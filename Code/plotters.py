@@ -75,19 +75,19 @@ def spatial_plotter():
         ax2.plot(spatial_tracker[i][:,0].value_in(units.AU), 
                  spatial_tracker[i][:,1].value_in(units.AU), 
                  c = colors[i])
+    min_x = min(spatial_tracker[i][:,0].value_in(units.AU)-com_tracker[0][:,1].value_in(units.AU))
+    max_x = max(spatial_tracker[i][:,0].value_in(units.AU)-com_tracker[0][:,1].value_in(units.AU))
+    lim_x.append(max(abs(min_x), abs(max_x)))
 
-        min_x = min(spatial_tracker[i][:,0].value_in(units.AU)-com_tracker[0][:,1].value_in(units.AU))
-        max_x = max(spatial_tracker[i][:,0].value_in(units.AU)-com_tracker[0][:,1].value_in(units.AU))
-        lim_x.append(max(abs(min_x), abs(max_x)))
-
-        min_y = min(spatial_tracker[i][:,1].value_in(units.AU)-com_tracker[0][:,1].value_in(units.AU))
-        max_y = max(spatial_tracker[i][:,1].value_in(units.AU)-com_tracker[0][:,1].value_in(units.AU))
-        lim_y.append(max(abs(min_y), abs(max_y)))
+    min_y = min(spatial_tracker[i][:,1].value_in(units.AU)-com_tracker[0][:,1].value_in(units.AU))
+    max_y = max(spatial_tracker[i][:,1].value_in(units.AU)-com_tracker[0][:,1].value_in(units.AU))
+    lim_y.append(max(abs(min_y), abs(max_y)))
 
     ax1.set_xlim(max(-2, -(1.1*np.max(lim_x))), 
                  min(2,    1.1*np.max(lim_x)))   
     ax1.set_ylim(max(-2, -(1.1*np.max(lim_y))),
                  min(2,    1.1*np.max(lim_y)))
+
 
     for i in range(len(spatial_tracker)-1):
         ax1.scatter(spatial_tracker[i][0,0].value_in(units.AU)-com_tracker[0][0,0].value_in(units.AU),

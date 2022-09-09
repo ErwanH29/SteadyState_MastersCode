@@ -231,19 +231,14 @@ class IMBH_init(object):
         self.N = 2
 
         IMBH = Particles(3)
-        IMBH[0].mass      = self.mass_func(mass_string, alpha)
-        IMBH[1].mass      = self.mass_func(mass_string, alpha)
-        IMBH[2].mass      = self.mass_func(mass_string, alpha)
-
-        IMBH[0].position  = self.IMBH_posinit(100, dist_string, 5, converter)[0].position
-        IMBH[1].position  = self.IMBH_posinit(100, dist_string, 5, converter)[randint(0,100)].position
-        IMBH[2].position  = self.IMBH_posinit(100, dist_string, 5, converter)[randint(0,100)].position
-        #IMBH.z = IMBH.z * 10**-5
-
-        #IMBH[1].position  = [200, -130, 78] | units.AU
-        #IMBH[2].position  = [-190, -92, -52] | units.AU
         
+        for i in range(len(IMBH)):
+            IMBH[i].mass = self.mass_func(mass_string,alpha)
+            IMBH[i].position = self.IMBH_posinit(100, dist_string, 5, converter)[randint(0,100)].position
+        IMBH[0].position  = self.IMBH_posinit(100, dist_string, 5, converter)[0].position  
+          
         IMBH.position += (1, 0, 0) * r
+
         IMBH.velocity  = [[23.518569826682455, 10.52227851919019, 0],    #Still needs development
                           [-20.74623746218285, -22.52084408611801, 0],#] | units.AU/units.yr
                           [-10.74623746218285, 15.52084408611801, 0], ] | units.AU/units.yr

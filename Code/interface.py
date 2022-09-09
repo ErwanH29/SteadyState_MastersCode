@@ -50,4 +50,4 @@ energy_plotter()
 
 anim = True
 if (anim):
-    animator(tend = 0.15 | units.yr, eta = 10**-3)
+    animator(tend = 0.15 | units.yr, eta = 10**-2)

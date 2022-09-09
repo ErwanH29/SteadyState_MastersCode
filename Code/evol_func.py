@@ -3,7 +3,7 @@ from amuse.units import units
 from initialiser import *
 from evol_func import *
 import numpy as np
-
+from amuse.community.galaxia.interface import BarAndSpirals3D
 
 class drift_without_gravity(object):
     """
@@ -39,6 +39,22 @@ class drift_without_gravity(object):
     def stop(self):
         pass
                    
+class MWG_parameters(object):
+    """
+    This class makes the integration of the Sun in the Milky Way by using BarAndSpirals3D. 
+    galaxy(): Function which calls for kinetic energy and potential so energy can be computed.
+    No parameters are default are based on MW values (Table B9 of Zwarte and McMillan (2008)).
+    Constructed from the semi-analytic potential Galaxia (Allen & Santillan 1991; Cox & Gómez 2002)
+    """
+    
+    def galaxy(self):
+
+        galaxy= BarAndSpirals3D()
+        galaxy.kinetic_energy=quantities.zero
+        galaxy.potential_energy=quantities.zero
+        
+        return galaxy 
+
 
 def adaptive_dt(eta, tend, parti):
     """

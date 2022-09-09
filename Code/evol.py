@@ -8,6 +8,8 @@ from amuse.ext.galactic_potentials import MWpotentialBovy2015
 from datetime import datetime
 import numpy as np
 import pickle as pkl
+from amuse.community.galaxia.interface import BarAndSpirals3D
+
 
 def evolve_system(parti, tend, eta, converter):
     """
@@ -22,7 +24,12 @@ def evolve_system(parti, tend, eta, converter):
     """
 
     SMBH_code      = MW_SMBH()
-    MWG_code       = MWpotentialBovy2015()
+    MWG            = MWG_parameters()
+    MWG_code       = MWG.galaxy()
+    #print(MWG_code.parameters)
+    MWG_code.kinetic_energy = quantities.zero
+    MWG_code.potential_energy = quantities.zero
+    MWG_code.get_potential_at_point
     GC_code        = GC_pot()
     GC_parti_track = GC_init()
     conv = converter
@@ -50,7 +57,7 @@ def evolve_system(parti, tend, eta, converter):
     brd = bridge.Bridge(timestep=1e-4 | units.yr)
     brd.add_system(gravity_code_gc, (SMBH_code, MWG_code))
     brd.add_system(code, (SMBH_code, MWG_code, GC_code))
-   
+    
     time = 0 | units.yr
     iter = 0
     Nenc = 0
@@ -59,20 +66,20 @@ def evolve_system(parti, tend, eta, converter):
     stopping_condition.enable()
 
     key_identify = [parti[i].key for i in range(len(parti))]
-    IMBH_tracker = np.zeros((len(parti)+1, 20002, 3))
+    IMBH_tracker = np.empty((len(parti)+1, 20002, 3))
     for i in range(len(parti)):
         IMBH_tracker[i][0,:] = parti[i].position.in_(units.parsec).number
     IMBH_tracker[-1][0,:] = GC_tracker.position.in_(units.parsec).number
 
-    com_tracker = np.zeros((1, 20002, 3))
+    com_tracker = np.empty((1, 20002, 3))
     com_tracker[0][0] = parti.center_of_mass().in_(units.parsec).number
 
     E0 = brd.kinetic_energy + code.get_radiated_gravitational_energy()
     E0 += (parti[:].mass * (SMBH_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
-                             +  MWG_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
+                             +  MWG_code.get_potential_at_point(0 | units.kpc, parti[:].x, parti[:].y, parti[:].z)
                              +  GC_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z))).sum()
     E0 += GC_code.gc_mass * (SMBH_code.get_potential_at_point(0, GC_tracker.x, GC_tracker.y, GC_tracker.z)
-                             + MWG_code.get_potential_at_point(0, GC_tracker.x, GC_tracker.y, GC_tracker.z))
+                             + MWG_code.get_potential_at_point(0 | units.kpc, GC_tracker.x, GC_tracker.y, GC_tracker.z))
 
     arr_Et        = [ ]
     arr_de_stab   = [ ]
@@ -133,10 +140,10 @@ def evolve_system(parti, tend, eta, converter):
         
         Et = brd.kinetic_energy + code.get_radiated_gravitational_energy()
         Et += (parti[:].mass * (SMBH_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
-                                + MWG_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
+                                + MWG_code.get_potential_at_point(0 | units.kpc, parti[:].x, parti[:].y, parti[:].z)
                                 + GC_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z))).sum()
         Et += GC_code.gc_mass * (SMBH_code.get_potential_at_point(0, GC_tracker.x, GC_tracker.y, GC_tracker.z)
-                                + MWG_code.get_potential_at_point(0, GC_tracker.x, GC_tracker.y, GC_tracker.z))
+                                + MWG_code.get_potential_at_point(0 | units.kpc, GC_tracker.x, GC_tracker.y, GC_tracker.z))
         de = abs(Et-E0)/abs(E0)
         
         arr_Et.append(Et)
