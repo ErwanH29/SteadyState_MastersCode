@@ -8,7 +8,6 @@ from amuse.ext.galactic_potentials import MWpotentialBovy2015
 from datetime import datetime
 import numpy as np
 import pickle as pkl
-from amuse.community.galaxia.interface import BarAndSpirals3D
 
 
 def evolve_system(parti, tend, eta, converter):
@@ -24,12 +23,12 @@ def evolve_system(parti, tend, eta, converter):
     """
 
     SMBH_code      = MW_SMBH()
-    MWG            = MWG_parameters()
-    MWG_code       = MWG.galaxy()
+    #MWG            = MWG_parameters()
+    MWG_code       = MWpotentialBovy2015()
     #print(MWG_code.parameters)
-    MWG_code.kinetic_energy = quantities.zero
-    MWG_code.potential_energy = quantities.zero
-    MWG_code.get_potential_at_point
+    #MWG_code.kinetic_energy = quantities.zero
+    #MWG_code.potential_energy = quantities.zero
+    #MWG_code.get_potential_at_point
     GC_code        = GC_pot()
     GC_parti_track = GC_init()
     conv = converter

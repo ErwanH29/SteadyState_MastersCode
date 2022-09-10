@@ -5,6 +5,7 @@ from amuse.ic.kingmodel import new_king_model
 from amuse.ic.scalo import new_scalo_mass_distribution
 from amuse.ext.galactic_potentials import Plummer_profile
 from random import random, randint
+from amuse.community.galaxia.interface import BarAndSpirals3D
 
 class GC_pot(object):
     """
@@ -61,7 +62,7 @@ class MW_SMBH(object):
     """
 
     def __init__(self,
-                 bh_mass=4.31e6 | units.MSun,
+                 bh_mass=4.e6 | units.MSun,
                  position=[0, 0, 0] | units.parsec):
         """
         Initialising function.
@@ -301,3 +302,20 @@ class GC_init(object):
         z_gc = [] | units.kpc
 
         return x_gc, y_gc, z_gc
+
+
+class MWG_parameters(object):
+    """
+    This class makes the integration of the Sun in the Milky Way by using BarAndSpirals3D. 
+    galaxy(): Function which calls for kinetic energy and potential so energy can be computed.
+    No parameters are default are based on MW values (Table B9 of Zwarte and McMillan (2008)).
+    Constructed from the semi-analytic potential Galaxia (Allen & Santillan 1991; Cox & Gómez 2002)
+    """
+    
+    def galaxy(self):
+
+        galaxy= BarAndSpirals3D()
+        galaxy.kinetic_energy=quantities.zero
+        galaxy.potential_energy=quantities.zero
+        
+        return galaxy 
