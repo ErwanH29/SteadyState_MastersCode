@@ -8,6 +8,7 @@ from amuse.ext.galactic_potentials import MWpotentialBovy2015
 from datetime import datetime
 import numpy as np
 import pickle as pkl
+import pandas as pd
 
 
 def evolve_system(parti, tend, eta, converter):
@@ -21,14 +22,14 @@ def evolve_system(parti, tend, eta, converter):
     eta:     The step size
     output:  The evolved simulation
     """
-
-    SMBH_code      = MW_SMBH()
     #MWG            = MWG_parameters()
-    MWG_code       = MWpotentialBovy2015()
     #print(MWG_code.parameters)
     #MWG_code.kinetic_energy = quantities.zero
     #MWG_code.potential_energy = quantities.zero
     #MWG_code.get_potential_at_point
+
+    SMBH_code      = MW_SMBH()
+    MWG_code       = MWpotentialBovy2015()
     GC_code        = GC_pot()
     GC_parti_track = GC_init()
     conv = converter
@@ -44,6 +45,10 @@ def evolve_system(parti, tend, eta, converter):
     code = Mikkola(conv, number_of_workers = 3)
     code.particles.add_particles(parti)
 
+    brd = bridge.Bridge(timestep=1e-4 | units.yr)
+    brd.add_system(gravity_code_gc, (SMBH_code, MWG_code))
+    brd.add_system(code, (SMBH_code, MWG_code, GC_code))
+
     channel_IMBH = {"from_gravity": 
                     code.particles.new_channel_to(parti,
                     attributes=["x", "y", "z", "vx", "vy", "vz", "mass"],
@@ -51,24 +56,30 @@ def evolve_system(parti, tend, eta, converter):
                     "to_gravity": 
                     parti.new_channel_to(code.particles,
                     attributes=["mass", "collision_radius"],
-                    target_names=["mass", "radius"])}
+                    target_names=["mass", "radius"])} 
 
-    brd = bridge.Bridge(timestep=1e-4 | units.yr)
-    brd.add_system(gravity_code_gc, (SMBH_code, MWG_code))
-    brd.add_system(code, (SMBH_code, MWG_code, GC_code))
-    
+    stopping_condition = code.stopping_conditions.collision_detection
+    stopping_condition.enable()
+    parti.collision_radius = parti.radius * 3000
+
+    adaptive_time = False
     time = 0 | units.yr
     iter = 0
     Nenc = 0
 
-    stopping_condition = code.stopping_conditions.collision_detection
-    stopping_condition.enable()
-
-    key_identify = [parti[i].key for i in range(len(parti))]
-    IMBH_tracker = np.empty((len(parti)+1, 20002, 3))
+    IMBH_array = pd.DataFrame()
+    df_IMBH    = pd.DataFrame()
     for i in range(len(parti)):
-        IMBH_tracker[i][0,:] = parti[i].position.in_(units.parsec).number
-    IMBH_tracker[-1][0,:] = GC_tracker.position.in_(units.parsec).number
+        df_IMBH_vals = pd.Series({'key_tracker': parti[i].key_tracker, '{}'.format(time): [parti[i].position]})
+        df_IMBH      = df_IMBH.append(df_IMBH_vals, ignore_index=True)
+    IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
+
+
+    GC_array = pd.DataFrame()
+    df_GC = pd.DataFrame()
+    df_GC_vals = pd.Series({'{}'.format(time): [GC_tracker.position]})
+    df_GC = df_GC.append(df_GC_vals, ignore_index=True)
+    GC_array = GC_array.append(df_GC, ignore_index=True)
 
     com_tracker = np.empty((1, 20002, 3))
     com_tracker[0][0] = parti.center_of_mass().in_(units.parsec).number
@@ -84,15 +95,15 @@ def evolve_system(parti, tend, eta, converter):
     arr_de_stab   = [ ]
     arr_de        = [ ]
     arr_time      = [ ]
-    parti.collision_radius = parti.radius * 3000
     encounter_particles = []
     
-    adaptive_time = False
-
     while time < tend:
         iter += 1
+        rows = (Nenc+len(parti))
+
         if iter%100 == 0:
             print('Iteration: ', iter)
+            print(IMBH_array)
 
         if (adaptive_time):
             adaptive_eta = adaptive_dt(eta, tend, parti).in_(units.yr)
@@ -100,6 +111,11 @@ def evolve_system(parti, tend, eta, converter):
 
         else:
             time += eta*tend
+
+        """
+        if new_particle:
+            key_identifier.append(new_particle.key)
+        """
 
         GC_code.d_update(GC_tracker.x, GC_tracker.y, GC_tracker.z)
 
@@ -130,13 +146,23 @@ def evolve_system(parti, tend, eta, converter):
         gc_track_array[1].append(GC_tracker.y)
         gc_track_array[2].append(GC_tracker.z)
         
+        df_IMBH = pd.DataFrame()
         for i in range(len(parti)+Nenc):
             for j in range(len(parti)):
-                if parti[j].key_tracker == key_identify[i]:
-                    IMBH_tracker[i][iter,:] = parti[j].position.in_(units.parsec).number# 
-        IMBH_tracker[-1][iter,:] = GC_tracker.position.in_(units.parsec).number
+                if IMBH_array.iloc[[i][0]][0] == parti[j].key_tracker:
+                    df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].position]})
+                    break
+                else:
+                    df_IMBH_vals = pd.Series({'{}'.format(time): [np.NaN, [np.NaN, np.NaN, np.NaN]]})
+            
+            df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
+
+        IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
+        IMBH_array['{}'.format(time)] = IMBH_array['{}'.format(time)].shift(-rows)
+        IMBH_array = IMBH_array[pd.notnull(IMBH_array["key_tracker"])]
+    
         com_tracker[0][iter] = parti.center_of_mass().in_(units.parsec).number
-        
+
         Et = brd.kinetic_energy + code.get_radiated_gravitational_energy()
         Et += (parti[:].mass * (SMBH_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
                                 + MWG_code.get_potential_at_point(0 | units.kpc, parti[:].x, parti[:].y, parti[:].z)
@@ -152,7 +178,7 @@ def evolve_system(parti, tend, eta, converter):
         if 15 < iter:
             arr_de_stab.append(abs(Et-arr_Et[13])/abs(arr_Et[13]))
 
-    IMBH_tracker = IMBH_tracker | units.parsec
+#    IMBH_tracker = IMBH_tracker | units.parsec
     com_tracker  = com_tracker  | units.parsec
     energy_tracker = [[arr_time], [arr_de], [arr_de_stab]]
 
@@ -163,8 +189,7 @@ def evolve_system(parti, tend, eta, converter):
     with open('data/center_of_mass/IMBH_com_parsecs_'+str(datetime.now())+'.pkl', 'wb') as file:
         pkl.dump(com_tracker, file)
 
-    with open('data/positions/IMBH_positions_parsecs_'+str(datetime.now())+'.pkl', 'wb') as file:
-        pkl.dump(IMBH_tracker, file)
+    IMBH_array.to_pickle('data/positions/IMBH_positions_'+str(datetime.now())+'.pkl')
 
     with open('data/energy/IMBH_energy_'+str(datetime.now())+'.pkl', 'wb') as file:
         pkl.dump(energy_tracker, file)

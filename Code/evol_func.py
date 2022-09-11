@@ -3,7 +3,6 @@ from amuse.units import units
 from initialiser import *
 from evol_func import *
 import numpy as np
-from amuse.community.galaxia.interface import BarAndSpirals3D
 
 class drift_without_gravity(object):
     """

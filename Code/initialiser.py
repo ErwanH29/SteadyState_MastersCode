@@ -236,8 +236,7 @@ class IMBH_init(object):
         for i in range(len(IMBH)):
             IMBH[i].mass = self.mass_func(mass_string,alpha)
             IMBH[i].position = self.IMBH_posinit(100, dist_string, 5, converter)[randint(0,100)].position
-        IMBH[0].position  = self.IMBH_posinit(100, dist_string, 5, converter)[0].position  
-          
+        IMBH[0].position  = self.IMBH_posinit(100, dist_string, 5, converter)[0].position
         IMBH.position += (1, 0, 0) * r
 
         IMBH.velocity  = [[23.518569826682455, 10.52227851919019, 0],    #Still needs development

@@ -10,7 +10,7 @@ import glob
 import os
 from datetime import datetime
 
-def spat_limits(spatial_data):
+def spat_limits(xcoords, ycoords):
     """
     Function which defines the x, y limits for spatial plots
     
@@ -42,7 +42,21 @@ def spatial_plotter():
     with open(os.path.join(max(filename, key=os.path.getctime)), 'rb') as input_file:
         spatial_tracker = pkl.load(input_file)
 
-    spatial_tracker[spatial_tracker.number==0] = np.nan | units.parsec
+    for i in range(len(spatial_tracker)):
+        IMBH_tracker = spatial_tracker.iloc[i]
+        col_len = len(IMBH_tracker)-1
+
+        line_x = np.empty((len(spatial_tracker)+1, col_len, 1))
+        line_y = np.empty((len(spatial_tracker)+1, col_len, 1))
+        line_z = np.empty((len(spatial_tracker)+1, col_len, 1))
+        
+        for j in range(col_len-1):
+            coords = IMBH_tracker.iloc[j+1][0] # * (1 | units.m)**-1
+            line_x[i][j][0] = coords[0].value_in(units.AU)
+            line_y[i][j][0] = coords[1].value_in(units.AU)
+            line_z[i][j][0] = coords[2].value_in(units.AU)
+        print(line_x[0])
+        print(i)
 
     fig = plt.figure(figsize=(12, 4))
     ax1 = fig.add_subplot(121)
@@ -62,7 +76,7 @@ def spatial_plotter():
     ax2.set_xlim(-xy_lim.value_in(units.AU), xy_lim.value_in(units.AU))
     ax2.set_ylim(-xy_lim.value_in(units.AU), xy_lim.value_in(units.AU))
     ax2.plot(spatial_tracker[-1][:,0].value_in(units.AU), 
-                spatial_tracker[-1][:,1].value_in(units.AU), 
+             spatial_tracker[-1][:,1].value_in(units.AU), 
                 c = 'black', linestyle = '--')
 
     lim_x = [ ]
@@ -229,3 +243,6 @@ def animator(tend, eta):
     #plt.show()
     anim.save('figures/animation'+str(datetime.now())+'.gif', writer='pillow')
     return 
+
+
+spatial_plotter()

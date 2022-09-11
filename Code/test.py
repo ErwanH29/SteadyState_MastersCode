@@ -1,116 +1,195 @@
-import numpy
 from amuse.lab import *
-from amuse.units import quantities
-from amuse.ext.rotating_bridge import Rotating_Bridge
-from amuse.community.galaxia.interface import BarAndSpirals3D
-from amuse.ext.composition_methods import *
+from amuse.units import units
+from amuse.community.mikkola.interface import Mikkola
+from amuse.couple import bridge
+from initialiser import *
+from evol_func import *
+from amuse.ext.galactic_potentials import MWpotentialBovy2015
+from datetime import datetime
+import numpy as np
+import pickle as pkl
+import pandas as pd
 
-class IntegrateOrbit(object):
-    """
-    This class makes the integration of the Sun in the Milky Way
-    by using BarAndSpirals3D. 
-    galaxy(): Function that sets the desired Galactic model. Any question on the parameters, contact me
-    creation_particles_noinertial(): creates a parti le set in a rotating frame
-    noinertial_to_inertial(): converts data from rotating to inertial frame
-    get_pos_vel_and_orbit(): Makes the evolution of the particle set
-    """
-    
-    def __init__(self, t_end= 10 |units.Myr, dt_bridge=0.5 |units.Myr, method= SPLIT_6TH_SS_M13, phase_bar= 0, phase_spiral= 0, omega_spiral= -20 |(units.kms/units.kpc), amplitude= 650|(units.kms**2/units.kpc), m=4, omega_bar= -50 |(units.kms/units.kpc), mass_bar= 1.1e10 |units.MSun ):
-        # Simulation parameters
-        self.t_end= t_end
-        self.dt_bridge= dt_bridge
-        self.method= method
-        self.time= 0 |units.Myr
-        #galaxy parameters
-        self.omega= 0 | (units.kms/units.kpc)
-        self.initial_phase= 0
-        self.bar_phase= phase_bar
-        self.spiral_phase= phase_spiral
-        self.omega_spiral= omega_spiral
-        self.amplitude= amplitude
-        self.rsp= 3.12 |units.kpc
-        self.m= m
-        self.tan_pitch_angle= 0.227194425
-        self.omega_bar= omega_bar
-        self.mass_bar= mass_bar
-        self.aaxis_bar= 3.12 |units.kpc
-        self.axis_ratio_bar= 0.37
-        return
-    
-    def galaxy(self):
-        global I
-        galaxy= BarAndSpirals3D(redirection='file', redirect_stdout_file="GAL{0}.log".format(I))
-        I = I + 1
-        galaxy.kinetic_energy=quantities.zero
-        galaxy.potential_energy=quantities.zero
-        galaxy.parameters.bar_contribution= True
-        galaxy.parameters.bar_phase= self.bar_phase
-        galaxy.parameters.omega_bar= self.omega_bar
-        galaxy.parameters.mass_bar= self.mass_bar
-        galaxy.parameters.aaxis_bar= self.aaxis_bar
-        galaxy.parameters.axis_ratio_bar= self.axis_ratio_bar 
-        galaxy.parameters.spiral_contribution= False
-        galaxy.parameters.spiral_phase= self.spiral_phase
-        galaxy.parameters.omega_spiral= self.omega_spiral
-        galaxy.parameters.amplitude= self.amplitude
-        galaxy.parameters.rsp= self.rsp
-        galaxy.parameters.m= self.m
-        galaxy.parameters.tan_pitch_angle= self.tan_pitch_angle
-        galaxy.commit_parameters()
-        self.omega= galaxy.parameters.omega_system
-        self.initial_phase= galaxy.parameters.initial_phase
-        print("INITIAL_PHASE:", self.initial_phase)
 
-        galaxy.kinetic_energy=quantities.zero
-        galaxy.potential_energy=quantities.zero
-        return galaxy 
+def evolve_system(parti, tend, eta, converter):
+    """
+    Bulk of the simulation. Uses Mikkola integrator to evolve the system while bridging it.
+    Keeps track of the particles' position and stores it in a pickle file.
+    
+    Inputs:
+    parti:   The particle set needed to simulate
+    tend:    The end time of the simulation
+    eta:     The step size
+    output:  The evolved simulation
+    """
+    #MWG            = MWG_parameters()
+    #print(MWG_code.parameters)
+    #MWG_code.kinetic_energy = quantities.zero
+    #MWG_code.potential_energy = quantities.zero
+    #MWG_code.get_potential_at_point
+
+    SMBH_code      = MW_SMBH()
+    MWG_code       = MWpotentialBovy2015()
+    GC_code        = GC_pot()
+    GC_parti_track = GC_init()
+    conv = converter
+    
+    GC_tracker = GC_parti_track.GC_tracer(parti)                        #Initial position/vel. of the GC
+    conv_gc = nbody_system.nbody_to_si(GC_tracker.mass.sum(),
+                                       GC_tracker.position.sum())
+    gravity_code_gc = drift_without_gravity(conv_gc)
+    gravity_code_gc.particles.add_particles(GC_tracker)                 #Initiates how GC will evolve in time
+    gc_track_array = GC_parti_track.gal_path_init()
+    channel_gc = gravity_code_gc.particles.new_channel_to(GC_tracker)
+
+    code = Mikkola(conv, number_of_workers = 3)
+    code.particles.add_particles(parti)
+
+    brd = bridge.Bridge(timestep=1e-4 | units.yr)
+    brd.add_system(gravity_code_gc, (SMBH_code, MWG_code))
+    brd.add_system(code, (SMBH_code, MWG_code, GC_code))
+
+    channel_IMBH = {"from_gravity": 
+                    code.particles.new_channel_to(parti,
+                    attributes=["x", "y", "z", "vx", "vy", "vz", "mass"],
+                    target_names=["x", "y", "z", "vx", "vy", "vz", "mass"]),
+                    "to_gravity": 
+                    parti.new_channel_to(code.particles,
+                    attributes=["mass", "collision_radius"],
+                    target_names=["mass", "radius"])} 
+
+    stopping_condition = code.stopping_conditions.collision_detection
+    stopping_condition.enable()
+    parti.collision_radius = parti.radius * 3000
+
+    adaptive_time = False
+    time = 0 | units.yr
+    iter = 0
+    Nenc = 0
+
+    IMBH_array = pd.DataFrame()
+    df_IMBH    = pd.DataFrame()
+    for i in range(len(parti)):
+        df_IMBH_vals = pd.Series({'key_tracker': parti[i].key_tracker, '{}'.format(time): [parti[i].position]})
+        df_IMBH      = df_IMBH.append(df_IMBH_vals, ignore_index=True)
+    IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
+
+
+    GC_array = pd.DataFrame()
+    df_GC = pd.DataFrame()
+    df_GC_vals = pd.Series({'{}'.format(time): [GC_tracker.position]})
+    df_GC = df_GC.append(df_GC_vals, ignore_index=True)
+    GC_array = GC_array.append(df_GC, ignore_index=True)
+
+    com_tracker = np.empty((1, 20002, 3))
+    com_tracker[0][0] = parti.center_of_mass().in_(units.parsec).number
+
+    E0 = brd.kinetic_energy + code.get_radiated_gravitational_energy()
+    E0 += (parti[:].mass * (SMBH_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
+                             +  MWG_code.get_potential_at_point(0 | units.kpc, parti[:].x, parti[:].y, parti[:].z)
+                             +  GC_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z))).sum()
+    E0 += GC_code.gc_mass * (SMBH_code.get_potential_at_point(0, GC_tracker.x, GC_tracker.y, GC_tracker.z)
+                             + MWG_code.get_potential_at_point(0 | units.kpc, GC_tracker.x, GC_tracker.y, GC_tracker.z))
+
+    arr_Et        = [ ]
+    arr_de_stab   = [ ]
+    arr_de        = [ ]
+    arr_time      = [ ]
+    encounter_particles = []
+    
+    while time < tend:
+        iter += 1
+        rows = (Nenc+len(parti))
+
+        if iter%100 == 0:
+            print('Iteration: ', iter)
+
+        if (adaptive_time):
+            adaptive_eta = adaptive_dt(eta, tend, parti).in_(units.yr)
+            time += adaptive_eta
+
+        else:
+            time += eta*tend
+
+        """
+        if new_particle:
+            key_identifier.append(new_particle.key)
+        """
+
+        GC_code.d_update(GC_tracker.x, GC_tracker.y, GC_tracker.z)
+
+        channel_IMBH["to_gravity"].copy()
+        brd.evolve_model(time)
+        if stopping_condition.is_set():
+            print("........Encounter Detected........")
+            print('Collision at step: ', iter)
+            
+            for ci in range(len(stopping_condition.particles(0))):
+                Nenc += 1
+                enc_particles = Particles(particles=[stopping_condition.particles(0)[ci],
+                                          stopping_condition.particles(1)[ci]])
+                enc_particles = enc_particles.get_intersecting_subset_in(parti)
+                print('Complete particle set:   ', parti)
+
+                merged_parti  = merge_IMBH(parti, enc_particles, code.model_time)
+                parti.synchronize_to(code.particles)
+                print('Updated particle set:    ', parti)
+                print('Merger mass:  ', merged_parti.mass.sum())
+                encounter_particles.append(merged_parti)
+                adaptive_eta = 10**-3 | units.yr
+                
+        channel_gc.copy()
+        channel_IMBH["from_gravity"].copy()  
+
+        gc_track_array[0].append(GC_tracker.x)
+        gc_track_array[1].append(GC_tracker.y)
+        gc_track_array[2].append(GC_tracker.z)
         
-    def creation_particles_noinertial(self, particles):
-        """
-        makes trans in a counterclockwise frame.
-        If the Galaxy only has bar or only spiral arms, the frame corotates with
-        the bar or with the spiral arms. If the Galaxy has bar and spiral arms, the frame corotates with the bar
-        """
-        no_inertial_system= particles.copy()
-        angle= self.initial_phase + self.omega*self.time
-        C1= particles.vx + self.omega*particles.y
-        C2= particles.vy - self.omega*particles.x
-        no_inertial_system.x = particles.x*numpy.cos(angle) + particles.y*numpy.sin(angle)
-        no_inertial_system.y = -particles.x*numpy.sin(angle) + particles.y*numpy.cos(angle) 
-        no_inertial_system.z = particles.z
-        no_inertial_system.vx = C1*numpy.cos(angle) + C2*numpy.sin(angle) 
-        no_inertial_system.vy = C2*numpy.cos(angle) - C1*numpy.sin(angle)
-        no_inertial_system.vz = particles.vz
-        return no_inertial_system    
+        df_IMBH = pd.DataFrame()
+        for i in range(len(parti)+Nenc):
+            for j in range(len(parti)):
+                if IMBH_array.iloc[[i][0]][0] == parti[j].key_tracker:
+                    df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].key_tracker, parti[j].position]})
+                    break
+                else:
+                    df_IMBH_vals = pd.Series({'{}'.format(time): [np.NaN, [np.NaN, np.NaN, np.NaN]]})
+            
+            df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
 
-    def noinertial_to_inertial(self, part_noin, part_in):
-        #makes trans in a counterclockwise frame
-        angle= self.initial_phase + self.omega*self.time
-        C1= part_noin.vx - part_noin.y*self.omega
-        C2= part_noin.vy + part_noin.x*self.omega
-        part_in.x= part_noin.x*numpy.cos(angle)-part_noin.y*numpy.sin(angle)
-        part_in.y= part_noin.x*numpy.sin(angle)+part_noin.y*numpy.cos(angle)
-        part_in.z= part_noin.z
-        part_in.vx= C1*numpy.cos(angle) - C2*numpy.sin(angle)
-        part_in.vy= C1*numpy.sin(angle) + C2*numpy.cos(angle)
-        part_in.vz= part_noin.vz
-        return
+        IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
+        IMBH_array['{}'.format(time)] = IMBH_array['{}'.format(time)].shift(-iter*rows)
+        com_tracker[0][iter] = parti.center_of_mass().in_(units.parsec).number
+        
+        print(IMBH_array)  
+        print(time.in_(units.yr))
+        Et = brd.kinetic_energy + code.get_radiated_gravitational_energy()
+        Et += (parti[:].mass * (SMBH_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
+                                + MWG_code.get_potential_at_point(0 | units.kpc, parti[:].x, parti[:].y, parti[:].z)
+                                + GC_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z))).sum()
+        Et += GC_code.gc_mass * (SMBH_code.get_potential_at_point(0, GC_tracker.x, GC_tracker.y, GC_tracker.z)
+                                + MWG_code.get_potential_at_point(0 | units.kpc, GC_tracker.x, GC_tracker.y, GC_tracker.z))
+        de = abs(Et-E0)/abs(E0)
+        
+        arr_Et.append(Et)
+        arr_de.append(de)
+        arr_time.append(iter)
+        
+        if 15 < iter:
+            arr_de_stab.append(abs(Et-arr_Et[13])/abs(arr_Et[13]))
 
-    
-    def testing_potential_and_force(self, galaxy, x, y, z):
-        dx, dy, dz = 0.001 |units.kpc, 0.001 |units.kpc, 0.001 |units.kpc
-        phi1x= galaxy.get_potential_at_point(0 |units.kpc, (x+dx), y, z)
-        phi2x= galaxy.get_potential_at_point(0 |units.kpc, (x-dx), y, z)
-        f1x= -(phi1x-phi2x)/(2*dx)
-        phi1y= galaxy.get_potential_at_point(0 |units.kpc, x, (y+dy), z)
-        phi2y= galaxy.get_potential_at_point(0 |units.kpc, x, (y-dy), z)
-        f1y= -(phi1y-phi2y)/(2*dy)
-        phi1z= galaxy.get_potential_at_point(0 |units.kpc, x, y, (z+dz))
-        phi2z= galaxy.get_potential_at_point(0 |units.kpc, x, y, (z-dz))
-        f1z= -(phi1z-phi2z)/(2*dz)
-        fx,fy,fz= galaxy.get_gravity_at_point(0 |units.kpc, x, y, z)
-        print("analytic", "numerical") 
-        print(fx.value_in(100*units.kms**2/units.kpc) , f1x.value_in(100*units.kms**2/units.kpc))
-        print(fy.value_in(100*units.kms**2/units.kpc) , f1y.value_in(100*units.kms**2/units.kpc))
-        print(fz.value_in(100*units.kms**2/units.kpc) , f1z.value_in(100*units.kms**2/units.kpc))
-        return
+#    IMBH_tracker = IMBH_tracker | units.parsec
+    com_tracker  = com_tracker  | units.parsec
+    energy_tracker = [[arr_time], [arr_de], [arr_de_stab]]
+
+    brd.stop()
+
+    print('...Dumping Files...')
+
+    with open('data/center_of_mass/IMBH_com_parsecs_'+str(datetime.now())+'.pkl', 'wb') as file:
+        pkl.dump(com_tracker, file)
+
+    with open('data/positions/IMBH_positions_parsecs_'+str(datetime.now())+'.pkl', 'wb') as file:
+        pkl.dump(IMBH_tracker, file)
+
+    with open('data/energy/IMBH_energy_'+str(datetime.now())+'.pkl', 'wb') as file:
+        pkl.dump(energy_tracker, file)
