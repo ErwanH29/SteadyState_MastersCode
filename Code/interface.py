@@ -39,15 +39,15 @@ conv = nbody_system.nbody_to_si(1 | units.MSun, 1 | units.AU)
 
 IMBH_code = IMBH_init()
 IMBH_parti = IMBH_code.IMBH_first(mass_string = 'S', dist_string = 'P', alpha = -2.35,
-                                  init_dist = 0.001, converter = conv)
+                                  init_dist = 0.01, converter = conv)
 IMBH_parti = IMBH_code.IMBH_radius(IMBH_parti)
 setattr(IMBH_parti, "collision_radius", 100 * IMBH_parti.radius)
 
-evolve_system(IMBH_parti, tend = 0.15 | units.yr, eta = 10**-3, converter = conv)
+evolve_system(IMBH_parti, tend = 1.5 | units.yr, eta = 10**-4, converter = conv)
 print('...Plotting Figures...')
 spatial_plotter()
 energy_plotter()
 
 anim = True
 if (anim):
-    animator(tend = 0.15 | units.yr, eta = 10**-2)
+    animator(tend = 1.5 | units.yr, eta = 10**-3)

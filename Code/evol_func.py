@@ -116,4 +116,3 @@ def merge_IMBH(parti, particles_in_encounter, tcoll):
     parti.add_particles(new_particle)
     parti.remove_particles(particles_in_encounter)
     return new_particle
-
