@@ -203,7 +203,7 @@ class IMBH_init(object):
 
         if dist_string == 'P' or dist_string == 'p':
             distributer = new_plummer_model(N, convert_nbody = converter, 
-                                            radius_cutoff = 15)
+                                            radius_cutoff = 20)
             return distributer
 
         if dist_string == 'K' or dist_string == 'k':

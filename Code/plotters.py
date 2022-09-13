@@ -77,8 +77,9 @@ def spatial_plotter():
     ax3 = fig.add_subplot(212)
 
     colors = get_distinct(len(IMBH_tracker))
-    ax1.set_title('Close-Encounters')
-    ax2.set_title('Overall System')
+    ax1.set_title('Overall System')
+    ax2.set_title('Focus On One IMBH')
+    
     ax1.set_xlabel(r'$x$-Coordinate [AU]')
     ax1.set_ylabel(r'$z$-Coordinate [AU]')
     for ax_ in [ax1, ax2]:
@@ -86,9 +87,9 @@ def spatial_plotter():
         ax_.set_ylabel(r'$y$-Coordinate [AU]')
 
     xy_lim = 0.001 | units.parsec # Hard-coded value but corresponds to the shift
-    xy_lim = 1.1* xy_lim.value_in(units.AU)
-    ax2.set_xlim(-xy_lim, xy_lim)
-    ax2.set_ylim(-xy_lim, xy_lim)
+    xy_lim = 1.5* xy_lim.value_in(units.AU)
+    ax3.set_xlim(-xy_lim, xy_lim)
+    ax3.set_ylim(-xy_lim, xy_lim)
 
     lim_x = [ ]
     lim_y = [ ]
@@ -101,22 +102,24 @@ def spatial_plotter():
     max_y = max((line_y[:]-com_y[0])[0][0])
     lim_y.append(max(abs(min_y), abs(max_y)))
     
-    ax3.plot(GC_x[0][:], GC_y[0][:], color = 'black', linestyle = '--')
+    ax3.plot(GC_x[0][:], GC_y[0][:], color = 'black', label = 'Globular Cluster', linestyle = '--')
     ax3.scatter(SMBH_code.position.x.value_in(units.AU), SMBH_code.position.y.value_in(units.AU), 
-                color = 'black', s = 1000*SMBH_code.bh_rad.value_in(units.AU) )
+                color = 'black', s = 1000*SMBH_code.bh_rad.value_in(units.AU), label = r'SMBH [$M=4$e$6 M_{\odot}$]' )
     for i in range(len(IMBH_tracker)):
         ax3.plot(line_x[i][:], line_y[i][:], color = colors[i])
-        for ax_ in [ax1, ax2]:
-            ax_.plot(line_x[i][:]-com_x[0][:], line_y[i][:]-com_y[0][:], c = colors[i], lw = 1.4)
-            ax_.scatter(line_x[i][0]-com_x[0][0], line_y[i][0]-com_y[0][0], 
-                        alpha = 0.7, c = colors[i], edgecolors = 'black', s = 50)
-            ax_.scatter(line_x[i][-1]-com_x[0][-1], line_y[i][-1]-com_y[0][-1], 
-                        c = colors[i], edgecolors = 'black', s = 50)
-    ax2.set_xlim(-2, 2)
-    ax2.set_ylim(-2, 2)
-
+        ax1.plot(line_x[i][:]-com_x[0][:], line_y[i][:]-com_y[0][:], c = colors[i], lw = 1.4)
+        ax1.scatter(line_x[i][0]-com_x[0][0], line_y[i][0]-com_y[0][0], 
+                    alpha = 0.7, c = colors[i], edgecolors = 'black', s = 50)
+        ax1.scatter(line_x[i][-1]-com_x[0][-1], line_y[i][-1]-com_y[0][-1], 
+                    c = colors[i], edgecolors = 'black', s = 50)
+        ax2.plot(line_x[i][:]-line_x[0][:], line_y[i][:]-line_y[0][:], c = colors[i], lw = 1.4)
+        ax2.scatter(line_x[i][0]-line_x[0][0], line_y[i][0]-line_y[0][0], 
+                    alpha = 0.7, c = colors[i], edgecolors = 'black', s = 50)
+        ax2.scatter(line_x[i][-1]-line_x[0][-1], line_y[i][-1]-line_y[0][-1], 
+                    c = colors[i], edgecolors = 'black', s = 50)
+    ax2.scatter(0, 0, c = colors[0], edgecolors = 'black', s = 50)
+    plt.legend()
     plt.savefig('figures/spatial_tracker'+str(datetime.now())+'.pdf', dpi=300, bbox_inches='tight')
-    plt.show()
     plt.clf()
     plt.close()
 
@@ -236,15 +239,13 @@ def animator(tend, eta):
                      line_y[i][max(0,col_len+1-70):col_len+1]-com_y[0][max(0,col_len+1-70):col_len+1],
                      c = colors[i], lw = 2)
 
-            ax3.scatter(line_x[i][col_len]-com_x[0][col_len],
-                        line_y[i][col_len]-com_y[0][col_len],
+            ax3.scatter(line_x[i][col_len]-com_x[0][col_len], line_y[i][col_len]-com_y[0][col_len],
                         c = colors[i], edgecolors = 'black', s = 40)
 
             ax4.plot(line_x[i][max(0,col_len+1-70):col_len+1]-com_x[0][max(0,col_len+1-70):col_len+1],
                      line_z[i][max(0,col_len+1-70):col_len+1]-com_z[0][max(0,col_len+1-70):col_len+1],
                      c = colors[i], lw = 2)
-            ax4.scatter(line_x[i][col_len]-com_x[0][col_len],
-                        line_z[i][col_len]-com_z[0][col_len],
+            ax4.scatter(line_x[i][col_len]-com_x[0][col_len], line_z[i][col_len]-com_z[0][col_len],
                         c = colors[i], edgecolors = 'black', s = 40)
 
         ax1.plot(GC_x[0][0:col_len+1], GC_y[0][0:col_len+1], c = 'black', linestyle = '--')
