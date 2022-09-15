@@ -203,7 +203,7 @@ class IMBH_init(object):
 
         if dist_string == 'P' or dist_string == 'p':
             distributer = new_plummer_model(N, convert_nbody = converter, 
-                                            radius_cutoff = 20)
+                                            radius_cutoff = 50)
             return distributer
 
         if dist_string == 'K' or dist_string == 'k':
@@ -236,12 +236,16 @@ class IMBH_init(object):
         for i in range(len(IMBH)):
             IMBH[i].mass = self.mass_func(mass_string,alpha)
             IMBH[i].position = self.IMBH_posinit(100, dist_string, 5, converter)[randint(0,100)].position
-        IMBH[0].position  = self.IMBH_posinit(100, dist_string, 5, converter)[0].position
+
+        IMBH[0].position = [22, 14, -2] | units.AU
+        IMBH[1].position = [9, 12, 0] | units.AU
+        IMBH[2].position = [13, 7, -4] | units.AU
+
         IMBH.position += (1, 0, 0) * r
 
-        IMBH.velocity  = [[23.518569826682455, 10.52227851919019, 0],    #Still needs development
+        IMBH.velocity  = [[-23.518569826682455, -10.52227851919019, 0],    #Still needs development
                           [-20.74623746218285, -22.52084408611801, 0],#] | units.AU/units.yr
-                          [-10.74623746218285, 15.52084408611801, 0], ] | units.AU/units.yr
+                          [-10.74623746218285, -15.52084408611801, 0], ] | units.AU/units.yr
 
         IMBH.velocity += (0, 1, 0) * (constants.G*SMBH_code.bh_mass/r).sqrt()
         IMBH.key_tracker = IMBH.key

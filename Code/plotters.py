@@ -8,6 +8,7 @@ import pickle as pkl
 import numpy as np
 import glob
 import os
+from itertools import cycle
 from datetime import datetime
 
 def file_opener(file_string):
@@ -51,46 +52,68 @@ def spatial_plotter():
 
     SMBH_code = MW_SMBH()
 
+    Lag_tracker, col_len  = file_opener('data/lagrangians/*')
     com_tracker, col_len  = file_opener('data/center_of_mass/*')
     IMBH_tracker, col_len = file_opener('data/positions_IMBH/*')
+    tdyn_tracker, col_len = file_opener('data/dynamical_time/*')
     GC_tracker, col_len   = file_opener('data/positions_GC/*')
-    
+
+    iteration = np.empty((1, col_len, 1))
+    LG25_array  = np.empty((1, col_len, 1))
+    LG75_array  = np.empty((1, col_len, 1))
+
+    for i in range(col_len):
+        vals = Lag_tracker.iloc[i]
+        iteration[0][i][0]  = vals[0]
+        LG25_array[0][i][0] = vals[1].value_in(units.AU)
+        LG75_array[0][i][0] = vals[2].value_in(units.AU)
+
+    com_x, com_y, com_z   = file_manipulator(col_len, com_tracker)
+    GC_x, GC_y, GC_z      = file_manipulator(col_len, GC_tracker)
+
     line_x = np.empty((len(IMBH_tracker), col_len, 1))
     line_y = np.empty((len(IMBH_tracker), col_len, 1))
     line_z = np.empty((len(IMBH_tracker), col_len, 1))
-
-    com_x, com_y, com_z = file_manipulator(col_len, com_tracker)
-    GC_x, GC_y, GC_z = file_manipulator(col_len, GC_tracker)
+    tdyn   = np.empty((len(IMBH_tracker), col_len, 1))
 
     for i in range(len(IMBH_tracker)):
         tIMBH_tracker = IMBH_tracker.iloc[i]
-        
+        tDyntime_trk  = tdyn_tracker.iloc[i]
         for j in range(col_len):
-            coords = tIMBH_tracker.iloc[j+1][0]
+            coords = tIMBH_tracker.iloc[j+1][1]
             line_x[i][j][0] = coords[0].value_in(units.AU)
             line_y[i][j][0] = coords[1].value_in(units.AU)
             line_z[i][j][0] = coords[2].value_in(units.AU)
 
+            tdynval = tDyntime_trk.iloc[j+1][0]
+            tdyn[i][j][0] = tdynval[0].value_in(units.day)
+
     fig = plt.figure(figsize=(12.5, 8))
     ax1 = fig.add_subplot(221)
     ax2 = fig.add_subplot(222)
-    ax3 = fig.add_subplot(212)
+    ax3 = fig.add_subplot(223)
+    ax4 = fig.add_subplot(224)
+    lines = ["-","--","-.",":"]
+    linecycler = cycle(lines)
 
     colors = get_distinct(len(IMBH_tracker))
-    ax1.set_title('Overall System')
-    ax2.set_title('Focus On One IMBH')
+    ax1.set_title('IMBH Center of Mass')
+    ax2.set_title('Overall System')
     
-    ax1.set_xlabel(r'$x$-Coordinate [AU]')
-    ax1.set_ylabel(r'$z$-Coordinate [AU]')
     for ax_ in [ax1, ax2]:
         ax_.set_xlabel(r'$x$-Coordinate [AU]')
         ax_.set_ylabel(r'$y$-Coordinate [AU]')
+    ax3.set_xlabel(r'Iteration')
+    ax3.set_ylabel(r'Dynamical Time [Days]')
+    ax3.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.03f'))
+    ax4.set_xlabel(r'Iteration')
+    ax4.set_ylabel(r'Lagrangian Radius [AU]')
 
     xy_lim = 0.001 | units.parsec # Hard-coded value but corresponds to the shift
     xy_lim = 1.5* xy_lim.value_in(units.AU)
-    ax3.set_xlim(-xy_lim, xy_lim)
-    ax3.set_ylim(-xy_lim, xy_lim)
-
+    ax2.set_xlim(-xy_lim, xy_lim)
+    ax2.set_ylim(-xy_lim, xy_lim)
+        
     lim_x = [ ]
     lim_y = [ ]
 
@@ -102,23 +125,22 @@ def spatial_plotter():
     max_y = max((line_y[:]-com_y[0])[0][0])
     lim_y.append(max(abs(min_y), abs(max_y)))
     
-    ax3.plot(GC_x[0][:], GC_y[0][:], color = 'black', label = 'Globular Cluster', linestyle = '--')
-    ax3.scatter(SMBH_code.position.x.value_in(units.AU), SMBH_code.position.y.value_in(units.AU), 
+    ax2.plot(GC_x[0][:], GC_y[0][:], color = 'black', label = 'Globular Cluster', linestyle = '--')
+    ax2.scatter(SMBH_code.position.x.value_in(units.AU), SMBH_code.position.y.value_in(units.AU), 
                 color = 'black', s = 1000*SMBH_code.bh_rad.value_in(units.AU), label = r'SMBH [$M=4$e$6 M_{\odot}$]' )
     for i in range(len(IMBH_tracker)):
-        ax3.plot(line_x[i][:], line_y[i][:], color = colors[i])
         ax1.plot(line_x[i][:]-com_x[0][:], line_y[i][:]-com_y[0][:], c = colors[i], lw = 1.4)
         ax1.scatter(line_x[i][0]-com_x[0][0], line_y[i][0]-com_y[0][0], 
                     alpha = 0.7, c = colors[i], edgecolors = 'black', s = 50)
         ax1.scatter(line_x[i][-1]-com_x[0][-1], line_y[i][-1]-com_y[0][-1], 
                     c = colors[i], edgecolors = 'black', s = 50)
-        ax2.plot(line_x[i][:]-line_x[0][:], line_y[i][:]-line_y[0][:], c = colors[i], lw = 1.4)
-        ax2.scatter(line_x[i][0]-line_x[0][0], line_y[i][0]-line_y[0][0], 
-                    alpha = 0.7, c = colors[i], edgecolors = 'black', s = 50)
-        ax2.scatter(line_x[i][-1]-line_x[0][-1], line_y[i][-1]-line_y[0][-1], 
-                    c = colors[i], edgecolors = 'black', s = 50)
-    ax2.scatter(0, 0, c = colors[0], edgecolors = 'black', s = 50)
-    plt.legend()
+        ax2.plot(line_x[i][:], line_y[i][:], color = colors[i])
+        ax3.plot(iteration[0][:], tdyn[i][:], c = colors[i], linestyle = next(linecycler))
+
+    ax4.plot(iteration[0][:], LG25_array[0][:], color = colors[0], label = r'$r_{25,L}$')
+    ax4.plot(iteration[0][:], LG75_array[0][:], color = colors[1], label = r'$r_{75,L}$')
+    ax2.legend()
+    ax4.legend()
     plt.savefig('figures/spatial_tracker'+str(datetime.now())+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()
@@ -132,11 +154,18 @@ def energy_plotter():
     """
 
     energy_tracker, col_len = file_opener('data/energy/*')
+    IMBH_energy_tracker, col_len = file_opener('data/particle_energies/*')
 
     iteration = np.empty((1, col_len, 1))
     Et_array  = np.empty((1, col_len, 1))
     dE_array  = np.empty((1, col_len, 1))
     dEs_array = np.empty((1, col_len, 1))
+
+    BE_array   = np.empty((1, col_len, 1))
+    KE_array   = np.empty((1, col_len, 1))
+    TotE_array = np.empty((1, col_len, 1))
+
+    colors = get_distinct(3)
 
     for i in range(col_len):
         vals = energy_tracker.iloc[i]
@@ -145,20 +174,31 @@ def energy_plotter():
         dE_array[0][i][0]  = vals[2]
         dEs_array[0][i][0] = vals[3]
 
+        vals = IMBH_energy_tracker.iloc[i]
+        BE_array[0][i][0]   = vals[1].value_in(units.J)
+        KE_array[0][i][0]   = vals[2].value_in(units.J)
+        TotE_array[0][i][0] = vals[3].value_in(units.J)    
+
     fig = plt.figure(figsize=(12, 4))
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
     ax1.set_title('Energy Conservation')
-    ax2.set_title('Stabilised Energy Conservation')
+    ax2.set_title('Intermediate Mass Black Hole \n'
+                  'Energy Evolution')
 
     ax1.set_xlabel(r'Time Step [$\eta$]')
     ax1.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
     ax2.set_xlabel(r'Time Step [$\eta$]')
+    ax2.set_ylabel(r'Energy [J]')
     ax1.set_yscale('log')
     ax2.set_yscale('log')
         
-    ax1.plot(iteration[0][:],   dE_array[0][:])
-    ax2.plot(iteration[0][17:], dEs_array[0][17:])
+    ax1.plot(iteration[0][:], dE_array[0][:], color = colors[0])
+    ax2.plot(iteration[0][:], -1*BE_array[0][:], color = colors[0], label = 'Potential Energy (abs)')
+    ax2.plot(iteration[0][:], KE_array[0][:], color = colors[1], label = 'Kinetic Energy')
+    ax2.plot(iteration[0][:], TotE_array[0][:], color = colors[2], label = 'Total Energy')
+    ax2.set_ylim(min(-1*BE_array[0][:])/2, max(TotE_array[0][:])*10)
+    ax2.legend()
     plt.savefig('figures/energy_tracker'+str(datetime.now())+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()
@@ -207,7 +247,7 @@ def animator(tend, eta):
         tIMBH_tracker = IMBH_tracker.iloc[i]
         
         for j in range(col_len):
-            coords = tIMBH_tracker.iloc[j+1][0]
+            coords = tIMBH_tracker.iloc[j+1][1]
             line_x[i][j][0] = coords[0].value_in(units.AU)
             line_y[i][j][0] = coords[1].value_in(units.AU)
             line_z[i][j][0] = coords[2].value_in(units.AU)
@@ -253,8 +293,8 @@ def animator(tend, eta):
         ax1.set_title(str("{:.3f}".format(iteration[0][col_len][0]*tend.number*eta*365)+" Days"), loc = 'left')
         ax1.scatter(SMBH_code.position.x.value_in(units.AU), SMBH_code.position.y.value_in(units.AU), 
                     color = 'black', s = SMBH_code.bh_mass.number**0.3)
-        ax1.set_xlim(-xy_lim, xy_lim)
-        ax1.set_ylim(-xy_lim, xy_lim)     
+        #ax1.set_xlim(-xy_lim, xy_lim)
+        #ax1.set_ylim(-xy_lim, xy_lim)     
         ax1.set_xlabel(r'$x$-Coordinate [AU]')
         ax1.set_ylabel(r'$y$-Coordinate [AU]')
 

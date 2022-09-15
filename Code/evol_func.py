@@ -33,46 +33,10 @@ class drift_without_gravity(object):
     @property 
     def kinetic_energy(self):
         return (0.5*self.particles.mass \
-                   *self.particles.velocity.lengths()**2).sum()
+                *self.particles.velocity.lengths()**2).sum()
 
     def stop(self):
         pass
-
-
-def adaptive_dt(eta, tend, parti):
-    """
-    In case one wants, the time-scale can change depending on the minimum 
-    interparticle collision time. This is calculated from the unaccelerated 
-    linear motion and free-fall time using Eqn (A.6) of Zwart et al. 2021 
-    
-    Input:
-    eta:     Rigid time-step used
-    tend:    The final time simulation evolves until
-    parti:   The IMBH particle set
-    output:  A new time-step once particles come closer than a certain distance.
-    """
-    
-    comp_val = eta * tend
-    dr_ratio = [ ]
-    for i in range(len(parti)):
-        for j in range(len(parti)):
-            if j != i:
-                dist  = (abs(parti[i].position.length()-parti[j].position.length()))
-                
-                if dist < 1000 * (parti[i].collision_radius + parti[j].collision_radius)/2:
-                    vel   = (abs(parti[i].velocity.length()-parti[j].velocity.length()))
-                    value = dist/vel
-
-                    if value > 10**-7 | units.yr:
-                        value * eta
-                        dr_ratio.append(value)
-                    else:
-                        dr_ratio.append(comp_val)
-
-            else:
-                j += 1
-
-    return min(comp_val, np.min(dr_ratio))
 
 def calc_momentum(parti):
     """
@@ -111,8 +75,32 @@ def merge_IMBH(parti, particles_in_encounter, tcoll):
     new_particle.velocity = com_vel
     new_particle.radius = (2*constants.G*new_particle.mass)/(constants.c**2)
     new_particle.collision_radius = new_particle.radius * 3000
-
     
     parti.add_particles(new_particle)
     parti.remove_particles(particles_in_encounter)
     return new_particle
+
+def tdyn_calc(particle):
+    """
+    Function to compute the dynamical timescale for each particle relative to one another.
+    In all its permutations, it only keeps the minimal value.
+    
+    Inputs:
+    particle: The particle set currently being evolved
+    outputs:  The dynamical timescale
+    """
+    
+    tdyn_array = [ ]
+    for i in range(len(particle)):
+        tdyn_temp_arr = [ ]
+        for j in range(len(particle)):
+            if i == j:
+                pass
+            else:
+                dist_temp = abs(particle[i].position.length()-particle[j].position.length())
+                value = ((4*np.pi*dist_temp**3)/(3*constants.G*(particle[i].mass+particle[j].mass))).sqrt()
+                value = value.value_in(units.yr)
+                tdyn_temp_arr.append(value)
+        tdyn_array.append(min(tdyn_temp_arr))
+
+    return tdyn_array

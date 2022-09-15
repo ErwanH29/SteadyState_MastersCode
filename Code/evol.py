@@ -3,11 +3,13 @@ from amuse.units import units
 from amuse.couple import bridge
 from initialiser import *
 from evol_func import *
+from amuse.ext.LagrangianRadii import LagrangianRadii
 from amuse.ext.galactic_potentials import MWpotentialBovy2015
 from datetime import datetime
 import numpy as np
 import pandas as pd
 import math
+import time as cpu_time
 
 
 def evolve_system(parti, tend, eta, grav_solver, converter):
@@ -21,11 +23,8 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
     eta:     The step size
     output:  The evolved simulation
     """
-    #MWG            = MWG_parameters()
-    #print(MWG_code.parameters)
-    #MWG_code.kinetic_energy = quantities.zero
-    #MWG_code.potential_energy = quantities.zero
-    #MWG_code.get_potential_at_point
+
+    comp_start = cpu_time.time()
 
     SMBH_code      = MW_SMBH()
     MWG_code       = MWpotentialBovy2015()
@@ -46,14 +45,14 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
     code.commit_particles()
     epsilon = 1e-16
     Lw = 4 * abs(math.log10(epsilon)) + 32
-    code.set_PN_terms(1,1,1,1)
+    code.set_PN_terms(1,1,1,0)
     code.set_bs_tolerance(1e-16)
     code.calculate_word_length()
-
-    brd = bridge.Bridge(timestep=1e-6 | units.yr)
+    """
+    brd = bridge.Bridge(timestep=1e-4 | units.yr)
     brd.add_system(gravity_code_gc, (SMBH_code, MWG_code))
     brd.add_system(code, (SMBH_code, MWG_code, GC_code))
-
+    """
     channel_IMBH = {"from_gravity": 
                     code.particles.new_channel_to(parti,
                     attributes=["x", "y", "z", "vx", "vy", "vz", "mass"],
@@ -66,7 +65,6 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
     #stopping_condition = code.stopping_conditions.collision_detection
     #stopping_condition.enable()
 
-    adaptive_time = False
     time = 0 | units.yr
     iter = 0
     Nenc = 0
@@ -74,10 +72,9 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
     IMBH_array = pd.DataFrame()
     df_IMBH    = pd.DataFrame()
     for i in range(len(parti)):
-        df_IMBH_vals = pd.Series({'key_tracker': parti[i].key_tracker, '{}'.format(time): [parti[i].position]})
+        df_IMBH_vals = pd.Series({'key_tracker': parti[i].key_tracker, '{}'.format(time): [parti[i].mass, parti[i].position]})
         df_IMBH      = df_IMBH.append(df_IMBH_vals, ignore_index=True)
     IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
-
 
     GC_array = pd.DataFrame()
     df_GC_tracker = pd.Series({'x': GC_tracker.position.x.in_(units.parsec),
@@ -91,27 +88,51 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
                                 'z': parti.center_of_mass()[2].in_(units.parsec)})
     com_tracker = com_tracker.append(df_com_tracker, ignore_index=True)
 
-#    E0 = brd.kinetic_energy #+ code.get_radiated_gravitational_energy()
-    E0 = (parti[:].mass * (SMBH_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
+    LG_array = pd.DataFrame()
+    df_LG_tracker = pd.Series({'Iteration': 0,
+                               'LG25': LagrangianRadii(code.particles)[5].in_(units.parsec),
+                               'LG75': LagrangianRadii(code.particles)[7].in_(units.parsec)})
+    LG_array = LG_array.append(df_LG_tracker , ignore_index=True)
+
+    energy_tracker = pd.DataFrame()
+
+    """
+    E0 = brd.kinetic_energy #+ brd.potential_energy
+    E0 += (parti[:].mass * (SMBH_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
                              +  MWG_code.get_potential_at_point(0 | units.kpc, parti[:].x, parti[:].y, parti[:].z)
                              +  GC_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z))).sum()
     E0 += GC_code.gc_mass * (SMBH_code.get_potential_at_point(0, GC_tracker.x, GC_tracker.y, GC_tracker.z)
                              + MWG_code.get_potential_at_point(0 | units.kpc, GC_tracker.x, GC_tracker.y, GC_tracker.z))
+    """
 
-    energy_tracker = pd.DataFrame()
+    parti_KE = code.kinetic_energy
+    parti_BE = code.potential_energy
+    E0p = parti_KE + parti_BE
+    E0 = E0p
+
     df_energy_tracker = pd.Series({'Iteration': 0, 'Et': E0 , 'dE': 0, 'dEs': 0 })
     energy_tracker = energy_tracker.append(df_energy_tracker, ignore_index=True)
+    parti_energy_tracker = pd.DataFrame()
+    df_parti_energy_tracker = pd.Series({'Iteration': 0, "BE": parti_BE.in_(units.J), "KE": parti_KE.in_(units.J), "Total E": E0p})
+    parti_energy_tracker = parti_energy_tracker.append(df_parti_energy_tracker, ignore_index=True)
+
+    binary_array = pd.DataFrame()
+
+    tdyn_tracker = pd.DataFrame()
+    df_tdyn = pd.DataFrame()
+    tdyn_val = tdyn_calc(parti) | units.s
+    for i in range(len(parti)):
+        df_tdyn_vals = pd.Series({'key_tracker': parti[i].key_tracker, '{}'.format(time): [tdyn_val[i]]})
+        df_tdyn = df_tdyn.append(df_tdyn_vals, ignore_index = True)
+    tdyn_tracker = tdyn_tracker.append(df_tdyn, ignore_index = True)
+    com_tracker = com_tracker.append(df_com_tracker, ignore_index=True)
 
     while time < tend:
         iter += 1
         rows = (Nenc+len(parti))
-        if iter%100 == 0:
-            print('Iteration: ', iter)
-        if (adaptive_time):
-            adaptive_eta = adaptive_dt(eta, tend, parti).in_(units.yr)
-            time += adaptive_eta
-        else:
-            time += eta*tend
+        print('Iteration:    ', iter)
+        print('Current Time: ', str("{:.3f}".format(time.value_in(units.day))))
+        time += eta*tend
 
         """
         if new_particle:
@@ -123,24 +144,35 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
         channel_IMBH["to_gravity"].copy()
         #brd.evolve_model(time)
         code.evolve_model(time)
+
+        """
+        #Rudimentary binary detector
+        binaries = parti.get_binaries()
+        df_bin   = pd.DataFrame()
+        if (len(binaries)>0):
+            print("...Binaries Detected...")
+            for i in range(2):
+                df_bin_vals = pd.Series({'key_tracker': binaries[0][i].key_tracker, '{}'.format(time): [binaries[0][i].position]})
+            df_bin = df_bin.append(df_bin_vals, ignore_index=True)
+        binary_array = binary_array.append(df_bin, ignore_index = True)
+        """
+
+        #Rudimentary collision detector
         for i in range(len(parti)):
             for j in range(len(parti)):
                 if i == j or i > j:
                     pass
                 else:
-                    distance = np.sqrt((parti[i].position.x-parti[j].position.x)**2
-                                        +(parti[i].position.y-parti[j].position.y)**2
-                                        +(parti[i].position.z-parti[j].position.z)**2)
+                    distance = abs(parti[i].position.length() - parti[j].position.length())
                     if 0.5*(parti[i].collision_radius + parti[j].collision_radius) > distance:
-                        print("...Encounter Detected")
+                        print("...Encounter Detected...")
                         Nenc += 1
-                        for ci in range(2):
-                            enc_particles = Particles(particles=[parti[i], parti[j]])
-                            print('Complete particle set:   ', parti)
-                            merged_parti  = merge_IMBH(parti, enc_particles, code.model_time)
-                            parti.synchronize_to(code.particles)
-                            print('Updated particle set:    ', parti)
-                            print('Merger mass:  ', merged_parti.mass.sum())
+                        enc_particles = Particles(particles=[parti[i], parti[j]])
+                        print('Complete particle set:   ', parti)
+                        merged_parti  = merge_IMBH(parti, enc_particles, code.model_time)
+                        parti.synchronize_to(code.particles)
+                        print('Updated particle set:    ', parti)
+                        print('Merger mass:  ', merged_parti.mass.sum())
                 
         channel_gc.copy()
         channel_IMBH["from_gravity"].copy()  
@@ -153,7 +185,7 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
         for i in range(len(parti)+Nenc):
             for j in range(len(parti)):
                 if IMBH_array.iloc[[i][0]][0] == parti[j].key_tracker:
-                    df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].position]})
+                    df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].mass, parti[j].position]})
                     break
                 else:
                     df_IMBH_vals = pd.Series({'{}'.format(time): [[np.NaN | units.parsec, 
@@ -166,6 +198,15 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
         IMBH_array['{}'.format(time)] = IMBH_array['{}'.format(time)].shift(-rows)
         IMBH_array = IMBH_array[pd.notnull(IMBH_array["key_tracker"])]
 
+        df_tdyn = pd.DataFrame()
+        tdyn_val = tdyn_calc(parti) | units.yr
+        for i in range(len(parti)):
+            df_tdyn_vals = pd.Series({'key_tracker': parti[i].key_tracker, '{}'.format(time): [tdyn_val[i]]})
+            df_tdyn = df_tdyn.append(df_tdyn_vals, ignore_index = True)
+        tdyn_tracker = tdyn_tracker.append(df_tdyn, ignore_index = True)
+        tdyn_tracker['{}'.format(time)] = tdyn_tracker['{}'.format(time)].shift(-rows)
+        tdyn_tracker = tdyn_tracker[pd.notnull(tdyn_tracker['{}'.format(time)])]
+
         df_GC_tracker = pd.Series({'x': GC_tracker.position.x.in_(units.parsec),
                                 'y': GC_tracker.position.y.in_(units.parsec),
                                 'z': GC_tracker.position.z.in_(units.parsec)})
@@ -176,31 +217,47 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
                                     'z': parti.center_of_mass()[2].in_(units.parsec)})
         com_tracker = com_tracker.append(df_com_tracker, ignore_index=True)
 
-        #Et = brd.kinetic_energy 
-        Et = (parti[:].mass * (SMBH_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
+        df_LG_tracker = pd.Series({'Iteration': iter,
+                                   'LG25': LagrangianRadii(code.particles)[5].in_(units.parsec),
+                                   'LG75': LagrangianRadii(code.particles)[7].in_(units.parsec)})
+        LG_array = LG_array.append(df_LG_tracker , ignore_index=True)
+        """
+        Et = brd.kinetic_energy #+ brd.potential_energy
+        Et += (parti[:].mass * (SMBH_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z)
                                 + MWG_code.get_potential_at_point(0 | units.kpc, parti[:].x, parti[:].y, parti[:].z)
                                 + GC_code.get_potential_at_point(0, parti[:].x, parti[:].y, parti[:].z))).sum()
         Et += GC_code.gc_mass * (SMBH_code.get_potential_at_point(0, GC_tracker.x, GC_tracker.y, GC_tracker.z)
                                 + MWG_code.get_potential_at_point(0 | units.kpc, GC_tracker.x, GC_tracker.y, GC_tracker.z))
+        """
+
+        parti_KE = code.kinetic_energy
+        parti_BE = code.potential_energy
+        Etp = parti_KE + parti_BE
+        Et = Etp
+
         de = abs(Et-E0)/abs(E0)
-        print(de)
-        print(parti.velocity.in_(units.AU/units.yr))
         if 16 < iter:
             dEs = abs(Et-energy_tracker.iloc[15][1])/abs(energy_tracker.iloc[15][1])
             df_energy_tracker = pd.Series({'Iteration': iter, 'Et': Et, 'dE': de, 'dEs': dEs})
         else:
             df_energy_tracker = pd.Series({'Iteration': iter, 'Et': Et, 'dE': de, 'dEs': 0 })
         energy_tracker = energy_tracker.append(df_energy_tracker, ignore_index=True)
+
+        df_parti_energy_tracker = pd.Series({'Iteration': 0, "BE": parti_BE.in_(units.J), "KE": parti_KE.in_(units.J), "Total E": Etp})
+        parti_energy_tracker = parti_energy_tracker.append(df_parti_energy_tracker, ignore_index=True)
+
     code.stop()
 
+    comp_end = cpu_time.time()
+
+    print('Total integration time: ', comp_end-comp_start)
     print('...Dumping Files...')
-    print('COM', com_tracker)
-    print('IMBH', IMBH_array)
-    print('GC', GC_array)
-    print('ENERGY', energy_tracker)
 
     com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(datetime.now())+'.pkl')
     IMBH_array.to_pickle('data/positions_IMBH/IMBH_positions_'+str(datetime.now())+'.pkl')
     GC_array.to_pickle('data/positions_GC/GC_positions_'+str(datetime.now())+'.pkl')
     energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(datetime.now())+'.pkl')
+    parti_energy_tracker.to_pickle('data/particle_energies/particle_energies_'+str(datetime.now())+'.pkl')
+    LG_array.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(datetime.now())+'.pkl')
+    tdyn_tracker.to_pickle('data/dynamical_time/IMBH_Dynamical_Time'+str(datetime.now())+'.pkl')
     

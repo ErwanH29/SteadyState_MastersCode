@@ -42,13 +42,13 @@ IMBH_code = IMBH_init()
 IMBH_parti = IMBH_code.IMBH_first(mass_string = 'S', dist_string = 'P', alpha = -2.35,
                                   init_dist = 0.001, converter = conv)
 IMBH_parti = IMBH_code.IMBH_radius(IMBH_parti)
-setattr(IMBH_parti, "collision_radius", 3000 * IMBH_parti.radius)
+setattr(IMBH_parti, "collision_radius", 300 * IMBH_parti.radius)
 
-evolve_system(IMBH_parti, tend = 3000 | units.yr, eta = 10**-3, grav_solver = Brutus, converter = conv)
+evolve_system(IMBH_parti, tend = 1 | units.yr, eta = 10**-3, grav_solver = Brutus, converter = conv)
 print('...Plotting Figures...')
 spatial_plotter()
 energy_plotter()
 
 anim = True
 if (anim):
-    animator(tend = 0.25 | units.yr, eta = 10**-3)
+    animator(tend = 100 | units.yr, eta = 10**-3)
