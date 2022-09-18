@@ -3,6 +3,7 @@ from amuse.units import units
 from initialiser import *
 from evol_func import *
 import numpy as np
+import math
 
 class drift_without_gravity(object):
     """
@@ -63,7 +64,8 @@ def merge_IMBH(parti, particles_in_encounter, tcoll):
     com_pos = particles_in_encounter.center_of_mass()
     com_vel = particles_in_encounter.center_of_mass_velocity()
 
-    new_particle = Particles(1)
+    new_particle  = Particles(1)
+
     if calc_momentum(particles_in_encounter[0]) > calc_momentum(particles_in_encounter[1]):
         new_particle.key_tracker = particles_in_encounter[0].key
     else: 
@@ -74,11 +76,31 @@ def merge_IMBH(parti, particles_in_encounter, tcoll):
     new_particle.position = com_pos
     new_particle.velocity = com_vel
     new_particle.radius = (2*constants.G*new_particle.mass)/(constants.c**2)
-    new_particle.collision_radius = new_particle.radius * 3000
+    new_particle.collision_radius = new_particle.radius * 10
     
     parti.add_particles(new_particle)
     parti.remove_particles(particles_in_encounter)
     return new_particle
+
+def reset_grav(particle, integrator, conv):
+        code = integrator(conv, number_of_workers = 3)
+        code.particles.add_particles(particle)
+        code.commit_particles()
+        epsilon = 1e-16
+        Lw = 4 * abs(math.log10(epsilon)) + 32
+        code.set_PN_terms(1,1,1,0)
+        code.set_bs_tolerance(1e-16)
+
+        channel_IMBH = {"from_gravity": 
+                        code.particles.new_channel_to(particle,
+                        attributes=["x", "y", "z", "vx", "vy", "vz", "mass"],
+                        target_names=["x", "y", "z", "vx", "vy", "vz", "mass"]),
+                        "to_gravity": 
+                        particle.new_channel_to(code.particles,
+                        attributes=["mass", "collision_radius"],
+                        target_names=["mass", "radius"])} 
+
+        return code, channel_IMBH
 
 def tdyn_calc(particle):
     """

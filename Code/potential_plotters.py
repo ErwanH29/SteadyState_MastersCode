@@ -14,7 +14,7 @@ r = 0.01 | units.parsec
 SMBH_potential = [(-test_mass*SMBH_code.get_potential_at_point(0, (i+r), (i+r), r*0.01**2)).value_in(units.J) for i in dist_range]
 MWG_potential  = [(-test_mass*MWG_code.get_potential_at_point(0 | units.kpc, (i+r), (i+r), r*0.01**2)).value_in(units.J) for i in dist_range]
 GC_potential   = [(-test_mass*GC_code.get_potential_at_point(0, i, i, r*0.01**2)).value_in(units.J) for i in dist_range]
-cum_potential = [i+j+z for i,j,z in zip(GC_potential, SMBH_potential, MWG_potential)]
+cum_potential  = [i+j+z for i,j,z in zip(GC_potential, SMBH_potential, MWG_potential)]
 
 plt.title('Potential Wells Used in the Simulation')
 plt.plot(dist_range.value_in(units.parsec), SMBH_potential, color = 'black', linestyle = '--', label = r'SMBH (m = $4\times10^6 M_{\odot}$)')

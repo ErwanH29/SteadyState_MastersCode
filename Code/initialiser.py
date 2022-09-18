@@ -4,7 +4,7 @@ from amuse.ic.plummer import new_plummer_model
 from amuse.ic.kingmodel import new_king_model
 from amuse.ic.scalo import new_scalo_mass_distribution
 from amuse.ext.galactic_potentials import Plummer_profile
-from random import random, randint
+from random import random, randint, choice
 from amuse.community.galaxia.interface import BarAndSpirals3D
 
 class GC_pot(object):
@@ -177,7 +177,7 @@ class IMBH_init(object):
 
         if mass_string == 'Scalo' or mass_string == 'scalo':
             mass_distr = new_scalo_mass_distribution(1, 50 | units.MSun, 
-                                                        10**5 | units.MSun)
+                                                     10**5 | units.MSun)
             return mass_distr
 
         if mass_string == 'K' or mass_string == 'k':
@@ -198,12 +198,12 @@ class IMBH_init(object):
         beta:       Parameter needed for the dimensionless
         output:     The initial position of the particle
         """
-        
-        N = 1000         # Hard-coded value to show how many IMBH in simulation
+
+        N = 100
 
         if dist_string == 'P' or dist_string == 'p':
             distributer = new_plummer_model(N, convert_nbody = converter, 
-                                            radius_cutoff = 50)
+                                            radius_cutoff = 206265)
             return distributer
 
         if dist_string == 'K' or dist_string == 'k':
@@ -229,26 +229,20 @@ class IMBH_init(object):
 
         SMBH_code = MW_SMBH()
         r = init_dist | units.parsec
-        self.N = 2
 
-        IMBH = Particles(3)
+        IMBH = Particles(10)
+        self.N = len(IMBH)
         
-        for i in range(len(IMBH)):
+        for i in range(self.N):
             IMBH[i].mass = self.mass_func(mass_string,alpha)
-            IMBH[i].position = self.IMBH_posinit(100, dist_string, 5, converter)[randint(0,100)].position
-
-        IMBH[0].position = [22, 14, -2] | units.AU
-        IMBH[1].position = [9, 12, 0] | units.AU
-        IMBH[2].position = [13, 7, -4] | units.AU
+            IMBH[i].position = self.IMBH_posinit(self.N, dist_string, 5, converter)[randint(0,self.N)].position
+            IMBH[i].velocity = [choice([-1,1])*randint(0,3), choice([-1,1])*randint(0,30), choice([-1,1])*randint(0,30)] | units.AU/units.yr
 
         IMBH.position += (1, 0, 0) * r
-
-        IMBH.velocity  = [[-23.518569826682455, -10.52227851919019, 0],    #Still needs development
-                          [-20.74623746218285, -22.52084408611801, 0],#] | units.AU/units.yr
-                          [-10.74623746218285, -15.52084408611801, 0], ] | units.AU/units.yr
-
         IMBH.velocity += (0, 1, 0) * (constants.G*SMBH_code.bh_mass/r).sqrt()
         IMBH.key_tracker = IMBH.key
+
+        IMBH.move_to_center()
 
         return IMBH
 

@@ -36,19 +36,21 @@ init_dist = float(input('Where do you wish to simulate the cluster (distance fro
 
 """
 
-conv = nbody_system.nbody_to_si(1 | units.MSun, 1 | units.AU)
+tend = 200 | units.yr
+eta = 10**-3
+conv = nbody_system.nbody_to_si(10**7 | units.MSun, 0.001 | units.parsec)
 
 IMBH_code = IMBH_init()
 IMBH_parti = IMBH_code.IMBH_first(mass_string = 'S', dist_string = 'P', alpha = -2.35,
                                   init_dist = 0.001, converter = conv)
 IMBH_parti = IMBH_code.IMBH_radius(IMBH_parti)
-setattr(IMBH_parti, "collision_radius", 300 * IMBH_parti.radius)
+setattr(IMBH_parti, "collision_radius", 10 * IMBH_parti.radius) #use 10 to follow Zwart et al. 2021
 
-evolve_system(IMBH_parti, tend = 1 | units.yr, eta = 10**-3, grav_solver = Brutus, converter = conv)
+evolve_system(IMBH_parti, tend, eta, Brutus, converter = conv)
 print('...Plotting Figures...')
 spatial_plotter()
 energy_plotter()
 
 anim = True
 if (anim):
-    animator(tend = 100 | units.yr, eta = 10**-3)
+    animator(tend, eta)
