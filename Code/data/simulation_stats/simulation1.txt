@@ -1,0 +1,9 @@
+Simulation: 
+Total CPU Time: 2468.487995862961
+Timestep: 0.001
+End Time: 100 years
+Integrator: <class 'amuse.community.brutuspn.interface.Brutus'>
+Epsilon: 1e-16
+PN Terms: [1, 1, 1, 1]
+No. of initial IMBH: 12
+Number of mergers: 0

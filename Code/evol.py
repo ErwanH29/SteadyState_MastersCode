@@ -1,18 +1,17 @@
 from cmath import nan
 from amuse.lab import *
 from amuse.units import units
-from amuse.couple import bridge
 from initialiser import *
+from physics_func import *
 from evol_func import *
 from amuse.ext.LagrangianRadii import LagrangianRadii
-from amuse.community.hermiteGRX.interface import HermitePN
-from amuse.ext.galactic_potentials import MWpotentialBovy2015
-from datetime import datetime
 import numpy as np
 import pandas as pd
 import math
 import time as cpu_time
-
+import glob
+import os
+import pickle as pkl
 
 def evolve_system(parti, tend, eta, grav_solver, converter):
     """
@@ -25,7 +24,7 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
     eta:     The step size
     output:  The evolved simulation
     """
-    set_printing_strategy("custom", preferred_units = [units.MSun, units.RSun, units.yr, units.AU/units.yr],
+    set_printing_strategy("custom", preferred_units = [units.MSun, units.AU, units.yr, units.AU/units.yr],
                                     precision = 4, prefix = "", separator = "[", suffix = "]")
 
     comp_start = cpu_time.time()
@@ -74,11 +73,24 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
     iter = 0
     Nenc = 0
     init_IMBH_pop = len(parti)
+    filename = glob.glob('data/preliminary_calcs/*')
+    with open(os.path.join(max(filename, key=os.path.getctime)), 'rb') as input_file:
+        temp_data = pkl.load(input_file)
+    pos_values = temp_data.iloc[0][0]
+    mas_values = temp_data.iloc[0][1]
+    vel_values = temp_data.iloc[0][2]
+    for particle in parti:
+        temp_vel = dynamical_fric(pos_values, vel_values, mas_values, particle, 10**-3, tend)
+        particle.velocity = particle.velocity + temp_vel
 
     IMBH_array = pd.DataFrame()
     df_IMBH    = pd.DataFrame()
     for i in range(init_IMBH_pop):
-        df_IMBH_vals = pd.Series({'key_tracker': parti[i].key_tracker, '{}'.format(time): [parti[i].mass, parti[i].position]})
+        parti_KE = 0.5*parti[i].velocity.length()**2
+        temp_PE = []
+        temp_PE = indiv_PE(parti[i], parti, temp_PE)
+        parti_PE = max(temp_PE)
+        df_IMBH_vals = pd.Series({'key_tracker': parti[i].key_tracker, '{}'.format(time): [parti[i].mass, parti[i].position, parti_KE, parti_PE]})
         df_IMBH      = df_IMBH.append(df_IMBH_vals, ignore_index=True)
     IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
 
@@ -153,6 +165,10 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
         #brd.evolve_model(time)
         code.evolve_model(time)
 
+        for particle in parti:
+            temp_vel = dynamical_fric(pos_values, vel_values, mas_values, particle, 10**-3, tend)
+            particle.velocity = particle.velocity + temp_vel
+
         """
         #Rudimentary binary detector
         binaries = parti.get_binaries()
@@ -214,7 +230,11 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
         for i in range(len(parti)+Nenc):
             for j in range(len(parti)):
                 if IMBH_array.iloc[[i][0]][0] == parti[j].key_tracker:
-                    df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].mass, parti[j].position]})
+                    parti_KE = 0.5*parti[j].velocity.length()**2
+                    temp_PE = []
+                    temp_PE = indiv_PE(parti[j], parti, temp_PE)
+                    parti_PE = max(temp_PE)
+                    df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].mass, parti[j].position, parti_KE, parti_PE]})
                     df_tdyn_vals = pd.Series({'key_tracker': parti[j].key_tracker, '{}'.format(time): [tdyn_val[j]]})
                     break
                 else:
@@ -266,6 +286,7 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
         Et = Etp
 
         de = abs(Et-E0)/abs(E0)
+        print(de)
         if 16 < iter:
             dEs = abs(Et-energy_tracker.iloc[15][1])/abs(energy_tracker.iloc[15][1])
             df_energy_tracker = pd.Series({'Time': time.in_(units.kyr), 'Et': Et, 'dE': de, 'dEs': dEs, 
@@ -279,27 +300,29 @@ def evolve_system(parti, tend, eta, grav_solver, converter):
         parti_energy_tracker = parti_energy_tracker.append(df_parti_energy_tracker, ignore_index=True)
 
     code.stop()
-
     comp_end = cpu_time.time()
+
     print("Total Merging Events: ", Nenc)
     print('Total integration time: ', comp_end-comp_start)
     print('...Dumping Files...')
+    count = file_counter()
 
-    com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(datetime.now())+'.pkl')
-    IMBH_array.to_pickle('data/positions_IMBH/IMBH_positions_'+str(datetime.now())+'.pkl')
+    com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(count)+'.pkl')
+    IMBH_array.to_pickle('data/positions_IMBH/IMBH_positions_'+str(count)+'.pkl')
     """
-    GC_array.to_pickle('data/positions_GC/GC_positions_'+str(datetime.now())+'.pkl')
+    GC_array.to_pickle('data/positions_GC/GC_positions_'+str(count)+'.pkl')
     """
-    energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(datetime.now())+'.pkl')
-    parti_energy_tracker.to_pickle('data/particle_energies/particle_energies_'+str(datetime.now())+'.pkl')
-    LG_array.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(datetime.now())+'.pkl')
-    tdyn_tracker.to_pickle('data/dynamical_time/IMBH_Dynamical_Time'+str(datetime.now())+'.pkl')
+    energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(count)+'.pkl')
+    parti_energy_tracker.to_pickle('data/particle_energies/particle_energies_'+str(count)+'.pkl')
+    LG_array.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(count)+'.pkl')
+    tdyn_tracker.to_pickle('data/dynamical_time/IMBH_Dynamical_Time'+str(count)+'.pkl')
     
-    lines = ['Simulation: ', "Total CPU Time: "+str(comp_end), 'Timestep: '+str(eta),
+    lines = ['Simulation: ', "Total CPU Time: "+str(comp_end-comp_start), 'Timestep: '+str(eta),
              'End Time: '+str(tend.value_in(units.yr))+' years', 'Integrator: '+str(grav_solver), 
              'Epsilon: '+str(epsilon), 'PN Terms: ' + str([1,1,1,1]),
              "No. of initial IMBH: "+str(init_IMBH_pop), 'Number of mergers: '+str(Nenc)]
-    with open('data/simulation_stats/simulation'+str(datetime.now())+'.txt', 'w') as f:
+
+    with open('data/simulation_stats/simulation'+str(count)+'.txt', 'w') as f:
         for line in lines:
             f.write(line)
             f.write('\n')

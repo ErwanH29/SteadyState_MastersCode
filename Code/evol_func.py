@@ -4,6 +4,9 @@ from initialiser import *
 from evol_func import *
 import numpy as np
 import math
+import fnmatch
+import os
+import matplotlib.pyplot as plt
 
 class drift_without_gravity(object):
     """
@@ -51,6 +54,50 @@ def calc_momentum(parti):
     mom_value = (parti.mass * parti.velocity).sum()
     return mom_value
 
+def file_counter():
+    """
+    Function which counts the number of files in a directory.
+    """
+
+    dir_path = r'data/center_of_mass/'
+    count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
+    return count
+
+def find_nearest(array, value):
+    """
+    Function to find the nearest value in an array for a particular element.
+    outputs: The index where the nearest array-value is found.
+    """
+    array = np.asarray(array)
+    index = (np.abs(array - value)).argmin()
+    return index
+
+def dynamical_fric(pos_distr, vel_distr, mass_distr, particle, eta, tend):
+    """
+    Function to compute the dynamical friction as per Petts et al. 2012 eqn 9.
+    
+    Inputs:
+    pos_distr:  A theoretical Plummer model positional distribution sampled over 1e7 stars
+    vel_distr:  A theoretical Plummer model velocity distribution
+    mass_distr: A theoretical Plummer model mass distribution
+    particle:   The individual particle who is having its dynamical friction computed
+    eta:        Simulation time-step
+    tend:       Simulation final time
+    output:     Value of the dynamical friction
+    """
+
+    systv = (4/3)*np.pi*(10**-3 | units.parsec)**3       # The volume for which the BHs are in (line 44 interface.py)
+    systm = 10**7 | units.MSun                           # The mass of the GC which the BHs are in (line 44 interface.py)
+
+    index = find_nearest(pos_distr, particle.position.length().value_in(units.AU))
+    enc_mass = mass_distr[index] | units.MSun
+    index2 = find_nearest(vel_distr, particle.velocity.length().value_in(units.kms))
+    frac_vel = index2/len(vel_distr)
+
+    value = -2*np.pi*(constants.G)**2*particle.mass*(systm/systv)*np.log((particle.mass/enc_mass)**2+1) \
+            * frac_vel*(particle.velocity.length())**-3 * eta * tend * particle.velocity
+    return value
+    
 def merge_IMBH(parti, particles_in_encounter, tcoll):
     """
     Function which merges two particles if the collision stopping condition has been met
@@ -101,28 +148,3 @@ def reset_grav(particle, integrator, conv):
                         target_names=["mass", "radius"])} 
 
         return code, channel_IMBH
-
-def tdyn_calc(particle):
-    """
-    Function to compute the dynamical timescale for each particle relative to one another.
-    In all its permutations, it only keeps the minimal value.
-    
-    Inputs:
-    particle: The particle set currently being evolved
-    outputs:  The dynamical timescale
-    """
-    
-    tdyn_array = [ ]
-    for i in range(len(particle)):
-        tdyn_temp_arr = [ ]
-        for j in range(len(particle)):
-            if i == j:
-                pass
-            else:
-                dist_temp = abs(particle[i].position.length()-particle[j].position.length())
-                value = ((4*np.pi*dist_temp**3)/(3*constants.G*(particle[i].mass+particle[j].mass))).sqrt()
-                value = value.value_in(units.yr)
-                tdyn_temp_arr.append(value)
-        tdyn_array.append(min(tdyn_temp_arr))
-
-    return tdyn_array

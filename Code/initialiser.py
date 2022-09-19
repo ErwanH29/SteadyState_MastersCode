@@ -200,10 +200,9 @@ class IMBH_init(object):
         """
 
         N = 100
-
+        
         if dist_string == 'P' or dist_string == 'p':
-            distributer = new_plummer_model(N, convert_nbody = converter, 
-                                            radius_cutoff = 206265)
+            distributer = new_plummer_model(N, convert_nbody = converter)
             return distributer
 
         if dist_string == 'K' or dist_string == 'k':
@@ -227,21 +226,13 @@ class IMBH_init(object):
         output:       The initial particle set for the simulation (as of now, N0 = 3)
         """
 
-        SMBH_code = MW_SMBH()
-        r = init_dist | units.parsec
-
-        IMBH = Particles(10)
+        IMBH = Particles(20)
         self.N = len(IMBH)
-        
         for i in range(self.N):
             IMBH[i].mass = self.mass_func(mass_string,alpha)
             IMBH[i].position = self.IMBH_posinit(self.N, dist_string, 5, converter)[randint(0,self.N)].position
             IMBH[i].velocity = [choice([-1,1])*randint(0,3), choice([-1,1])*randint(0,30), choice([-1,1])*randint(0,30)] | units.AU/units.yr
-
-        IMBH.position += (1, 0, 0) * r
-        IMBH.velocity += (0, 1, 0) * (constants.G*SMBH_code.bh_mass/r).sqrt()
         IMBH.key_tracker = IMBH.key
-
         IMBH.move_to_center()
 
         return IMBH

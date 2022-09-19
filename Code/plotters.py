@@ -9,7 +9,7 @@ import numpy as np
 import glob
 import os
 from itertools import cycle
-from datetime import datetime
+from evol_func import file_counter
 
 def file_opener(file_string):
     """
@@ -49,13 +49,13 @@ def spatial_plotter():
     outputs: Plots of the evolution of the system in Cartesian coordinates
     """
 
-    SMBH_code = MW_SMBH()
+    count = file_counter()
 
     Lag_tracker, col_len  = file_opener('data/lagrangians/*')
     com_tracker, col_len  = file_opener('data/center_of_mass/*')
     IMBH_tracker, col_len = file_opener('data/positions_IMBH/*')
     tdyn_tracker, col_len = file_opener('data/dynamical_time/*')
-    GC_tracker, col_len   = file_opener('data/positions_GC/*')
+#    GC_tracker, col_len   = file_opener('data/positions_GC/*')
 
     time = np.empty((1, col_len, 1))
     LG25_array  = np.empty((1, col_len, 1))
@@ -68,7 +68,7 @@ def spatial_plotter():
         LG75_array[0][i][0] = vals[2].value_in(units.AU)
 
     com_x, com_y, com_z   = file_manipulator(col_len, com_tracker)
-    GC_x, GC_y, GC_z      = file_manipulator(col_len, GC_tracker)
+#    GC_x, GC_y, GC_z      = file_manipulator(col_len, GC_tracker)
 
     line_x = np.empty((len(IMBH_tracker), col_len, 1))
     line_y = np.empty((len(IMBH_tracker), col_len, 1))
@@ -112,10 +112,6 @@ def spatial_plotter():
 
     ax3.set_xlabel(r'Time [yr]')
     ax3.set_ylabel(r'Dynamical Time [yr]')
-    ax3.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.02f'))
-    ax3.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.02f'))
-
-    ax4.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.02f'))
     ax4.set_xlabel(r'Time [yr]')
     ax4.set_ylabel(r'Lagrangian Radius [AU]')
 
@@ -156,7 +152,7 @@ def spatial_plotter():
     ax4.plot(time[0][:], LG75_array[0][:], color = 'blue', label = r'$r_{75,L}$')
     #ax2.legend()
     ax4.legend()
-    plt.savefig('figures/spatial_tracker'+str(datetime.now())+'.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/spatial_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()
 
@@ -168,14 +164,16 @@ def energy_plotter():
     outputs: Plots of the evolution of the system in Cartesian coordinates
     """
 
+    count = file_counter()
+
     energy_tracker, col_len = file_opener('data/energy/*')
     IMBH_energy_tracker, col_len = file_opener('data/particle_energies/*')
 
     time = np.empty((1, col_len, 1))
-    Et_array  = np.empty((1, col_len, 1))
-    dE_array  = np.empty((1, col_len, 1))
-    dEs_array = np.empty((1, col_len, 1))
-    collisions = np.empty((1, col_len, 1)) 
+    Et_array    = np.empty((1, col_len, 1))
+    dE_array    = np.empty((1, col_len, 1))
+    dEs_array   = np.empty((1, col_len, 1))
+    collisions  = np.empty((1, col_len, 1)) 
     merger_mass = np.empty((1, col_len, 1)) 
 
     BE_array   = np.empty((1, col_len, 1))
@@ -211,12 +209,11 @@ def energy_plotter():
         ax_.xaxis.set_ticks_position('both')
         ax_.tick_params(axis="y",direction="in")
         ax_.tick_params(axis="x",direction="in")
+        ax_.set_yscale('log')
+        ax_.set_xlabel(r'Time [yr]')
 
-    ax1.set_xlabel(r'Time [yr]')
     ax1.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
-    ax2.set_xlabel(r'Time Step [$\eta$]')
     ax2.set_ylabel(r'Energy [J]')
-    ax1.set_yscale('log')
         
     ax1.plot(time[0][:], dE_array[0][:], color = 'black')
     if len(coll_id) > 0:
@@ -229,7 +226,7 @@ def energy_plotter():
     ax2.plot(time[0][:], KE_array[0][:], color = 'red', label = 'Kinetic Energy')
     ax2.plot(time[0][:], abs(TotE_array[0][:]), color = 'black', label = 'Total Energy', linestyle = '--')
     ax2.legend()
-    plt.savefig('figures/energy_tracker'+str(datetime.now())+'.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/energy_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()
 
@@ -248,11 +245,12 @@ def animator(tend, eta):
     print('You have chosen to animate. This will take a while...')
 
     plt.clf()
-    SMBH_code = MW_SMBH()
+    #SMBH_code = MW_SMBH()
+    count = file_counter()
 
     com_tracker, col_len  = file_opener('data/center_of_mass/*')
     IMBH_tracker, col_len = file_opener('data/positions_IMBH/*')
-    GC_tracker,   col_len = file_opener('data/positions_GC/*')
+#    GC_tracker,   col_len = file_opener('data/positions_GC/*')
     energy_tracker, col_len = file_opener('data/energy/*')
 
     time = np.empty((1, col_len, 1))
@@ -270,7 +268,7 @@ def animator(tend, eta):
     line_z = np.empty((len(IMBH_tracker), col_len, 1))
     
     com_x, com_y, com_z = file_manipulator(col_len, com_tracker)
-    GC_x, GC_y, GC_z = file_manipulator(col_len, GC_tracker)
+#    GC_x, GC_y, GC_z = file_manipulator(col_len, GC_tracker)
 
     for i in range(len(IMBH_tracker)):
         tIMBH_tracker = IMBH_tracker.iloc[i]
@@ -349,5 +347,5 @@ def animator(tend, eta):
         ax4.set_ylabel(r'$z$-Coordinate [AU]')
 
     anim = animation.FuncAnimation(fig, animate, interval = 100, frames=col_len)
-    anim.save('figures/animation'+str(datetime.now())+'.gif', writer='pillow')
+    anim.save('figures/animation'+str(count)+'.gif', writer='pillow')
     return 

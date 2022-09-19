@@ -38,7 +38,7 @@ init_dist = float(input('Where do you wish to simulate the cluster (distance fro
 
 tend = 200 | units.yr
 eta = 10**-3
-conv = nbody_system.nbody_to_si(10**7 | units.MSun, 0.001 | units.parsec)
+conv = nbody_system.nbody_to_si(10**7 | units.MSun, 10**-3 | units.parsec)
 
 IMBH_code = IMBH_init()
 IMBH_parti = IMBH_code.IMBH_first(mass_string = 'S', dist_string = 'P', alpha = -2.35,
