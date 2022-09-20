@@ -1,5 +1,5 @@
 from amuse.ext.galactic_potentials import MWpotentialBovy2015
-from initialiser import *
+from parti_initialiser import *
 import numpy as np
 import matplotlib.pyplot as plt
 import glob, os
@@ -8,7 +8,6 @@ import pickle as pkl
 def potential_plotters():
     SMBH_code = MW_SMBH()
     MWG_code  = MWpotentialBovy2015()
-    GC_code   = GC_pot()
 
     dist_range = np.linspace(-0.1, 0.1, 10000) | units.parsec
     test_mass  = 100 | units.MSun
@@ -37,7 +36,7 @@ def find_nearest(array, value):
     return index
 
 def dynamical_fric(pos_distr, vel_distr, mass_distr, eta, tend):
-    temp_pos   = np.linspace(0,100,1000) | units.AU
+    temp_pos   = np.linspace(0,0.4,1000) | units.parsec
     temp_mass  = 50 | units.MSun
     temp_mass2 = 200 | units.MSun
     temp_vel   = 5  | units.AU/units.yr
@@ -49,37 +48,37 @@ def dynamical_fric(pos_distr, vel_distr, mass_distr, eta, tend):
     sample1 = [ ]
     sample2 = [ ]
     sample3 = [ ]
+
     for i in range(len(temp_pos)):
-        print(i)
         index = find_nearest(pos_distr, temp_pos[i].value_in(units.AU))
         enc_mass = mass_distr[index] | units.MSun
         index2 = find_nearest(vel_distr, temp_vel.value_in(units.AU/units.yr))
         frac_vel = index2/len(vel_distr)
 
-        value1 = (-2*np.pi*(constants.G)**2*temp_mass*(systm/systv)*np.log((temp_mass/enc_mass)**2+1) \
-                    *frac_vel*(temp_vel)**-2 * eta * tend).value_in(units.AU/units.yr)
+        value1 = (-16*np.pi**2*(constants.G)**2*(systm)*((systm)+temp_mass)*(systm/systv) \
+                  *np.log((temp_mass/enc_mass)**2+1) *frac_vel*(temp_vel)**-2 * eta * tend).value_in(units.AU/units.yr)
         sample1.append(value1)
         
 
-        value3 = (-2*np.pi*(constants.G)**2*temp_mass2*(systm/systv)*np.log((temp_mass2/enc_mass)**2+1) \
-                    *frac_vel*(temp_vel)**-2 * eta * tend).value_in(units.AU/units.yr)
+        value3 = (-16*np.pi**2*(constants.G)**2*(systm)*((systm)+temp_mass2)*(systm/systv) \
+                  *np.log((temp_mass2/enc_mass)**2+1)*frac_vel*(temp_vel)**-2 * eta * tend).value_in(units.AU/units.yr)
         sample3.append(value3)
         
         index2 = find_nearest(vel_distr, temp_vel2.value_in(units.AU/units.yr))
         frac_vel = index2/len(vel_distr)
-        value2 = (-2*np.pi*(constants.G)**2*temp_mass*(systm/systv)*np.log((temp_mass/enc_mass)**2+1) \
+        value2 = (-16*np.pi**2*(constants.G)**2*(systm)*((systm)+temp_mass)*(systm/systv) \
                     *frac_vel*(temp_vel2)**-2 * eta * tend).value_in(units.AU/units.yr)
         sample2.append(value2)
         
-    plt.plot(temp_pos.value_in(units.AU), sample1, color = 'black',
+    plt.plot(temp_pos.value_in(units.parsec), sample1, color = 'black',
                 label = r'$M = 50M_{\odot}$, $v = 5.0$ AU yr$^{-1}$')
-    plt.plot(temp_pos.value_in(units.AU), sample3, color = 'red',
+    plt.plot(temp_pos.value_in(units.parsec), sample3, color = 'red',
                 ls = '--', label = r'$M = 200M_{\odot}$, $v = 5.0$ AU yr$^{-1}$')                
-    plt.plot(temp_pos.value_in(units.AU), sample2, color = 'blue', 
+    plt.plot(temp_pos.value_in(units.parsec), sample2, color = 'blue', 
                 ls = '--', label = r'$M = 50M_{\odot}$, $v = 20$ AU yr$^{-1}$')
-
+                
     plt.title('Dynamical Friction vs.\nDistance from Cluster Core')
-    plt.xlabel('Distance from Core [AU]')
+    plt.xlabel('Distance from Core [pc]')
     plt.ylabel('Dynamical Friction [AU/yr]')
     plt.legend()
     plt.show()

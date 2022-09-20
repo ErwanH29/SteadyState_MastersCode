@@ -1,4 +1,4 @@
-from initialiser import *
+from parti_initialiser import *
 from plotters import *
 from evol import *
 from amuse.community.brutuspn.interface import Brutus
@@ -36,19 +36,20 @@ init_dist = float(input('Where do you wish to simulate the cluster (distance fro
 
 """
 
-tend = 200 | units.yr
-eta = 10**-3
-conv = nbody_system.nbody_to_si(10**7 | units.MSun, 10**-3 | units.parsec)
+tend = 10**6 | units.yr
+eta = 10**-4
+cluster_mass = 10**7  | units.MSun
+cluster_radi = 10**-3 | units.parsec
+cluster_dist = 10**-2 | units.parsec
+conv = nbody_system.nbody_to_si(cluster_mass, cluster_radi)
 
 IMBH_code = IMBH_init()
 IMBH_parti = IMBH_code.IMBH_first(mass_string = 'S', dist_string = 'P', alpha = -2.35,
-                                  init_dist = 0.001, converter = conv)
-IMBH_parti = IMBH_code.IMBH_radius(IMBH_parti)
-setattr(IMBH_parti, "collision_radius", 10 * IMBH_parti.radius) #use 10 to follow Zwart et al. 2021
+                                  init_dist = cluster_dist, converter = conv)
 
-evolve_system(IMBH_parti, tend, eta, Brutus, converter = conv)
+evolve_system(IMBH_parti, tend, eta, cluster_dist, conv)
 print('...Plotting Figures...')
-spatial_plotter()
+spatial_plotter(cluster_dist)
 energy_plotter()
 
 anim = True

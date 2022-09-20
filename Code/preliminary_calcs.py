@@ -4,9 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from amuse.ext.galactic_potentials import MWpotentialBovy2015
-from initialiser import *
+from parti_initialiser import *
 import numpy as np
 import matplotlib.pyplot as plt
+from random import choices
 
 def prelim_dynamical_friction():
     """
@@ -43,4 +44,20 @@ def prelim_dynamical_friction():
     massdist_Array = massdist_Array.append(df_massdist, ignore_index=True)
     massdist_Array.to_pickle('data/preliminary_calcs/Mass_Dist_Distr.pkl')
 
-prelim_dynamical_friction()
+def velocityList():
+    sigmaV = 6 # in kms
+    vrange = np.linspace(0, 500, 10000) # in kms
+    ProbFunc = [np.sqrt(2/np.pi)*(i**2/sigmaV**3)*np.exp(-i**2/(2*sigmaV**2)) for i in vrange]
+    ProbFunc = ProbFunc/max(ProbFunc)
+    CumSum = np.cumsum(ProbFunc)/200
+    plt.plot(vrange, ProbFunc, color = 'red', label = 'PDF')
+    plt.plot(vrange, CumSum, color = 'blue', label = 'CDF')
+    plt.xlabel(r'Speed [km s$^{-1}$]')
+    plt.ylabel(r'Normalised Population Fraction')
+    plt.title('Velocity Distribution of Stars \n'
+              'in Globular Clusters')
+    plt.xlim(0,100)
+    plt.legend()
+    plt.savefig('figures/BasicMB.pdf', dpi = 300)
+
+velocityList()

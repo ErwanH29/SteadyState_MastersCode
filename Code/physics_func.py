@@ -1,6 +1,6 @@
 from amuse.lab import *
 from amuse.units import units
-from initialiser import *
+from parti_initialiser import *
 from evol_func import *
 import numpy as np
 
