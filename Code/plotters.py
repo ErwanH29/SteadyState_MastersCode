@@ -197,8 +197,8 @@ def energy_plotter():
         TotE_array[0][i][0]  = vals[3].value_in(units.J)    
 
 
-    coll_id = np.argwhere(collisions > time[0][5][0])
-    app_id  = np.argwhere(IMBH_birth  > time[0][5][0])
+    coll_id = np.argwhere(collisions > time[0][1])
+    app_id  = np.argwhere(IMBH_birth[0]  > time[0][1])
 
     fig = plt.figure(figsize=(12.5, 8))
     ax1 = fig.add_subplot(221)
@@ -216,23 +216,23 @@ def energy_plotter():
     ax1.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
     ax2.set_ylabel(r'Energy [J]')
     ax2.set_ylim(0.1*min(abs(BE_array[0][:])), 5*max(KE_array[0][:]))
-    ax1.plot(time[0][:], dE_array[0][:], color = 'black')
+    ax1.plot(time[0][:], dE_array[0][:], color = 'black', zorder = 1)
     if len(coll_id) > 0:
         dE_coll = dE_array[0][coll_id[0]]
         collisions = collisions[0][coll_id[0]]
         merger_mass = merger_mass[0][coll_id[0]]
         color_axes = ax1.scatter(collisions, dE_coll, c = merger_mass)
         plt.colorbar(color_axes, ax=ax1, label = r'Merger Mass [$M_{\odot}$]')
-    if len(app_id) > 0:
-        dE_app = dE_array[0][app_id[0]]
-        IMBH_birth = IMBH_birth[0][app_id[0]]
-        totE_app = [0.12*min(abs(BE_array[0][:])) for i in range(len(IMBH_birth))]
-        ax1.scatter(IMBH_birth, dE_app, marker = 'X', color = 'red')
-        ax2.scatter(IMBH_birth, totE_app, marker = 'X', color = 'black')
-    ax2.plot(time[0][:], abs(BE_array[0][:]), color = 'blue', label = 'Potential Energy (abs)')
-    ax2.plot(time[0][:], KE_array[0][:], color = 'red', label = 'Kinetic Energy')
-    ax2.plot(time[0][:], abs(TotE_array[0][:]), color = 'black', label = 'Total Energy (abs)', linestyle = '--')
+    ax2.plot(time[0][:], abs(BE_array[0][:]), color = 'blue', label = 'Potential Energy (abs)', zorder = 1)
+    ax2.plot(time[0][:], KE_array[0][:], color = 'red', label = 'Kinetic Energy', zorder = 2)
+    ax2.plot(time[0][:], abs(TotE_array[0][:]), color = 'black', label = 'Total Energy (abs)', linestyle = '--', zorder = 3)
     ax2.legend()
+    if len(app_id) > 0:
+        dE_app = dE_array[0][app_id[:,0]]
+        IMBH_birth = IMBH_birth[0][app_id[:,0]]
+        totE_app = abs(TotE_array[0][app_id[:,0]])
+        ax1.scatter(IMBH_birth, dE_app, marker = 'X', color = 'red', zorder = 2)
+        ax2.scatter(IMBH_birth, totE_app, marker = 'X', color = 'black', zorder = 4)
     plt.savefig('figures/energy_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()

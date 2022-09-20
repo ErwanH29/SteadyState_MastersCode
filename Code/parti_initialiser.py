@@ -92,6 +92,9 @@ class IMBH_init(object):
         return 10*radius
 
     def decision(self, time, app_rate):
+        """
+        Function which chooses through a Gaussian probability whether an IMBH
+        appears in the simulation. Dependent on the dynamical friction term."""
         if time == 0.0 | units.Myr: # because at 0.0 particles already appear
             c = False
         else:
@@ -209,7 +212,6 @@ class IMBH_init(object):
         IMBH.key_tracker = IMBH.key
         IMBH.move_to_center()
         
-        print(IMBH)
         return IMBH
 
     def add_IMBH(self, pos, distance):
@@ -224,5 +226,5 @@ class IMBH_init(object):
         add_IMBH.key_tracker = add_IMBH.key
         add_IMBH.radius = self.IMBH_radius(add_IMBH.mass)
         add_IMBH.collision_radius = self.coll_radius(add_IMBH.radius)
-        
+
         return add_IMBH

@@ -25,7 +25,7 @@ def evolve_system(parti, tend, eta, cluster_radius, converter):
     """
 
     set_printing_strategy("custom", preferred_units = [units.MSun, units.AU, units.yr, units.AU/units.yr],
-                                    precision = 16, prefix = "", separator = " ", suffix = "")
+                                    precision = 20, prefix = "", separator = " ", suffix = "")
 
     comp_start = cpu_time.time()
 
@@ -150,7 +150,8 @@ def evolve_system(parti, tend, eta, cluster_radius, converter):
         df_tdyn = pd.DataFrame()
         app_time = np.NaN | units.s
         if IMBH_adder.decision(time, decision_scale)==True:
-            print('.......New particle added.......')
+            print('.........New particle added.........')
+            print('Added on step: ', iter)
             N_parti += 1
             app_time = time
             temp_E1 = code.kinetic_energy + code.potential_energy
@@ -173,8 +174,8 @@ def evolve_system(parti, tend, eta, cluster_radius, converter):
         df_IMBH = pd.DataFrame()
         df_tdyn = pd.DataFrame()
         tdyn_val = tdyn_calc(parti) | units.yr
-        for i in range(Nenc+N_parti):
-            for j in range(Nenc+N_parti):
+        for i in range(N_parti):
+            for j in range(len(parti)):
                 if IMBH_array.iloc[[i][0]][0] == parti[j].key_tracker:
                     parti_KE = 0.5*parti[j].velocity.length()**2
                     temp_PE = []
@@ -249,7 +250,7 @@ def evolve_system(parti, tend, eta, cluster_radius, converter):
     
     lines = ['Simulation: ', "Total CPU Time: "+str(comp_end-comp_start)+' seconds', 'Timestep: '+str(eta),
              'Simulated until: '+str(time.value_in(units.yr))+str('year'), 'Cluster Radius: '+str(cluster_radius.value_in(units.parsec))+' parsecs', 
-             'Masses of IMBH: '+str(parti[1:].mass.value_in(units.MSun))+' MSun',
+             'Masses of IMBH: '+str(parti.mass.value_in(units.MSun))+' MSun',
              "No. of initial IMBH: "+str(init_IMBH_pop), 'Number of new particles: '+str(N_parti-N_parti_init),
              'Total Number of IMBH: '+str(len(parti)), 'IMBH Appearance Rate: '+str(IMBHapp.value_in(units.yr))+' years',
              'Number of mergers: '+str(Nenc), 'End Time: '+str(tend.value_in(units.yr))+' years', 'Integrator: Hermite (NO PN)']

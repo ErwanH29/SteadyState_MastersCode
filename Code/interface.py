@@ -37,7 +37,7 @@ init_dist = float(input('Where do you wish to simulate the cluster (distance fro
 """
 
 tend = 10**6 | units.yr
-eta = 10**-4
+eta = 10**-5
 cluster_mass = 10**7  | units.MSun
 cluster_radi = 10**-3 | units.parsec
 cluster_dist = 10**-2 | units.parsec
