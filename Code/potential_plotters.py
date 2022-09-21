@@ -6,6 +6,10 @@ import glob, os
 import pickle as pkl
 
 def potential_plotters():
+    """
+    Function to plot the potentials present in the simulation
+    """
+    
     SMBH_code = MW_SMBH()
     MWG_code  = MWpotentialBovy2015()
 
@@ -31,11 +35,34 @@ def potential_plotters():
     plt.savefig('figures/potentials_used.pdf', dpi = 300)
 
 def find_nearest(array, value):
+    """
+    Function which finds the index of an element in an array
+    corresponding to the nearest value of some input.
+    
+    Inputs:
+    array:  Array for which we want to find the index of
+    value:  Value for which we want to compare the array elements with
+    output: Index where the value ~ array element
+    """
+
     array = np.asarray(array)
     index = (np.abs(array - value)).argmin()
     return index
 
 def dynamical_fric(pos_distr, vel_distr, mass_distr, eta, tend):
+    """
+    Function which utilises eqn. 9 of Petts et al. 2012 to derive
+    the dynamical friction [TO FIX]
+    
+    Inputs:
+    pos_distr:  Array of some sample GC to compare positions (and enclosed mass) with
+    vel_distr:  Array with some velocity distribution to find f(v<vi)
+    mass_distr: Array of some sample GC to find enclosed mass
+    eta:        Time-step used in the simulation
+    tend:       The final time of the simulation
+    output:     Dynamical friction in units of velocity
+    """
+    
     temp_pos   = np.linspace(0,0.4,1000) | units.parsec
     temp_mass  = 50 | units.MSun
     temp_mass2 = 200 | units.MSun
@@ -84,6 +111,26 @@ def dynamical_fric(pos_distr, vel_distr, mass_distr, eta, tend):
     plt.show()
     #plt.savefig('figures/dynamicalfriction.pdf', dpi=300)
     return 
+
+def velocityList():
+    """
+    Function to plot the Maxwellian distribution used
+    """
+
+    sigmaV = 6 # in kms
+    vrange = np.linspace(0, 500, 10000) # in kms
+    ProbFunc = [np.sqrt(2/np.pi)*(i**2/sigmaV**3)*np.exp(-i**2/(2*sigmaV**2)) for i in vrange]
+    ProbFunc = ProbFunc/max(ProbFunc)
+    CumSum = np.cumsum(ProbFunc)/200
+    plt.plot(vrange, ProbFunc, color = 'red', label = 'PDF')
+    plt.plot(vrange, CumSum, color = 'blue', label = 'CDF')
+    plt.xlabel(r'Speed [km s$^{-1}$]')
+    plt.ylabel(r'Normalised Population Fraction')
+    plt.title('Velocity Distribution of Stars \n'
+              'in Globular Clusters')
+    plt.xlim(0,100)
+    plt.legend()
+    plt.savefig('figures/BasicMB.pdf', dpi = 300)
 
 filename = glob.glob('data/preliminary_calcs/*')
 with open(os.path.join(max(filename, key=os.path.getctime)), 'rb') as input_file:

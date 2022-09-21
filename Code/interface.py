@@ -37,21 +37,21 @@ init_dist = float(input('Where do you wish to simulate the cluster (distance fro
 """
 
 tend = 10**6 | units.yr
-eta = 10**-5
+eta = 10**-4
 cluster_mass = 10**7  | units.MSun
 cluster_radi = 10**-3 | units.parsec
-cluster_dist = 10**-2 | units.parsec
+cluster_dist = 0.1 | units.parsec
 conv = nbody_system.nbody_to_si(cluster_mass, cluster_radi)
 
 IMBH_code = IMBH_init()
-IMBH_parti = IMBH_code.IMBH_first(mass_string = 'S', dist_string = 'P', alpha = -2.35,
+IMBH_parti = IMBH_code.IMBH_first(mass_string = 'S', distr_string = 'P', alpha = -2.35,
                                   init_dist = cluster_dist, converter = conv)
 
-evolve_system(IMBH_parti, tend, eta, cluster_dist, conv)
+evolve_system(IMBH_parti, tend, eta, cluster_dist, cluster_radi , 'P', conv)
 print('...Plotting Figures...')
 spatial_plotter(cluster_dist)
 energy_plotter()
 
 anim = True
 if (anim):
-    animator(tend, eta)
+    animator()

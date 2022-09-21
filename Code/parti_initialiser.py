@@ -107,7 +107,7 @@ class IMBH_init(object):
         return np.sqrt(2/np.pi)*(vel**2/sigmaV**3)*np.exp(-vel**2/(2*sigmaV**2))
 
     def velocityList(self):
-        vrange = np.linspace(0, 500/3) # in kms
+        vrange = np.linspace(0, 5*np.sqrt(6)) # in kms
         r=[-1,1]
         w = self.ProbFunc(vrange)
         scalex = [np.random.choice(r)]
@@ -151,7 +151,7 @@ class IMBH_init(object):
         else:
             return print('Error when choosing mass function')
 
-    def IMBH_posinit(self, N, dist_string, beta, converter):
+    def IMBH_posinit(self, N, distr_string, beta, converter):
         """
         Function which sets the distribution of the IMBH particles when initialised
         
@@ -164,25 +164,25 @@ class IMBH_init(object):
 
         N = 100
         
-        if dist_string == 'P' or dist_string == 'p':
+        if distr_string == 'P' or distr_string == 'p':
             distributer = new_plummer_model(N, convert_nbody = converter)
             return distributer
 
-        if dist_string == 'K' or dist_string == 'k':
+        if distr_string == 'K' or distr_string == 'k':
             distributer = new_king_model(N, W0 = beta, convert_nbody = converter)
             return distributer
 
         else:
             return print('Error when choosing a distribution function.')
 
-    def IMBH_first(self, mass_string, dist_string, alpha, init_dist, converter):
+    def IMBH_first(self, mass_string, distr_string, alpha, init_dist, converter):
         """
         Function to initialise the first IMBH population
         The first particle forms the center of the cluster
 
         Inputs:
         mass_string:  The mass distribution wanting to be modelled
-        dist_string:  The spatial distribution wanting to be modelled
+        distr_string:  The spatial distribution wanting to be modelled
         alpha:        The power law, influencing the mass-distribtion
         init_dist:    The distance from central SMBH the cluster will be
         converter:    Converter used to translate nbody_system to SI units
@@ -190,7 +190,7 @@ class IMBH_init(object):
         """
         
         SMBH_parti = MW_SMBH()
-        IMBH = Particles(4)
+        IMBH = Particles(3)
         self.N += len(IMBH)
 
         IMBH[0].position = SMBH_parti.position
@@ -199,7 +199,7 @@ class IMBH_init(object):
 
         for i in range(self.N):
             #IMBH[i].mass = self.mass_func(mass_string,alpha)
-            IMBH[i].position = self.IMBH_posinit(self.N, dist_string, 5, converter)[randint(0,self.N)].position
+            IMBH[i].position = self.IMBH_posinit(self.N, distr_string, 5, converter)[randint(0,self.N)].position
             IMBH[i].velocity = self.velocityList() * (1 | units.AU/units.yr)
 
         IMBH[1].position = [0, 0, 0] | units.AU
@@ -210,21 +210,23 @@ class IMBH_init(object):
         IMBH.radius = self.IMBH_radius(IMBH.mass)
         IMBH.collision_radius = self.coll_radius(IMBH.radius)
         IMBH.key_tracker = IMBH.key
+        IMBH.ejection = 0
         IMBH.move_to_center()
         
         return IMBH
 
-    def add_IMBH(self, pos, distance):
+    def add_IMBH(self, pos, distr_string, converter):
                 
         SMBH_parti = MW_SMBH()
         self.N += 1
         add_IMBH = Particles(1)
         add_IMBH.mass = self.mass
-        add_IMBH.position = pos
+        add_IMBH.position = self.IMBH_posinit(1, distr_string, 5, converter)[randint(0,self.N)].position
+        add_IMBH.position += pos
         add_IMBH.velocity = self.velocityList() * (1 | units.AU/units.yr)
-        add_IMBH.vy += (constants.G*SMBH_parti.mass/distance).sqrt()
         add_IMBH.key_tracker = add_IMBH.key
         add_IMBH.radius = self.IMBH_radius(add_IMBH.mass)
         add_IMBH.collision_radius = self.coll_radius(add_IMBH.radius)
+        add_IMBH.ejection = 0
 
         return add_IMBH
