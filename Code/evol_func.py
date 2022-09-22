@@ -104,10 +104,4 @@ def merge_IMBH(parti, particles_in_encounter, tcoll):
 
 def SMBH_filter(parti):
     particle = parti[parti.mass < 10**6 | units.MSun]
-    particle = parti[parti.mass < 10**6 | units.MSun]
-    return particle
-
-def SMBH_filter_ps(parti):
-    particle = parti[parti.mass < 10**6 | units.MSun]
-    particle.key_tracker = parti[parti.mass < 10**6 | units.MSun].key_tracker
     return particle

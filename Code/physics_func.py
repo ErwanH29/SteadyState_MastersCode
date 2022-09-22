@@ -28,7 +28,7 @@ def indiv_max_PE(indiv, set):
 
     return max(temp_PE_array)
 
-def indiv_PE(indiv, set, array):
+def indiv_PE_BH(indiv, set, array):
     """
     Finding a particles' individual PE based on its closest binary
 
@@ -47,6 +47,32 @@ def indiv_PE(indiv, set, array):
             distance = (indiv.position.length()-set[j].position.length())
             temp_PE  = abs(((constants.G*indiv.mass*set[j].mass)/abs(distance) \
                         + indiv.mass * SMBH.get_potential_at_point(0, indiv.x, indiv.y, indiv.z)))
+            array.append(temp_PE)
+
+    return array
+
+def indiv_PE(indiv, set, array):
+    """
+    Finding a particles' individual PE based on its closest binary
+
+    Input:
+    indiv:  The individual particle computing BE for
+    set:    The complete particle set
+    output: PE value of the particle based on its closest binary + SMBH
+    """
+
+    SMBH = MW_SMBH()
+
+    for j in range(len(set)):
+        if indiv == set[j] or set[j].mass > 10**6 | units.MSun:
+            pass
+        else:
+            x_pos = indiv.x - set[j].position.x
+            y_pos = indiv.y - set[j].position.y
+            z_pos = indiv.z - set[j].position.z
+            distance = (x_pos*x_pos + y_pos*y_pos + z_pos*z_pos).sqrt()
+            
+            temp_PE  = abs(((constants.G*indiv.mass*set[j].mass)/abs(distance)))
             array.append(temp_PE)
 
     return array
