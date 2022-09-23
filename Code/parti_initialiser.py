@@ -1,11 +1,9 @@
 from amuse.lab import *
-from amuse.units import (units, constants, quantities)
+from amuse.units import (units, constants)
 from amuse.ic.plummer import new_plummer_model
 from amuse.ic.kingmodel import new_king_model
 from amuse.ic.scalo import new_scalo_mass_distribution
-from amuse.ext.galactic_potentials import Plummer_profile
 from random import random, randint, choices
-from amuse.community.galaxia.interface import BarAndSpirals3D
 import numpy as np
 
 class MW_SMBH(object):
@@ -13,13 +11,11 @@ class MW_SMBH(object):
     Class which describes the central (MW) SMBH.
     """
 
-    def __init__(self,
-                 mass=4.e6 | units.MSun,
+    def __init__(self, mass=4.e6 | units.MSun,
                  position=[0, 0, 0] | units.parsec,
                  velocity=[0, 0, 0] | (units.AU/units.yr)):
         """
-        Initialising function.
-        outputs: The SMBH mass, radius and position. 
+        Initialising function for the SMBH class.
         """
     
         self.mass = mass
@@ -30,8 +26,11 @@ class MW_SMBH(object):
     def get_gravity_at_point(self, eps, x, y, z):
         """
         Function which gathers the gravitational acceleration induced
-        at any given point
-        output: The gravitational acceleration induced onto the particle
+        at any given point.
+        Inputs:
+        eps:     Integrator softening parameter
+        x, y, z: Cartesian coordinates of the object wanting to compute
+                 potential energy of.
         """     
 
         dx = x - self.position.x
@@ -43,12 +42,16 @@ class MW_SMBH(object):
         ax = fr*dx
         ay = fr*dy
         az = fr*dz
+
         return ax, ay, az
 
     def get_potential_at_point(self, eps, x, y, z):
         """
         Function calculating the potential of the SMBH at any point
-        output: The potential at any given point
+        Inputs:
+        eps:     Integrator softening parameter
+        x, y, z: Cartesian coordinates of the object wanting to compute
+                 potential energy of.
         """
 
         dx = x - self.position.x
@@ -56,20 +59,27 @@ class MW_SMBH(object):
         dz = z - self.position.z
         radius = (dx*dx + dy*dy + dz*dz).sqrt()
         phi = -constants.G*self.mass/radius
+
         return phi
 
 class IMBH_init(object):
     """
-    Class which initialises the IMBH population (starts with N = 2 for Mikkola)
+    Class which initialises the IMBH population.
     """
 
     def __init__(self):
         self.N = 0
         self.mass = 1000 | units.MSun
+
         return
 
     def N_count(self):
+        """
+        Function which counts the number of particles in the simulation
+        """
+        
         N = self.N
+
         return int(N)
     
     def IMBH_radius(self, mass):
@@ -77,11 +87,11 @@ class IMBH_init(object):
         Function which sets the IMBH radius based on the Schwarzschild radius
         
         Inputs:
-        parti:   The particle set being simulated
-        output:  The particle set with a refined radius
+        mass:   The mass of the input particle
         """
 
         radius = (2*constants.G*mass)/(constants.c**2)
+
         return radius
 
     def coll_radius(self, radius):
@@ -94,7 +104,11 @@ class IMBH_init(object):
     def decision(self, time, app_rate):
         """
         Function which chooses through a Gaussian probability whether an IMBH
-        appears in the simulation. Dependent on the dynamical friction term.
+        appears in the simulation.
+
+        Inputs:
+        time:     The time the simulation is evolving to
+        app_rate: The computed birth rate (step*tend)/(df)
         """
         
         if time == 0.0 | units.Myr: # because at 0.0 particles already appear
@@ -110,7 +124,6 @@ class IMBH_init(object):
         
         Inputs:
         vel:    The velocity range for which to sample the weights from
-        output: Weights for the range of velocity allowed
         """
 
         sigmaV = 6 # in kms
@@ -157,16 +170,12 @@ class IMBH_init(object):
 
     def IMBH_first(self, init_dist, converter):
         """
-        Function to initialise the first IMBH population
+        Function to initialise the first IMBH population.
         The first particle forms the center of the cluster
 
         Inputs:
-        mass_func:     The mass distribution wanting to be modelled
-        distr_string:  The spatial distribution wanting to be modelled
-        alpha:         The power law, influencing the mass-distribtion
-        init_dist:     The distance from central SMBH the cluster will be
-        converter:     Converter used to translate nbody_system to SI units
-        output:        The initial particle set for the simulation (as of now, N0 = 3)
+        init_dist:  The distance from central SMBH the cluster will be
+        converter:  Converter used to translate nbody_system to SI units
         """
         
         SMBH_parti = MW_SMBH()
@@ -179,14 +188,16 @@ class IMBH_init(object):
         
         for i in range(self.N):
             #IMBH[i].mass = self.mass_func()
-            IMBH[i].position = self.plummer_distr(converter)[randint(0,self.N)].position
+            IMBH[i].position = 0.85*self.plummer_distr(converter)[randint(0,self.N)].position
             IMBH[i].velocity = self.velocityList() * (1 | units.AU/units.yr)
 
         IMBH[1].position  = [0, 0, 0] | units.AU
         IMBH[1].velocity  = [0, 0, 0] | units.AU/units.yr
-        velx_vect = float((IMBH[2:].x - IMBH[1].x).value_in(units.AU))
-        vely_vect = float((IMBH[2:].y - IMBH[1].y).value_in(units.AU))
-        velz_vect = float((IMBH[2:].z - IMBH[1].z).value_in(units.AU))
+
+        for i in range(self.N-2):
+            velx_vect = float((IMBH[i+2].x - IMBH[1].x).value_in(units.AU))
+            vely_vect = float((IMBH[i+2].y - IMBH[1].y).value_in(units.AU))
+            velz_vect = float((IMBH[i+2].z - IMBH[1].z).value_in(units.AU))
         vel_vect  = [velx_vect, vely_vect, velz_vect]
         veldist   = np.sqrt((velx_vect**2+vely_vect**2+velz_vect**2))
         
@@ -202,7 +213,14 @@ class IMBH_init(object):
         
         return IMBH
 
-    def add_IMBH(self, pos, distr_string, converter):
+    def add_IMBH(self, pos, converter):
+        """
+        Function which adds an IMBH particle to the cluster
+        
+        Inputs:
+        pos:       The current c.o.m position of the cluster
+        converter: The converter to go between SI and Nbody units
+        """
 
         self.N += 1
         add_IMBH = Particles(1)

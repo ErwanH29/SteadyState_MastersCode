@@ -1,16 +1,19 @@
 from amuse.lab import *
 from parti_initialiser import *
+from file_logistics import *
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import matplotlib.animation as animation
 import pickle as pkl
 import numpy as np
 import glob
-import os
-from itertools import cycle
 from evol_func import file_counter
 
 def colour_picker():
+    """
+    Colour chooser for the spatial plots and animation
+    """
+
     colors = ['red', 'blue', 'orange', 'purple', 'salmon', 'slateblue', 
               'darkviolet', 'cornflowerblue', 'cyan', 'sienna', 
               'lightskyblue', 'magenta', 'gold', 'dodgerblue', 'red',
@@ -25,71 +28,15 @@ def colour_picker():
               'lightskyblue', 'magenta', 'gold', 'dodgerblue', 'red']
     return colors
 
-def ejected_extract(complete, ejected, col_len):
-
-    line_x = np.empty((1, col_len, 1))
-    line_y = np.empty((1, col_len, 1))
-    line_z = np.empty((1, col_len, 1))
-
-    for i in range(len(complete)):
-        if complete.iloc[i,0] == ejected.iloc[0][-1]:
-            temp_comp = complete.iloc[i]
-            temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
-            for j in range(col_len):
-                coords = temp_comp.iloc[j+1][1]
-                if len(coords) == 1:
-                    pass
-                else:
-                    line_x[0][j][0] = coords[0].value_in(units.pc)
-                    line_y[0][j][0] = coords[1].value_in(units.pc)
-                    line_z[0][j][0] = coords[2].value_in(units.pc)
-    
-    return line_x, line_y, line_z
-
-def file_manipulator(col_len, data):
-    """
-    Function to read POSITIONAL arrays of SINGLE components.
-    Manipulates them so they can be read by plotters.
-    outputs: Manipulatable data
-    """
-
-    temp_x = np.empty((1, col_len, 1))
-    temp_y = np.empty((1, col_len, 1))
-    temp_z = np.empty((1, col_len, 1))
-
-    for i in range(col_len):
-        temp_vals = data.iloc[i]
-        temp_x[0][i][0] = temp_vals[0].value_in(units.pc)
-        temp_y[0][i][0] = temp_vals[1].value_in(units.pc)
-        temp_z[0][i][0] = temp_vals[2].value_in(units.pc)
-
-    return temp_x, temp_y, temp_z
-    
-def file_opener(file_string):
-    """
-    Function which opens and reads the pickle files
-    outputs: Data frames
-    """
-
-    filename = glob.glob(file_string)
-    with open(os.path.join(max(filename, key=os.path.getctime)), 'rb') as input_file:
-        temp_data = pkl.load(input_file)
-    temp_length = len(temp_data)
-
-    return temp_data, temp_length
-
 def animator(init_dist):
     """
     Function to produce animations. WARNING: SLOW
     
     Inputs:
-    tend:    The total time the simulation evolves till
-    eta:     The time-step used for integration
-    outputs: Movie of the animation
+    init_dist: The initial distance of the cluster to the central SMBH
     """
 
-    print('You have chosen to animate. This will take a while...')
-
+    print('!!!!! You have chosen to animate. This will take a while !!!!!')
     plt.clf()
     count = file_counter()
 
@@ -107,7 +54,6 @@ def animator(init_dist):
         dE_array[0][i][0]  = vals[2]
 
     col_len = len(IMBH_tracker.iloc[0])-2
-    
     com_x, com_y, com_z = file_manipulator(col_len, com_tracker)
     line_x = np.empty((len(IMBH_tracker), col_len, 1))
     line_y = np.empty((len(IMBH_tracker), col_len, 1))
@@ -203,16 +149,10 @@ def animator(init_dist):
         if skip_zeroth %100 == 0:
             print('Current frame: ', skip_zeroth)
 
-        xy_lim = 0.001 | units.parsec # Hard-coded value but corresponds to the shift
-        xy_lim = 1.1* xy_lim.value_in(units.pc)
-
         ax1.clear()
         ax2.clear()
         ax3.clear()
         ax4.clear()
-        
-        #ax1.set_xlim(0.9*min(line_x[1][col_len]), 1.1*max(line_x[1][col_len]))
-        #ax1.set_ylim(0.9*min(line_y[1][col_len]), 1.1*max(line_y[1][col_len]))
         
         colours = colour_picker()
         for i in range(len(IMBH_tracker)):
@@ -262,41 +202,39 @@ def animator(init_dist):
         
 def energy_plotter():
     """
-    Function to plot the evolution of the system
-    outputs: Plots of the evolution of the system in Cartesian coordinates
+    Function to plot the energy evolution of the system
     """
 
     count = file_counter()
-
     energy_tracker, col_len = file_opener('data/energy/*')
     IMBH_energy_tracker, col_len = file_opener('data/particle_energies/*')
 
     time = np.empty((1, col_len, 1))
-    Et_array    = np.empty((1, col_len, 1))
-    dE_array    = np.empty((1, col_len, 1))
-    dEs_array   = np.empty((1, col_len, 1))
-    IMBH_birth  = np.empty((1, col_len, 1))
-    collisions  = np.empty((1, col_len, 1)) 
+    Et_array = np.empty((1, col_len, 1))
+    dE_array = np.empty((1, col_len, 1))
+    dEs_array = np.empty((1, col_len, 1))
+    IMBH_birth = np.empty((1, col_len, 1))
+    collisions = np.empty((1, col_len, 1)) 
     merger_mass = np.empty((1, col_len, 1)) 
 
-    BE_array   = np.empty((1, col_len, 1))
-    KE_array   = np.empty((1, col_len, 1))
+    BE_array = np.empty((1, col_len, 1))
+    KE_array = np.empty((1, col_len, 1))
     TotE_array = np.empty((1, col_len, 1))
 
     for i in range(col_len):
         vals = energy_tracker.iloc[i]
         time[0][i][0] = vals[0].value_in(units.kyr)
-        Et_array[0][i][0]    = vals[1].value_in(units.J)
-        dE_array[0][i][0]    = vals[2]
-        dEs_array[0][i][0]   = vals[3]
-        IMBH_birth[0][i][0]  = vals[4].value_in(units.kyr)
-        collisions[0][i][0]  = vals[5].value_in(units.kyr)
+        Et_array[0][i][0] = vals[1].value_in(units.J)
+        dE_array[0][i][0] = vals[2]
+        dEs_array[0][i][0] = vals[3]
+        IMBH_birth[0][i][0] = vals[4].value_in(units.kyr)
+        collisions[0][i][0] = vals[5].value_in(units.kyr)
         merger_mass[0][i][0] = vals[6].value_in(units.MSun)
 
         vals = IMBH_energy_tracker.iloc[i]
-        BE_array[0][i][0]    = vals[1].value_in(units.J)
-        KE_array[0][i][0]    = vals[2].value_in(units.J)
-        TotE_array[0][i][0]  = vals[3].value_in(units.J)    
+        BE_array[0][i][0] = vals[1].value_in(units.J)
+        KE_array[0][i][0] = vals[2].value_in(units.J)
+        TotE_array[0][i][0] = vals[3].value_in(units.J)    
 
     coll_id = np.argwhere(collisions > time[0][1])
     coll_id[:,0] = [i-1 for i in coll_id[:,0]]
@@ -455,7 +393,7 @@ def spatial_plotter(init_dist):
     ax4.plot(time[0][:-5], LG25_array[0][:-5], color = 'red',   label = r'$r_{25,L}$')
     ax4.plot(time[0][:-5], LG50_array[0][:-5], color = 'black', label = r'$r_{50,L}$')
     ax4.plot(time[0][:-5], LG75_array[0][:-5], color = 'blue',  label = r'$r_{75,L}$')
-    ax4.set_ylim(0, 300)
+    ax4.set_ylim(0, max(LG75_array[LG25_array < 300]))
     ax4.legend()
     plt.savefig('figures/spatial_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
@@ -463,4 +401,62 @@ def spatial_plotter(init_dist):
 
     return
 
-spatial_plotter(0.04 | units.parsec)
+def bulk_stat_extractor(file_string):
+    
+    filename = glob.glob(file_string)
+    data = [ ]
+    
+    for file_ in range(len(filename)):
+        with open(filename[file_], 'rb') as input_file:
+            data.append(pkl.load(input_file))
+
+    return data
+
+def steadytime_plotter():
+    steadytime_data = bulk_stat_extractor('data/stability_time/*')
+    no_Data = len(steadytime_data)
+    
+    init_parti = np.empty(no_Data)
+    fin_parti  = np.empty(no_Data)
+    no_mergers = np.empty(no_Data)
+    sim_tend   = np.empty(no_Data)
+    stab_time  = np.empty(no_Data)
+
+    for i in range(no_Data):
+        sim_data = steadytime_data[i]
+        init_parti[i] = sim_data.iloc[0][0]
+        fin_parti[i]  = sim_data.iloc[0][1]
+        no_mergers[i] = sim_data.iloc[0][2]
+        sim_tend[i]   = sim_data.iloc[0][3].value_in(units.kyr)
+        stab_time[i]  = sim_data.iloc[0][5].value_in(units.kyr)
+
+    fig, ax = plt.subplots()
+    pop_size, samples = np.unique(fin_parti, return_counts=True)
+    xints = [i for i in range(1+int(max(pop_size)))]
+
+    print(stab_time)
+    
+    for pop_, samp_ in zip(pop_size, samples):
+        N_parti = np.argwhere(fin_parti == pop_)
+        N_parti_avg = np.mean(stab_time[N_parti])
+        N_parti_max = np.max(stab_time[N_parti])
+        N_parti_min = np.min(stab_time[N_parti])
+        ax.errorbar(pop_, N_parti_avg, color = 'black',
+                     yerr=[[(abs(N_parti_avg-N_parti_min))],[(abs(N_parti_avg-N_parti_max))]], fmt = 'o')
+        ax.scatter(pop_, N_parti_max, marker = '_', color = 'black')
+        ax.scatter(pop_, N_parti_min, marker = '_', color = 'black')
+        
+        #plt.xticks([pop_], labels = str(pop_)+'\n(No. Simulations: \n'+str(samp_))
+    for i, xpos in enumerate(pop_size):
+        ax.text(xpos, -1e-1*max(stab_time), '(Tot. Simulations: '+str(samples[i])+')', 
+                fontsize = 'x-small', ha = 'center' )
+
+    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
+    ax.xaxis.labelpad = 20
+    plt.xticks(xints)
+    plt.xlim(0,max(pop_size)+1)
+    plt.ylim(0, 1.15*(max(stab_time)))
+    plt.ylabel(r'Ejection Time [kyr]')
+    plt.xlabel(r'Number of IMBH [$N$]')
+    plt.title(r'Black Hole Population vs. Stability Time')
+    plt.savefig('figures/stab_time.pdf', dpi = 300, bbox_inches='tight')

@@ -40,6 +40,8 @@ def df_timescale(particle, clust_rad, halfmass):
     clust_rad:  The initial radius of the cluster particles orbit at
     """
 
+    SMBH_parti = MW_SMBH()
+
     dist_const = 5 | units.kpc
     vel_const  = 200 | units.kms
     mass_const = 10**8 | units.MSun

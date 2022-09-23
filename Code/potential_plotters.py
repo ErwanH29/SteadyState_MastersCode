@@ -42,79 +42,15 @@ def find_nearest(array, value):
     Inputs:
     array:  Array for which we want to find the index of
     value:  Value for which we want to compare the array elements with
-    output: Index where the value ~ array element
     """
 
     array = np.asarray(array)
     index = (np.abs(array - value)).argmin()
     return index
 
-def dynamical_fric(pos_distr, vel_distr, mass_distr, eta, tend):
-    """
-    Function which utilises eqn. 9 of Petts et al. 2012 to derive
-    the dynamical friction [TO FIX]
-    
-    Inputs:
-    pos_distr:  Array of some sample GC to compare positions (and enclosed mass) with
-    vel_distr:  Array with some velocity distribution to find f(v<vi)
-    mass_distr: Array of some sample GC to find enclosed mass
-    eta:        Time-step used in the simulation
-    tend:       The final time of the simulation
-    output:     Dynamical friction in units of velocity
-    """
-    
-    temp_pos   = np.linspace(0,0.4,1000) | units.parsec
-    temp_mass  = 50 | units.MSun
-    temp_mass2 = 200 | units.MSun
-    temp_vel   = 5  | units.AU/units.yr
-    temp_vel2  = 20  | units.AU/units.yr
-
-    systv = (4/3)*np.pi*(1 | units.parsec)**3       # The volume for which the BHs are in (line 44 interface.py)
-    systm = 10**7 | units.MSun                      # The mass of the GC which the BHs are in (line 44 interface.py)
-
-    sample1 = [ ]
-    sample2 = [ ]
-    sample3 = [ ]
-
-    for i in range(len(temp_pos)):
-        index = find_nearest(pos_distr, temp_pos[i].value_in(units.AU))
-        enc_mass = mass_distr[index] | units.MSun
-        index2 = find_nearest(vel_distr, temp_vel.value_in(units.AU/units.yr))
-        frac_vel = index2/len(vel_distr)
-
-        value1 = (-16*np.pi**2*(constants.G)**2*(systm)*((systm)+temp_mass)*(systm/systv) \
-                  *np.log((temp_mass/enc_mass)**2+1) *frac_vel*(temp_vel)**-2 * eta * tend).value_in(units.AU/units.yr)
-        sample1.append(value1)
-        
-
-        value3 = (-16*np.pi**2*(constants.G)**2*(systm)*((systm)+temp_mass2)*(systm/systv) \
-                  *np.log((temp_mass2/enc_mass)**2+1)*frac_vel*(temp_vel)**-2 * eta * tend).value_in(units.AU/units.yr)
-        sample3.append(value3)
-        
-        index2 = find_nearest(vel_distr, temp_vel2.value_in(units.AU/units.yr))
-        frac_vel = index2/len(vel_distr)
-        value2 = (-16*np.pi**2*(constants.G)**2*(systm)*((systm)+temp_mass)*(systm/systv) \
-                    *frac_vel*(temp_vel2)**-2 * eta * tend).value_in(units.AU/units.yr)
-        sample2.append(value2)
-        
-    plt.plot(temp_pos.value_in(units.parsec), sample1, color = 'black',
-                label = r'$M = 50M_{\odot}$, $v = 5.0$ AU yr$^{-1}$')
-    plt.plot(temp_pos.value_in(units.parsec), sample3, color = 'red',
-                ls = '--', label = r'$M = 200M_{\odot}$, $v = 5.0$ AU yr$^{-1}$')                
-    plt.plot(temp_pos.value_in(units.parsec), sample2, color = 'blue', 
-                ls = '--', label = r'$M = 50M_{\odot}$, $v = 20$ AU yr$^{-1}$')
-                
-    plt.title('Dynamical Friction vs.\nDistance from Cluster Core')
-    plt.xlabel('Distance from Core [pc]')
-    plt.ylabel('Dynamical Friction [AU/yr]')
-    plt.legend()
-    plt.show()
-    #plt.savefig('figures/dynamicalfriction.pdf', dpi=300)
-    return 
-
 def velocityList():
     """
-    Function to plot the Maxwellian distribution used
+    Function to plot the Maxwellian distribution used.
     """
 
     sigmaV = 6 # in kms
@@ -131,12 +67,3 @@ def velocityList():
     plt.xlim(0,100)
     plt.legend()
     plt.savefig('figures/BasicMB.pdf', dpi = 300)
-
-filename = glob.glob('data/preliminary_calcs/*')
-with open(os.path.join(max(filename, key=os.path.getctime)), 'rb') as input_file:
-    temp_data = pkl.load(input_file)
-pos_values = temp_data.iloc[0][0]
-mas_values = temp_data.iloc[0][1]
-vel_values = temp_data.iloc[0][2]
-
-temp_vel = dynamical_fric(pos_values, vel_values, mas_values, 10**-3, 100 | units.yr)
