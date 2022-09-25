@@ -352,11 +352,11 @@ def spatial_plotter(init_dist):
     ax1.set_title('Center of Mass TO FIX')
     ax2.set_title('Ejected IMBH Focus')
 
-    for ax_ in [ax1, ax3]:
-        ax_.set_xlabel(r'$x$-Coordinate [pc]')
-        ax_.set_ylabel(r'$y$-Coordinate [pc]')
-    ax2.set_xlabel(r'$x$-Coordinate [AU]')
-    ax2.set_ylabel(r'$y$-Coordinate [AU]')
+    for ax_ in [ax1, ax2]:
+        ax_.set_xlabel(r'$x$-Coordinate [AU]')
+        ax_.set_ylabel(r'$y$-Coordinate [AU]')
+    ax3.set_xlabel(r'$x$-Coordinate [pc]')
+    ax3.set_ylabel(r'$y$-Coordinate [pc]')
 
     for ax_ in [ax1, ax2, ax3, ax4]:
         ax_.yaxis.set_ticks_position('both')
@@ -374,27 +374,28 @@ def spatial_plotter(init_dist):
     ax4.set_ylabel(r'Lagrangian Radius [AU]')
 
     for i in range(len(IMBH_tracker)):
-        ax1.scatter(line_x[i][1:]-com_x[0][1:], line_y[i][1:]-com_y[0][1:], 
+        ax1.scatter(206265*(line_x[i][1:]-com_x[0][1:]), 206265*(line_y[i][1:]-com_y[0][1:]), 
                     s = 5, c = colours[i], zorder = 1)
-        ax1.scatter(line_x[i][1]-com_x[0][1], line_y[i][1]-com_y[0][1], 
+        ax1.scatter(206265*(line_x[i][1]-com_x[0][1]), 206265*(line_y[i][1]-com_y[0][1]), 
                     alpha = 0.7, c = colours[i], edgecolors = 'black', s = 50, zorder = 2)
-        ax1.scatter(line_x[i][-1]-com_x[0][-1], line_y[i][-1]-com_y[0][-1], 
+        ax1.scatter(206265*(line_x[i][-1]-com_x[0][-1]), 206265*(line_y[i][-1]-com_y[0][-1]), 
                     c = colours[i], edgecolors = 'black', s = 50, zorder = 3)
         ax3.scatter(line_x[i][:-1], line_y[i][:-1], c = colours[i], zorder = 1, s = 1)
         ax3.scatter(line_x[i][-1], line_y[i][-1], c = colours[i], edgecolors = 'black', s = 50, zorder = 3)
-        ax3.scatter(line_x[i][0], line_y[i][0], alpha = 0.7, c = colours[i], edgecolors = 'black', s = 50, zorder = 2)
+        ax3.scatter(line_x[i][1], line_y[i][1], alpha = 0.7, c = colours[i], edgecolors = 'black', s = 50, zorder = 2)
         ax2.scatter(206265*(line_x[i][:-1]-ejected_x[0][:-1]), 206265*(line_y[i][:-1]-ejected_y[0][:-1]), 
                     c = colours[i], s = 5, zorder = 1)
         ax2.scatter(206265*(line_x[i][0]-ejected_x[0][0]), 206265*(line_y[i][0]-ejected_y[0][0]), 
-                    alpha = 0.7,c = colours[i], edgecolors = 'black', s = 50)
+                    alpha = 0.7,c = colours[i], edgecolors = 'black', s = 50, zorder=2)
         ax2.scatter(206265*(line_x[i][-2]-ejected_x[0][-2]), 206265*(line_y[i][-2]-ejected_y[0][-2]), 
-                    c = colours[i], edgecolors = 'black', s = 50)
-    ax3.scatter(0,0, color = 'black', s = 50, zorder = 2)
+                    c = colours[i], edgecolors = 'black', s = 50, zorder=3)
+    ax3.scatter(0,0, color = 'black', s = 250, zorder = 2)
     ax4.plot(time[0][:-5], LG25_array[0][:-5], color = 'red',   label = r'$r_{25,L}$')
     ax4.plot(time[0][:-5], LG50_array[0][:-5], color = 'black', label = r'$r_{50,L}$')
     ax4.plot(time[0][:-5], LG75_array[0][:-5], color = 'blue',  label = r'$r_{75,L}$')
-    ax4.set_ylim(0, max(LG75_array[LG25_array < 300]))
+    ax4.set_ylim(0, max(LG75_array[LG25_array < 5000]))
     ax4.legend()
+    ax1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
     plt.savefig('figures/spatial_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()
@@ -412,51 +413,142 @@ def bulk_stat_extractor(file_string):
 
     return data
 
-def steadytime_plotter():
+def steadytime_dist_plotter():
     steadytime_data = bulk_stat_extractor('data/stability_time/*')
     no_Data = len(steadytime_data)
     
-    init_parti = np.empty(no_Data)
     fin_parti  = np.empty(no_Data)
-    no_mergers = np.empty(no_Data)
-    sim_tend   = np.empty(no_Data)
     stab_time  = np.empty(no_Data)
+    init_dist  = np.empty(no_Data)
+    init_mass  = np.empty(no_Data)
 
     for i in range(no_Data):
         sim_data = steadytime_data[i]
-        init_parti[i] = sim_data.iloc[0][0]
         fin_parti[i]  = sim_data.iloc[0][1]
-        no_mergers[i] = sim_data.iloc[0][2]
-        sim_tend[i]   = sim_data.iloc[0][3].value_in(units.kyr)
         stab_time[i]  = sim_data.iloc[0][5].value_in(units.kyr)
+        init_dist[i]  = sim_data.iloc[0][6].value_in(units.parsec)
+        init_mass[i]  = sim_data.iloc[0][8][0].value_in(units.MSun)
 
-    fig, ax = plt.subplots()
-    pop_size, samples = np.unique(fin_parti, return_counts=True)
-    xints = [i for i in range(1+int(max(pop_size)))]
-
-    print(stab_time)
+    in_mass = np.unique(init_mass)
+    in_dist = np.unique(init_dist)
     
-    for pop_, samp_ in zip(pop_size, samples):
-        N_parti = np.argwhere(fin_parti == pop_)
-        N_parti_avg = np.mean(stab_time[N_parti])
-        N_parti_max = np.max(stab_time[N_parti])
-        N_parti_min = np.min(stab_time[N_parti])
-        ax.errorbar(pop_, N_parti_avg, color = 'black',
-                     yerr=[[(abs(N_parti_avg-N_parti_min))],[(abs(N_parti_avg-N_parti_max))]], fmt = 'o')
-        ax.scatter(pop_, N_parti_max, marker = '_', color = 'black')
-        ax.scatter(pop_, N_parti_min, marker = '_', color = 'black')
-        
-        #plt.xticks([pop_], labels = str(pop_)+'\n(No. Simulations: \n'+str(samp_))
-    for i, xpos in enumerate(pop_size):
-        ax.text(xpos, -1e-1*max(stab_time), '(Tot. Simulations: '+str(samples[i])+')', 
-                fontsize = 'x-small', ha = 'center' )
+    colours = colour_picker()
 
-    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
-    ax.xaxis.labelpad = 20
-    plt.xticks(xints)
-    plt.xlim(0,max(pop_size)+1)
-    plt.ylim(0, 1.15*(max(stab_time)))
-    plt.ylabel(r'Ejection Time [kyr]')
-    plt.xlabel(r'Number of IMBH [$N$]')
-    plt.title(r'Black Hole Population vs. Stability Time')
-    plt.savefig('figures/stab_time.pdf', dpi = 300, bbox_inches='tight')
+    for exp_ in in_mass:
+        fig, ax = plt.subplots()
+        tot_pop = [ ]
+
+        for i in range(len(in_dist)): 
+            N_parti_avg = [ ]
+            std = [ ]
+            dist_arrays = np.argwhere(init_dist == in_dist[i])
+            fin_parti = fin_parti[dist_arrays]
+            stab_time = stab_time[dist_arrays]
+            pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
+            tot_pop.append(max(pop_size))
+
+            for pop_, samp_ in zip(pop_size, pop_samples):
+                N_parti = np.argwhere(fin_parti == pop_)
+                N_parti_avg.append(np.mean(stab_time[N_parti]))
+                std.append(np.std(stab_time[N_parti]))
+
+            ax.errorbar(pop_size, N_parti_avg, color = colours[i], yerr=std, 
+                        markeredgecolor = 'black', fmt = 'o', label = r'$r_{SMBH}=$'+str(in_dist[i])+' pc')
+            ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = colours[i])
+            ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = colours[i])
+            ax.scatter(pop_size, N_parti_avg, color = colours[i])
+
+            for j, xpos in enumerate(pop_size):
+                if i == 0:
+                    ax.text(xpos, -0.09, 'Simulations\n'+'Set '+str(i)+': '+str(pop_samples[j]), fontsize = 'xx-small', ha = 'center' )
+                else:
+                    ax.text(xpos, -0.09*(1+0.3*i), 'Set '+str(i)+': '+str(pop_samples[j]), fontsize = 'xx-small', ha = 'center' )
+        
+        order = int('{:.0f}'.format(np.log10(exp_)))
+        xints = [i for i in range(1+int(max(tot_pop)))]
+        ax.text(2.8, (0.05), r'$m_{IMBH}$: '+str('{:.0f}'.format(exp_/10**order))+r'$\times 10^{}$'.format(order)+r' $M_\odot$')
+        ax.yaxis.set_ticks_position('both')
+        ax.xaxis.set_ticks_position('both')
+        ax.tick_params(axis="y",direction="in")
+        ax.tick_params(axis="x",direction="in")
+        ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
+        ax.xaxis.labelpad = 20
+        plt.xticks(xints)
+        plt.xlim(2.5,max(pop_size)+1)
+        plt.ylim(0, 1)
+        plt.ylabel(r'Ejection Time [kyr]')
+        plt.xlabel(r'Number of IMBH [$N$]')
+        plt.title(r'Black Hole Population vs. Stability Time')
+        plt.legend()
+        plt.savefig('figures/stab_time_equal_mass_'+str(exp_)+'.pdf', dpi = 300, bbox_inches='tight')
+
+def steadytime_initmass_plotter():
+    steadytime_data = bulk_stat_extractor('data/stability_time/*')
+    no_Data = len(steadytime_data)
+    
+    fin_parti  = np.empty(no_Data)
+    stab_time  = np.empty(no_Data)
+    init_dist  = np.empty(no_Data)
+    init_mass  = np.empty((no_Data, 2))
+
+    for i in range(no_Data):
+        sim_data = steadytime_data[i]
+        fin_parti[i]  = sim_data.iloc[0][1]
+        stab_time[i]  = sim_data.iloc[0][5].value_in(units.kyr)
+        init_dist[i]  = sim_data.iloc[0][6].value_in(units.parsec)
+        init_mass[i]  = [min(sim_data.iloc[0][8].value_in(units.MSun)), max(sim_data.iloc[0][8].value_in(units.MSun))]
+
+    in_dist = np.unique(init_dist)
+    in_mass = np.unique(init_mass, axis=0)
+
+    colours = colour_picker()
+
+    for exp_ in in_dist:
+        fig, ax = plt.subplots()
+        tot_pop = [ ]
+
+        for i in range(len(in_mass)): 
+            N_parti_avg = [ ]
+            std = [ ]
+            mass_arrays = np.argwhere(init_mass == in_mass[1][i])[:,0]  #Indices with the correct mass column
+            fin_parti = fin_parti[mass_arrays]
+            stab_time = stab_time[mass_arrays]
+            pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
+            tot_pop.append(max(pop_size))
+
+            for pop_, samp_ in zip(pop_size, pop_samples):
+                N_parti = np.argwhere(fin_parti == pop_)
+                N_parti_avg.append(np.mean(stab_time[N_parti]))
+                std.append(np.std(stab_time[N_parti]))
+
+            ax.errorbar(pop_size, N_parti_avg, color = colours[i], yerr=std, 
+                        markeredgecolor = 'black', fmt = 'o', label = r'$m_{i} \in$ ['+str(in_mass[i][0])+', '+str(in_mass[i][1])+r'] $M_\odot$')
+            ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = colours[i])
+            ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = colours[i])
+            ax.scatter(pop_size, N_parti_avg, color = colours[i])
+
+            for j, xpos in enumerate(pop_size):
+                if i == 0:
+                    ax.text(xpos, -0.09*(1+0.05*i), 'Simulations\n'+'Set '+str(i)+': '+str(pop_samples[j]), fontsize = 'xx-small', ha = 'center' )
+                else:
+                    ax.text(xpos, -0.09*(1+0.3*i), 'Set '+str(i)+': '+str(pop_samples[j]), fontsize = 'xx-small', ha = 'center' )
+        xints = [i for i in range(1+int(max(tot_pop)))]
+
+        ax.text(2.8, 0.05, 'SMBH Distance: '+str(exp_)+' pc')
+        ax.yaxis.set_ticks_position('both')
+        ax.xaxis.set_ticks_position('both')
+        ax.tick_params(axis="y",direction="in")
+        ax.tick_params(axis="x",direction="in")
+        ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+        ax.xaxis.labelpad = 40
+        plt.xticks(xints)
+        plt.xlim(2.5,max(tot_pop)+1)
+        plt.ylim(0, 1)
+        plt.ylabel(r'Ejection Time [kyr]')
+        plt.xlabel(r'Number of IMBH [$N$]')
+        plt.title(r'Black Hole Population vs. Stability Time')
+        plt.legend()
+        plt.savefig('figures/stab_time_equal_dist_'+str(exp_)+'.pdf', dpi = 300, bbox_inches='tight')
+
+steadytime_dist_plotter()
+#steadytime_initmass_plotter()

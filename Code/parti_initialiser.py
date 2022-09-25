@@ -160,15 +160,15 @@ class IMBH_init(object):
         return constant
 
     def plummer_distr(self, converter):
-        N = 100
-        return new_plummer_model(N, radius_cutoff = 50, convert_nbody = converter)
+        self.Plummer_N = 100
+        return new_plummer_model(self.Plummer_N, radius_cutoff = 300, convert_nbody = converter)
 
     def king_distr(self, converter):
         N = 100
         beta = -9
         return new_king_model(N, W0 = beta, convert_nbody = converter)
 
-    def IMBH_first(self, init_dist, converter):
+    def IMBH_first(self, init_dist, init_parti, converter):
         """
         Function to initialise the first IMBH population.
         The first particle forms the center of the cluster
@@ -179,16 +179,13 @@ class IMBH_init(object):
         """
         
         SMBH_parti = MW_SMBH()
-        IMBH = Particles(3)
+        IMBH = Particles(init_parti)
         self.N += len(IMBH)
+        r = [-1,1]
 
-        IMBH[0].position = SMBH_parti.position
-        IMBH[0].velocity = SMBH_parti.velocity
-        IMBH[0].mass     = SMBH_parti.mass
-        
         for i in range(self.N):
             #IMBH[i].mass = self.mass_func()
-            IMBH[i].position = 0.85*self.plummer_distr(converter)[randint(0,self.N)].position
+            IMBH[i].position = 4*self.plummer_distr(converter)[randint(0,self.N)].position
             IMBH[i].velocity = self.velocityList() * (1 | units.AU/units.yr)
 
         IMBH[1].position  = [0, 0, 0] | units.AU
@@ -200,17 +197,22 @@ class IMBH_init(object):
             velz_vect = float((IMBH[i+2].z - IMBH[1].z).value_in(units.AU))
         vel_vect  = [velx_vect, vely_vect, velz_vect]
         veldist   = np.sqrt((velx_vect**2+vely_vect**2+velz_vect**2))
-        
+
         IMBH[2:].velocity = -1 * IMBH[2:].velocity * (vel_vect)/(veldist)
         IMBH[1:].mass     = self.mass
         IMBH[1:].x += init_dist
-        IMBH[1:].vy += 1.15*(constants.G*SMBH_parti.mass/IMBH.position.length()).sqrt()
+        IMBH[1:].vy += (constants.G*SMBH_parti.mass/IMBH.position.length()).sqrt()
         IMBH.radius = self.IMBH_radius(IMBH.mass)
         IMBH.collision_radius = self.coll_radius(IMBH.radius)
         IMBH.key_tracker = IMBH.key
         IMBH.ejection = 0
-        IMBH.move_to_center()
-        
+
+        IMBH[0].position = SMBH_parti.position
+        IMBH[0].velocity = SMBH_parti.velocity
+        IMBH[0].mass     = SMBH_parti.mass
+
+        IMBH.move_to_center()  
+
         return IMBH
 
     def add_IMBH(self, pos, converter):
@@ -225,10 +227,12 @@ class IMBH_init(object):
         self.N += 1
         add_IMBH = Particles(1)
         add_IMBH.mass = self.mass
-        add_IMBH.position = 2 * self.plummer_distr(converter)[randint(0,self.N)].position
+        add_IMBH.position = self.plummer_distr(converter)[randint(0,(self.Plummer_N-1))].position
         add_IMBH.position += pos
+        dist_vector = ((add_IMBH.x-pos.x)**2+(add_IMBH.y-pos.y)**2+(add_IMBH.z-pos.z)**2).sqrt()
+
         add_IMBH.velocity = self.velocityList() * (1 | units.AU/units.yr)
-        add_IMBH.velocity *= (1 * add_IMBH.position)/(add_IMBH.position.length()) 
+        add_IMBH.velocity *= (-1.15 * (add_IMBH.position-pos))/(dist_vector) 
         add_IMBH.key_tracker = add_IMBH.key
         add_IMBH.radius = self.IMBH_radius(add_IMBH.mass)
         add_IMBH.collision_radius = self.coll_radius(add_IMBH.radius)

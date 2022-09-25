@@ -19,7 +19,7 @@ def ejected_extract(complete, ejected, col_len):
     line_z = np.empty((1, col_len, 1))
 
     for i in range(len(complete)):
-        if complete.iloc[i,0] == ejected.iloc[0][-2]:
+        if complete.iloc[i,0] == ejected.iloc[0][4]:
             temp_comp = complete.iloc[i]
             temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):
