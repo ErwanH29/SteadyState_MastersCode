@@ -7,13 +7,9 @@ from random import random, randint, choices
 import numpy as np
 
 class MW_SMBH(object):
-    """
-    Class which describes the central (MW) SMBH.
-    """
-
-    def __init__(self, mass=4.e6 | units.MSun,
-                 position=[0, 0, 0] | units.parsec,
-                 velocity=[0, 0, 0] | (units.AU/units.yr)):
+    def __init__(self, mass = 4.e6 | units.MSun,
+                 position = [0, 0, 0] | units.parsec,
+                 velocity = [0, 0, 0] | (units.AU/units.yr)):
         """
         Initialising function for the SMBH class.
         """
@@ -63,24 +59,16 @@ class MW_SMBH(object):
         return phi
 
 class IMBH_init(object):
-    """
-    Class which initialises the IMBH population.
-    """
-
     def __init__(self):
         self.N = 0
         self.mass = 1000 | units.MSun
-
         return
 
     def N_count(self):
         """
         Function which counts the number of particles in the simulation
         """
-        
-        N = self.N
-
-        return int(N)
+        return int(self.N)
     
     def IMBH_radius(self, mass):
         """
@@ -89,16 +77,12 @@ class IMBH_init(object):
         Inputs:
         mass:   The mass of the input particle
         """
-
-        radius = (2*constants.G*mass)/(constants.c**2)
-
-        return radius
+        return (2*constants.G*mass)/(constants.c**2)
 
     def coll_radius(self, radius):
         """
         Function which sets the IMBH collision radius based on Zwart et al. 2021
         """
-
         return 10*radius
 
     def decision(self, time, app_rate):
@@ -161,7 +145,7 @@ class IMBH_init(object):
 
     def plummer_distr(self, converter):
         self.Plummer_N = 100
-        return new_plummer_model(self.Plummer_N, radius_cutoff = 300, convert_nbody = converter)
+        return new_plummer_model(self.Plummer_N, radius_cutoff = 20, convert_nbody = converter)
 
     def king_distr(self, converter):
         N = 100
@@ -184,10 +168,14 @@ class IMBH_init(object):
         r = [-1,1]
 
         for i in range(self.N):
-            #IMBH[i].mass = self.mass_func()
-            IMBH[i].position = 4*self.plummer_distr(converter)[randint(0,self.N)].position
+            IMBH[i].position = 2*self.plummer_distr(converter)[randint(0,self.N)].position
             IMBH[i].velocity = self.velocityList() * (1 | units.AU/units.yr)
 
+        for particle in IMBH:
+            if particle.position.length() < 500 | units.AU:
+                particle.position *= (500 | units.AU) / particle.position.length()
+
+        IMBH[2:].position += 0.2*IMBH[1].position
         IMBH[1].position  = [0, 0, 0] | units.AU
         IMBH[1].velocity  = [0, 0, 0] | units.AU/units.yr
 
@@ -201,7 +189,7 @@ class IMBH_init(object):
         IMBH[2:].velocity = -1 * IMBH[2:].velocity * (vel_vect)/(veldist)
         IMBH[1:].mass     = self.mass
         IMBH[1:].x += init_dist
-        IMBH[1:].vy += (constants.G*SMBH_parti.mass/IMBH.position.length()).sqrt()
+        IMBH[1:].vy += 1.15*(constants.G*SMBH_parti.mass/IMBH.position.length()).sqrt()
         IMBH.radius = self.IMBH_radius(IMBH.mass)
         IMBH.collision_radius = self.coll_radius(IMBH.radius)
         IMBH.key_tracker = IMBH.key
@@ -227,10 +215,10 @@ class IMBH_init(object):
         self.N += 1
         add_IMBH = Particles(1)
         add_IMBH.mass = self.mass
-        add_IMBH.position = self.plummer_distr(converter)[randint(0,(self.Plummer_N-1))].position
+        add_IMBH.position  = self.plummer_distr(converter)[randint(0,(self.Plummer_N-1))].position
         add_IMBH.position += pos
-        dist_vector = ((add_IMBH.x-pos.x)**2+(add_IMBH.y-pos.y)**2+(add_IMBH.z-pos.z)**2).sqrt()
 
+        dist_vector = ((add_IMBH.x-pos.x)**2+(add_IMBH.y-pos.y)**2+(add_IMBH.z-pos.z)**2).sqrt()
         add_IMBH.velocity = self.velocityList() * (1 | units.AU/units.yr)
         add_IMBH.velocity *= (-1.15 * (add_IMBH.position-pos))/(dist_vector) 
         add_IMBH.key_tracker = add_IMBH.key

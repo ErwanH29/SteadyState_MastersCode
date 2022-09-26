@@ -4,6 +4,17 @@ import numpy as np
 import glob
 import os
 
+def bulk_stat_extractor(file_string):
+    
+    filename = glob.glob(file_string)
+    data = [ ]
+    
+    for file_ in range(len(filename)):
+        with open(filename[file_], 'rb') as input_file:
+            data.append(pkl.load(input_file))
+
+    return data
+
 def ejected_extract(complete, ejected, col_len):
     """
     Extracts positional info on the ejected particle into an array
@@ -43,15 +54,15 @@ def file_manipulator(col_len, data):
     data:    File with the data
     """
 
-    temp_x = np.empty((1, col_len, 1))
-    temp_y = np.empty((1, col_len, 1))
-    temp_z = np.empty((1, col_len, 1))
+    temp_x = np.empty((col_len, 1))
+    temp_y = np.empty((col_len, 1))
+    temp_z = np.empty((col_len, 1))
 
     for i in range(col_len):
         temp_vals = data.iloc[i]
-        temp_x[0][i][0] = temp_vals[0].value_in(units.pc)
-        temp_y[0][i][0] = temp_vals[1].value_in(units.pc)
-        temp_z[0][i][0] = temp_vals[2].value_in(units.pc)
+        temp_x[i][0] = temp_vals[0].value_in(units.pc)
+        temp_y[i][0] = temp_vals[1].value_in(units.pc)
+        temp_z[i][0] = temp_vals[2].value_in(units.pc)
 
     return temp_x, temp_y, temp_z
     

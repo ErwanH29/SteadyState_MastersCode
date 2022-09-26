@@ -20,11 +20,6 @@ def calc_momentum(parti):
     mom_value = (parti.mass * parti.velocity).sum()
     return mom_value
 
-def circ_vel(particle, distance, eta, tend):
-    SMBH = MW_SMBH()
-    particle.velocity = np.sqrt((constants.G*SMBH.mass)/distance**3)*particle.position
-    return particle
-
 def df_timescale(particle, clust_rad, halfmass):
     """
     Dynamical friction timescale to compute the time needed before IMBH enters cluster.
@@ -63,7 +58,10 @@ def file_counter():
 def find_nearest(array, value):
     """
     Function to find the nearest value in an array for a particular element.
-    outputs: The index where the nearest array-value is found.
+
+    Inputs:
+    array:  The array for which has all the elements
+    value:  The value to compare the elements with
     """
 
     array = np.asarray(array)
@@ -104,6 +102,29 @@ def merge_IMBH(parti, particles_in_encounter, tcoll):
     parti.remove_particles(particles_in_encounter)
     return new_particle
 
+def nearest_neighbour(indiv, set):
+    min_dist = [ ]
+    for i in range(len(set)):
+        if indiv == set[i]:
+            pass
+        else:
+            vec_x = indiv.x - set[i].x
+            vec_y = indiv.y - set[i].y
+            vec_z = indiv.z - set[i].z
+            dist = (vec_x**2+vec_y**2+vec_z**2).sqrt()
+            min_dist.append(dist)
+    return min(min_dist)
+
+
 def SMBH_filter(parti):
-    particle = parti[parti.mass < 10**6 | units.MSun]
-    return particle
+    """
+    Function to remove the SMBH from the particle set
+    
+    Inputs:
+    parti:  The particle set
+    """
+    return parti[parti.mass < 10**6 | units.MSun]
+
+def tidal_radius(parti):
+    SMBH = MW_SMBH()
+    return (2/3)*(1/3 * SMBH_filter(parti).mass.sum()/SMBH.mass * (SMBH_filter(parti).center_of_mass()).length()**3)**(1/3)
