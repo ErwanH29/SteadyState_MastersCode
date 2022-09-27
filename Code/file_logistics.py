@@ -86,20 +86,35 @@ def file_reset(directory):
     for f in filelist:
         os.remove(f)
 
-def steadytime_extractor():
-    steadytime_data = bulk_stat_extractor('data/stability_time/*')
+def steadytime_extractor(dir):
+    steadytime_data = bulk_stat_extractor(dir)
     no_Data = len(steadytime_data)
     
+    ini_parti_data = np.empty(no_Data)
     fin_parti_data = np.empty(no_Data)
+    number_mergers = np.empty(no_Data)
+    simulated_end  = np.empty(no_Data)
+    ejected_parti  = np.empty(no_Data)
     stab_time_data = np.empty(no_Data)
     init_dist_data = np.empty(no_Data)
-    init_mass_data = np.empty(no_Data)
+    cluster_radius = np.empty(no_Data)
+    init_mass_data = np.empty((no_Data, 2))
+    inj_mass_data  = np.empty(no_Data)
+    eje_mass_data  = np.empty(no_Data)
 
     for i in range(no_Data):
         sim_data = steadytime_data[i]
+        ini_parti_data[i] = sim_data.iloc[0][0]
         fin_parti_data[i] = sim_data.iloc[0][1]
+        number_mergers[i] = sim_data.iloc[0][2]
+        simulated_end[i]  = sim_data.iloc[0][3].value_in(units.yr)
+        ejected_parti[i]  = sim_data.iloc[0][4]
         stab_time_data[i] = sim_data.iloc[0][5].value_in(units.yr)
         init_dist_data[i] = sim_data.iloc[0][6].value_in(units.parsec)
-        init_mass_data[i] = sim_data.iloc[0][8][0].value_in(units.MSun)
+        cluster_radius[i] = sim_data.iloc[0][7].value_in(units.parsec)
+        init_mass_data[i] = [min(sim_data.iloc[0][8].value_in(units.MSun)), max(sim_data.iloc[0][8].value_in(units.MSun))]
+        inj_mass_data[i]  = sim_data.iloc[0][9].value_in(units.MSun)
+        eje_mass_data[i]  = sim_data.iloc[0][10].value_in(units.MSun)
 
-    return fin_parti_data, stab_time_data, init_dist_data, init_mass_data
+    return ini_parti_data, fin_parti_data, number_mergers, simulated_end, ejected_parti, stab_time_data, \
+           init_dist_data, cluster_radius, init_mass_data, inj_mass_data, eje_mass_data
