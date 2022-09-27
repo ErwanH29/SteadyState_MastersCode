@@ -9,16 +9,16 @@ cluster_mass = 1e7  | units.MSun
 cluster_radi = 1e-3 | units.parsec
 cluster_dist = 1e-1 | units.parsec
 conv = nbody_system.nbody_to_si(cluster_mass, cluster_radi)
-file_reset('data/simulation_stats')
-file_reset('data/stability_time')
+"""file_reset('data/simulation_stats')
+file_reset('data/stability_time')"""
 
 no_sim = 3000
 
-for ipop_ in [4, 5, 6, 7, 8]: #IMBH+SMBH
+for ipop_ in [4, 5, 6, 7, 8, 9, 10]: #IMBH+SMBH
     initial_pop = ipop_
     remove_files = True
 
-    if ipop_ > 5:
+    if ipop_ > 7:
         eta = 1e-5
 
     if (remove_files):

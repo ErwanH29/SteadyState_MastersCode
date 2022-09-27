@@ -1,12 +1,36 @@
 from amuse.lab import *
 from amuse.units import units
+from amuse.ext.orbital_elements import orbital_elements_from_binary
 from parti_initialiser import *
 from evol_func import *
 import numpy as np
-import math
 import fnmatch
 import os
-import matplotlib.pyplot as plt
+
+def bin_global(parti1, parti2):
+    """
+    Function which computes the Kepler elements for a specific binary.
+    
+    Inputs:
+    parti1: The first particle in the binary
+    parti2: The second particle in the binary
+    """
+
+    bin_sys =  Particles()
+    bin_sys.add_particle(parti1)
+    bin_sys.add_particle(parti2)
+
+    kepler_elements = orbital_elements_from_binary(bin_sys, G=constants.G)    
+    mass1 = kepler_elements[0]
+    mass2 = kepler_elements[1]
+    semimajor = kepler_elements[2]
+    eccentric = kepler_elements[3]
+    inclinate = kepler_elements[4]
+    arg_peri  = kepler_elements[5]
+    asc_node  = kepler_elements[6]
+    true_anom = kepler_elements[7]
+
+    return  mass1, mass2, semimajor, eccentric, inclinate, arg_peri, asc_node, true_anom
 
 def calc_momentum(parti):
     """
@@ -27,12 +51,12 @@ def df_timescale(particle, clust_rad, halfmass):
     
     Inputs:
     particle:   Single particle of the initialised set to extract approx. value from.
+    clust_rad:  The initial radius of the cluster particles orbit at
     halfmass:   The half-mass radius of the complete particle set (IMBH)
     dist_const: The radius constant used in TB07
     vel_const:  The vel. constant used in TB07
     mass_const: The mass constant used in TB07
     sigmav:     Assumed to be ~ (circular_velocity)/(sqrt(2)) as per TB07
-    clust_rad:  The initial radius of the cluster particles orbit at
     """
 
     SMBH_parti = MW_SMBH()
@@ -76,7 +100,6 @@ def merge_IMBH(parti, particles_in_encounter, tcoll):
     parti:                    The complete particle set being simulated
     particles_in_encounter:   The particles in the collision
     tcoll:                    The time-stamp for which the particles collide at
-    outputs:                  Removal of two colliding particles, while addition of the merging product
     """
 
     com_pos = particles_in_encounter.center_of_mass()
@@ -103,6 +126,14 @@ def merge_IMBH(parti, particles_in_encounter, tcoll):
     return new_particle
 
 def nearest_neighbour(indiv, set):
+    """
+    Function to find the nearest particle to some individual.
+    
+    Inputs:
+    indiv:   The individual particle
+    set:     The complete particle set
+    """
+
     min_dist = [ ]
     for i in range(len(set)):
         if indiv == set[i]:
@@ -125,6 +156,28 @@ def SMBH_filter(parti):
     """
     return parti[parti.mass < 10**6 | units.MSun]
 
-def tidal_radius(parti):
+
+def tidal_radius1(parti):
     SMBH = MW_SMBH()
     return (2/3)*(1/3 * SMBH_filter(parti).mass.sum()/SMBH.mass * (SMBH_filter(parti).center_of_mass()).length()**3)**(1/3)
+
+def tidal_radius(parti):
+    """
+    Function to outline the tidal radius. Uses equation 5.8 and 5.10 of Spitzer 1969.
+    
+    Inputs:
+    parti:  The complete particle set
+    """
+
+    SMBH = MW_SMBH()
+
+    new_parti = Particle()
+    new_parti.mass = SMBH_filter(parti).mass.sum()
+    new_parti.position = SMBH_filter(parti).center_of_mass()
+    new_parti.velocity = SMBH_filter(parti).center_of_mass_velocity()
+
+    m1, m2, semimajor, ecc, inc, argp, ascn, tanom = bin_global(parti[0], new_parti)
+    perigal = semimajor*(1-ecc)
+    xe = ((3+ecc)**-1 * (new_parti.mass)/SMBH.mass * (perigal)**3)**(1/3)
+
+    return (2/3)*((3+ecc)**-1 * (new_parti.mass)/SMBH.mass * (perigal)**3)**(1/3)

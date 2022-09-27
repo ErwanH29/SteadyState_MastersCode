@@ -85,3 +85,21 @@ def file_reset(directory):
     filelist = glob.glob(os.path.join(directory, "*"))
     for f in filelist:
         os.remove(f)
+
+def steadytime_extractor():
+    steadytime_data = bulk_stat_extractor('data/stability_time/*')
+    no_Data = len(steadytime_data)
+    
+    fin_parti_data = np.empty(no_Data)
+    stab_time_data = np.empty(no_Data)
+    init_dist_data = np.empty(no_Data)
+    init_mass_data = np.empty(no_Data)
+
+    for i in range(no_Data):
+        sim_data = steadytime_data[i]
+        fin_parti_data[i] = sim_data.iloc[0][1]
+        stab_time_data[i] = sim_data.iloc[0][5].value_in(units.yr)
+        init_dist_data[i] = sim_data.iloc[0][6].value_in(units.parsec)
+        init_mass_data[i] = sim_data.iloc[0][8][0].value_in(units.MSun)
+
+    return fin_parti_data, stab_time_data, init_dist_data, init_mass_data

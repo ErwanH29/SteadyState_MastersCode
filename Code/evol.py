@@ -246,9 +246,9 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
         com_tracker = com_tracker.append(df_com_tracker, ignore_index=True)
 
         df_LG_tracker = pd.Series({'Time': time.in_(units.kyr),
-                                   'LG25': LagrangianRadii(SMBH_filter(code.particles))[5].in_(units.parsec),
-                                   'LG50': LagrangianRadii(SMBH_filter(code.particles))[6].in_(units.parsec),
-                                   'LG75': LagrangianRadii(SMBH_filter(code.particles))[7].in_(units.parsec),
+                                   'LG25': LagrangianRadii(code.particles[1:])[5].in_(units.parsec),
+                                   'LG50': LagrangianRadii(code.particles[1:])[6].in_(units.parsec),
+                                   'LG75': LagrangianRadii(code.particles[1:])[7].in_(units.parsec),
                                    'Tidal Radius': rtide.in_(units.parsec)})
         LG_array = LG_array.append(df_LG_tracker , ignore_index=True)
 

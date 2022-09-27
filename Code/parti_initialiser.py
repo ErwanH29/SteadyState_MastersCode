@@ -144,11 +144,11 @@ class IMBH_init(object):
         return constant
 
     def plummer_distr(self, converter):
-        self.Plummer_N = 100
+        self.Plummer_N = 20
         return new_plummer_model(self.Plummer_N, radius_cutoff = 20, convert_nbody = converter)
 
     def king_distr(self, converter):
-        N = 100
+        N = 20
         beta = -9
         return new_king_model(N, W0 = beta, convert_nbody = converter)
 
@@ -168,7 +168,7 @@ class IMBH_init(object):
         r = [-1,1]
 
         for i in range(self.N):
-            IMBH[i].position = 2*self.plummer_distr(converter)[randint(0,self.N)].position
+            IMBH[i].position = 3*self.plummer_distr(converter)[randint(0,self.N)].position
             IMBH[i].velocity = self.velocityList() * (1 | units.AU/units.yr)
 
         for particle in IMBH:
