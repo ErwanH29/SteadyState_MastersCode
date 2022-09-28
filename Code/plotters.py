@@ -35,6 +35,7 @@ def animator(init_dist):
     com_tracker, col_len = file_opener('data/center_of_mass/*')
     IMBH_tracker, col_len = file_opener('data/positions_IMBH/*')
     energy_tracker, col_len = file_opener('data/energy/*')
+    com_x, com_y, com_z = file_manipulator(col_len, com_tracker)
 
     time = np.empty((col_len, 1))
     dE_array = np.empty((col_len, 1))
@@ -42,7 +43,7 @@ def animator(init_dist):
     for i in range(col_len):
         vals = energy_tracker.iloc[i]
         time[i][0] = vals[0].value_in(units.yr)
-        dE_array[i][0]  = vals[2]
+        dE_array[i][0] = vals[2]
 
     col_len = len(IMBH_tracker.iloc[0])-2
     line_x = np.empty((len(IMBH_tracker), col_len, 1))
@@ -61,27 +62,22 @@ def animator(init_dist):
                 line_y[i][j][0] = coords[1].value_in(units.pc)
                 line_z[i][j][0] = coords[2].value_in(units.pc)
 
-    line_x[:][abs(line_x[:]) < 10**-5] = np.NaN
-    line_y[:][abs(line_y[:]) < 10**-5] = np.NaN
-    line_z[:][abs(line_z[:]) < 10**-5] = np.NaN
+    temp_coord_array = [line_x, line_y, line_z]
+    for arr_ in temp_coord_array:
+        arr_[:][abs(arr_[:]) < 10**-5] = np.NaN
+        arr_[:][abs(arr_[:]) > 1e8] = np.NaN
 
-    line_x[:][abs(line_x[:]) > 1e8] = np.NaN
-    line_y[:][abs(line_y[:]) > 1e8] = np.NaN
-    line_z[:][abs(line_z[:]) > 1e8] = np.NaN 
-
-    com_x, com_y, com_z = file_manipulator(col_len, com_tracker)
-
-    LG25_array  = np.empty((col_len, 1))
-    LG50_array  = np.empty((col_len, 1))
-    LG75_array  = np.empty((col_len, 1))
-    rtide_array = np.empty((col_len, 1))
+    LG25_array = np.empty((col_len, 1))
+    LG50_array = np.empty((col_len, 1))
+    LG75_array = np.empty((col_len, 1))
+    rtid_array = np.empty((col_len, 1))
 
     for i in range(col_len):
         vals = Lag_tracker.iloc[i]
-        LG25_array[i][0]  = vals[1].value_in(units.AU)
-        LG50_array[i][0]  = vals[2].value_in(units.AU)
-        LG75_array[i][0]  = vals[3].value_in(units.AU)
-        rtide_array[i][0] = vals[4].value_in(units.AU)
+        LG25_array[i][0] = vals[1].value_in(units.AU)
+        LG50_array[i][0] = vals[2].value_in(units.AU)
+        LG75_array[i][0] = vals[3].value_in(units.AU)
+        rtid_array[i][0] = vals[4].value_in(units.AU)
 
     totsys_lim = init_dist.value_in(units.pc)
 
@@ -119,12 +115,10 @@ def animator(init_dist):
                           206265*(line_y[i][skip_zeroth]-com_y[skip_zeroth]), 
                           206265*(line_z[i][skip_zeroth]-com_z[skip_zeroth]),
                           c = colours[i], edgecolors = 'black', s = 40)
-        ax3D1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-        ax3D1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-        ax3D1.zaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-        ax3D2.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.0f'))
-        ax3D2.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.0f'))
-        ax3D2.zaxis.set_major_formatter(mtick.FormatStrFormatter('%0.0f'))
+        for ax_ in [ax3D1, ax3D2]:
+            ax_.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+            ax_.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+            ax_.zaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
             
         ax3D1.scatter(0,0, color = 'black', s = 100 )
         ax3D1.set_xlabel(r'$x$-Coordinate [pc]')
@@ -156,8 +150,8 @@ def animator(init_dist):
         
         for i in range(len(IMBH_tracker)):
             ax1.scatter(line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_x[max(0,skip_zeroth-20):skip_zeroth+1],
-                     line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_y[max(0,skip_zeroth-20):skip_zeroth+1],
-                     c = colours[i], lw = 2, alpha = 0.7, s = 1)
+                        line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_y[max(0,skip_zeroth-20):skip_zeroth+1],
+                        c = colours[i], lw = 2, alpha = 0.7, s = 1)
             ax1.scatter(line_x[i][skip_zeroth]-com_x[skip_zeroth], line_y[i][skip_zeroth]-com_y[skip_zeroth],
                         c = colours[i], edgecolors = 'black', s = 40)
 
@@ -165,7 +159,7 @@ def animator(init_dist):
                         s =1, c = colours[i], lw = 2)
             ax3.scatter(line_x[i][skip_zeroth], line_y[i][skip_zeroth], c = colours[i], edgecolors = 'black', s = 50)
 
-            ax4.plot(time[3:skip_zeroth+1], 3*(rtide_array[3:skip_zeroth+1]), color = 'black', linestyle = ':', label = r'$3r_{tidal}$')
+            ax4.plot(time[3:skip_zeroth+1], 3*(rtid_array[3:skip_zeroth+1]), color = 'black', linestyle = ':', label = r'$3r_{tidal}$')
             ax4.plot(time[3:skip_zeroth+1], (LG25_array[3:skip_zeroth+1]), color = 'red',  label = r'$r_{25,L}$')
             ax4.plot(time[3:skip_zeroth+1], (LG50_array[3:skip_zeroth+1]), color = 'black', label = r'$r_{50,L}$')
             ax4.plot(time[3:skip_zeroth+1], (LG75_array[3:skip_zeroth+1]), color = 'blue',   label = r'$r_{75,L}$')
@@ -183,6 +177,10 @@ def animator(init_dist):
         ax1.set_title(str("{:.0f}".format(time[skip_zeroth][0])+" yr"), loc = 'left')   
         ax1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
         ax1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
+        ax1.set_xlim(min(line_x[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_x[max(0,skip_zeroth-80):skip_zeroth+1]),
+                     max(line_x[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_x[max(0,skip_zeroth-80):skip_zeroth+1]))
+        ax1.set_xlim(min(line_y[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_y[max(0,skip_zeroth-80):skip_zeroth+1]),
+                     max(line_y[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_y[max(0,skip_zeroth-80):skip_zeroth+1]))
 
         ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
         ax2.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
@@ -293,7 +291,6 @@ def spatial_plotter(init_dist):
     ejec_parti, col_len   = file_opener('data/stability_time/*')
     com_tracker, col_len  = file_opener('data/center_of_mass/*')
     IMBH_tracker, col_len = file_opener('data/positions_IMBH/*')
-    tdyn_tracker, col_len = file_opener('data/dynamical_time/*')
     Lag_tracker, col_len  = file_opener('data/lagrangians/*')
     com_x, com_y, com_z   = file_manipulator(col_len, com_tracker)
 
@@ -320,18 +317,16 @@ def spatial_plotter(init_dist):
     for i in range(len(IMBH_tracker)-1):
         tIMBH_tracker = IMBH_tracker.iloc[i+1]
         tIMBH_tracker = tIMBH_tracker.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
-        tDyntime_trk  = tdyn_tracker.iloc[i+1]
         for j in range(col_len):
             coords = tIMBH_tracker.iloc[j+1][1]
+            tdynval = tIMBH_tracker.iloc[j+1][4]
             if len(coords) == 1:
                 pass
             else:
                 line_x[i][j][0] = coords[0].value_in(units.pc)
                 line_y[i][j][0] = coords[1].value_in(units.pc)
                 line_z[i][j][0] = coords[2].value_in(units.pc)
-
-                tdynval = tDyntime_trk.iloc[j+1][0]
-                tdyn[i][j][0] = tdynval[0].value_in(units.yr)
+                tdyn[i][j][0] = tdynval.value_in(units.yr)
 
     ejected_x, ejected_y, ejected_z = ejected_extract(IMBH_tracker, ejec_parti, col_len)
 
@@ -341,7 +336,7 @@ def spatial_plotter(init_dist):
 
     line_x[:][abs(line_x[:]) > 1e8] = np.NaN
     line_y[:][abs(line_y[:]) > 1e8] = np.NaN
-    line_z[:][abs(line_z[:]) > 1e8] = np.NaN
+    line_z[:][abs(line_z[:]) > 1e8] = np.NaN 
 
     tdyn[:][tdyn[:] < 10**-30] = np.NaN
     tdyn[:][tdyn[:] > 10**10] = np.NaN
@@ -352,7 +347,7 @@ def spatial_plotter(init_dist):
     ax3 = fig.add_subplot(223)
     ax4 = fig.add_subplot(224)
     
-    ax1.set_title('Center of Mass TO FIX')
+    ax1.set_title('Cluster Center of Mass')
     ax2.set_title('Ejected IMBH Focus')
 
     for ax_ in [ax1, ax2]:
@@ -360,25 +355,30 @@ def spatial_plotter(init_dist):
         ax_.set_ylabel(r'$y$-Coordinate [AU]')
     ax3.set_xlabel(r'$x$-Coordinate [pc]')
     ax3.set_ylabel(r'$y$-Coordinate [pc]')
+    ax4.set_xlabel(r'Time [yr]')
+    ax4.set_ylabel(r'Lagrangian Radius [AU]')
 
     for ax_ in [ax1, ax2, ax3, ax4]:
         ax_.yaxis.set_ticks_position('both')
         ax_.xaxis.set_ticks_position('both')
         ax_.tick_params(axis="y",direction="in")
-        ax_.tick_params(axis="x",direction="in")
-    
-    ax2.set_xlim(-3e2, 3e2)
-    ax2.set_ylim(-3e2, 3e2)
+        ax_.tick_params(axis="x",direction="in")       
 
-    ax3.set_xlim(-1.15*init_dist.value_in(units.pc), 1.15*init_dist.value_in(units.pc))
-    ax3.set_ylim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc))        
-
-    ax4.set_xlabel(r'Time [yr]')
-    ax4.set_ylabel(r'Lagrangian Radius [AU]')
+    maxx = [ ]
+    minx = [ ]
+    miny = [ ]
+    maxy = [ ]
 
     for i in range(len(IMBH_tracker)):
-        ax1.scatter(206265*(line_x[i][1:]-com_x[1:]), 206265*(line_y[i][1:]-com_y[1:]), 
-                    s = 5, c = colours[i], zorder = 1)
+        xval = 206265*(line_x[i][1:]-com_x[1:])
+        yval = 206265*(line_y[i][1:]-com_y[1:])
+        
+        minx.append(1.1*min(xval))
+        maxx.append(1.1*max(xval))
+        miny.append(1.1*min(yval))
+        maxy.append(1.1*max(yval))
+
+        ax1.scatter(xval, yval, s = 5, c = colours[i], zorder = 1)
         ax1.scatter(206265*(line_x[i][1]-com_x[1]), 206265*(line_y[i][1]-com_y[1]), 
                     alpha = 0.7, c = colours[i], edgecolors = 'black', s = 50, zorder = 2)
         ax1.scatter(206265*(line_x[i][-1]-com_x[-1]), 206265*(line_y[i][-1]-com_y[-1]), 
@@ -398,6 +398,14 @@ def spatial_plotter(init_dist):
     ax4.plot(time[0][3:], LG50_array[0][3:],  color = 'black', label = r'$r_{50,L}$')
     ax4.plot(time[0][3:], LG75_array[0][3:],  color = 'blue',  label = r'$r_{75,L}$')
     ax4.legend()
+
+    ax1.set_xlim(min(minx), max(maxx))
+    ax1.set_ylim(min(miny), max(maxy))
+    ax2.set_xlim(-1000,1000)
+    ax2.set_ylim(-1000,1000)
+    ax3.set_xlim(-1.15*init_dist.value_in(units.pc), 1.15*init_dist.value_in(units.pc))
+    ax3.set_ylim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc)) 
+
     ax1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.0f'))
     plt.savefig('figures/spatial_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
@@ -423,7 +431,7 @@ def stab_plotter_logistics(ax, pop, xints):
     ax.xaxis.labelpad = 20
     plt.xticks(xints)
     plt.xlim(2.5,max(pop)+1)
-    plt.ylim(0, 2000)
+    plt.ylim(0, 1500)
     plt.ylabel(r'Ejection Time [yr]')
     plt.xlabel(r'Number of IMBH [$N$]')
     plt.title(r'Black Hole Population vs. Stability Time')
@@ -444,9 +452,8 @@ def steadytime_distdep_plotter(dir):
     in_dist = np.unique(init_dist_data)
     colourcycler = cycle(colour_picker())
 
-    for mass_ in in_mass: #For every initial mass, we will plot a separate graph showing different coloured data points
-                          #depending on their distance to the central SMBH
-        fig, ax = plt.subplots()
+    for mass_ in in_mass:           #For every initial mass, we will plot a separate graph showing different coloured data points
+        fig, ax = plt.subplots()    #depending on their distance to the central SMBH
         tot_pop = [ ]
         iter = -1
 
@@ -461,33 +468,36 @@ def steadytime_distdep_plotter(dir):
             colours = next(colourcycler)
             N_parti_avg = [ ]
             
-            fin_parti = fin_parti[dist_arrays]                             #the data relative to their distances.
+            fin_parti = fin_parti[dist_arrays]                             #The data relative to their distances.
             stab_time = stab_time[dist_arrays]
 
             pop_size, pop_samples = np.unique(fin_parti, return_counts=True)  #Count the number of unique final populations
-            pop_id = np.argwhere(pop_size > 2)                                #Only look at samples with N>2
-            pop_size = pop_size[pop_id]
+            if len(pop_size) == 0:
+                pass
+            else:
+                pop_id = np.argwhere(pop_size > 2)                                #Only look at samples with N>2
+                pop_size = pop_size[pop_id]
 
-            pop_samples = pop_samples[pop_id]
-            tot_pop.append(max(pop_size))
+                pop_samples = pop_samples[pop_id]
+                tot_pop.append(max(pop_size))
 
-            for pop_, samp_ in zip(pop_size, pop_samples):
-                N_parti = np.argwhere(fin_parti == pop_)                      #For every N, we will gather their indices where they are in the pickle file
-                N_parti_avg.append(np.mean(stab_time[N_parti]))               #This enables us to compute their average between the whole data set                     
+                for pop_, samp_ in zip(pop_size, pop_samples):
+                    N_parti = np.argwhere(fin_parti == pop_)                      #For every N, we will gather their indices where they are in the pickle file
+                    N_parti_avg.append(np.mean(stab_time[N_parti]))               #This enables us to compute their average between the whole data set                     
 
-            ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black', label = r'$r_{SMBH} =$'+str(dist_)+' pc')
-            for j, xpos in enumerate(pop_size):
-                if iter == 0:
-                    ax.text(xpos, -180, 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
-                else:
-                    ax.text(xpos, -180*(1+0.25*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
-        xints = [i for i in range(1+int(max(tot_pop)))]
+                ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black', label = r'$r_{SMBH} =$'+str(dist_)+' pc')
+                for j, xpos in enumerate(pop_size):
+                    if iter == 0:
+                        ax.text(xpos, -160, 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                    else:
+                        ax.text(xpos, -160*(1+0.25*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
+            xints = [i for i in range(1+int(max(tot_pop)))]
 
-        order = int('{:.0f}'.format(np.log10(mass_)))
-        ax.text(2.7, 1850, r'$m_{i} \in$ '+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r'$M_\odot$')
-        stab_plotter_logistics(ax, tot_pop, xints)
-        plt.legend()
-        plt.savefig('figures/stab_time_InitMass'+str(mass_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
+            order = int('{:.0f}'.format(np.log10(mass_)))
+            ax.text(2.7, 1450, r'$m_{i} \in$ '+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r'$M_\odot$')
+            stab_plotter_logistics(ax, tot_pop, xints)
+            plt.legend()
+            plt.savefig('figures/stab_time_equal_mass_'+str(mass_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
 
     for mass_ in in_mass:      #For every initial mass and distance we will plot a separate graph. This time it includes std spread
         for dist_ in in_dist:  #For three different distances, every mass has 3 unique plots with errors.
@@ -508,28 +518,32 @@ def steadytime_distdep_plotter(dir):
             stab_time = stab_time[dist_arrays]
 
             pop_size, pop_samples = np.unique(fin_parti, return_counts=True)  #Count the number of unique final populations
-            pop_id = np.argwhere(pop_size > 2)
-            pop_size = pop_size[pop_id]
-            pop_samples = pop_samples[pop_id]
-
-            for pop_, samp_ in zip(pop_size, pop_samples):                    #For the unique populations, compute their average stab time
-                N_parti = np.argwhere(fin_parti == pop_)                      #and average spread in data.
-                N_parti_avg.append(np.mean(stab_time[N_parti]))
-                std.append(np.std(stab_time[N_parti]))
-
-            ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
-            ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
-            ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
-            ax.scatter(pop_size, N_parti_avg, color = 'black')
-
-            for j, xpos in enumerate(pop_size):
-                ax.text(xpos, -180, 'Simulations\n'+'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
             
-            order = int('{:.0f}'.format(np.log10(mass_)))
-            xints = [i for i in range(1+int(max(tot_pop)))]
-            ax.text(2.7, 1750, r'$m_{IMBH}=$'+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r' $M_\odot$'+'\n'+r'$r_{SMBH}=$'+str(dist_)+' pc')
-            stab_plotter_logistics(ax, tot_pop, xints)
-            plt.savefig('figures/stab_time_InitMass'+str(mass_)+'_err_dist'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
+            if len(pop_size) == 0:
+                pass
+            else:
+                pop_id = np.argwhere(pop_size > 2)
+                pop_size = pop_size[pop_id]
+                pop_samples = pop_samples[pop_id]
+
+                for pop_, samp_ in zip(pop_size, pop_samples):                    #For the unique populations, compute their average stab time
+                    N_parti = np.argwhere(fin_parti == pop_)                      #and average spread in data.
+                    N_parti_avg.append(np.mean(stab_time[N_parti]))
+                    std.append(np.std(stab_time[N_parti]))
+
+                ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
+                ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
+                ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
+                ax.scatter(pop_size, N_parti_avg, color = 'black')
+
+                for j, xpos in enumerate(pop_size):
+                    ax.text(xpos, -160, 'Simulations\n'+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
+                
+                order = int('{:.0f}'.format(np.log10(mass_)))
+                xints = [i for i in range(1+int(max(tot_pop)))]
+                ax.text(2.7, 1350, r'$m_{IMBH}=$'+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r' $M_\odot$'+'\n'+r'$r_{SMBH}=$'+str(dist_)+' pc')
+                stab_plotter_logistics(ax, tot_pop, xints)
+                plt.savefig('figures/stab_time_equal_mass_'+str(mass_)+'_err_dist_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
 
 def steadytime_massdep_plotter(dir):
 
@@ -561,30 +575,34 @@ def steadytime_massdep_plotter(dir):
             fin_parti = fin_parti[mass_arrays]
             stab_time = stab_time[mass_arrays]
             pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
-            pop_id = np.argwhere(pop_size > 2)
-            pop_size = pop_size[pop_id]
-            pop_samples = pop_samples[pop_id]
-            tot_pop.append(max(pop_size))
 
-            for pop_, samp_ in zip(pop_size, pop_samples):
-                N_parti = np.argwhere(fin_parti == pop_)
-                N_parti_avg.append(np.mean(stab_time[N_parti]))
-                std.append(np.std(stab_time[N_parti]))
+            if len(pop_size) == 0:
+                pass
+            else:
+                pop_id = np.argwhere(pop_size > 2)
+                pop_size = pop_size[pop_id]
+                pop_samples = pop_samples[pop_id]
+                tot_pop.append(max(pop_size))
 
-            ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black',
-                       label = r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
+                for pop_, samp_ in zip(pop_size, pop_samples):
+                    N_parti = np.argwhere(fin_parti == pop_)
+                    N_parti_avg.append(np.mean(stab_time[N_parti]))
+                    std.append(np.std(stab_time[N_parti]))
 
-            for j, xpos in enumerate(pop_size):
-                if iter == 0:
-                    ax.text(xpos, -180, 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
-                else:
-                    ax.text(xpos, -180*(1+0.25*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
-        xints = [i for i in range(1+int(max(tot_pop)))]
+                ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black',
+                        label = r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
 
-        ax.text(2.7, 1850, r'$r_{SMBH}=$'+str(dist_)+' pc')
-        stab_plotter_logistics(ax, tot_pop, xints)
-        plt.legend()
-        plt.savefig('figures/stab_time_equal_dist_mean_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
+                for j, xpos in enumerate(pop_size):
+                    if iter == 0:
+                        ax.text(xpos, -160, 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                    else:
+                        ax.text(xpos, -160*(1+0.25*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
+            xints = [i for i in range(1+int(max(tot_pop)))]
+
+            ax.text(2.7, 1450, r'$r_{SMBH}=$'+str(dist_)+' pc')
+            stab_plotter_logistics(ax, tot_pop, xints)
+            plt.legend()
+            plt.savefig('figures/stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
 
     for dist_ in in_dist:
         for mass_ in in_mass: 
@@ -607,30 +625,34 @@ def steadytime_massdep_plotter(dir):
             pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
             pop_id = np.argwhere(pop_size > 2)
             pop_size = pop_size[pop_id]
-            pop_samples = pop_samples[pop_id]
-            tot_pop.append(max(pop_size))
 
-            for pop_, samp_ in zip(pop_size, pop_samples):
-                N_parti = np.argwhere(fin_parti == pop_)
-                N_parti_avg.append(np.mean(stab_time[N_parti]))
-                std.append(np.std(stab_time[N_parti]))
+            if len(pop_size) == 0:
+                pass
+            else:
+                pop_samples = pop_samples[pop_id]
+                tot_pop.append(max(pop_size))
 
-            ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
-            ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
-            ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
-            ax.scatter(pop_size, N_parti_avg, color = 'black')
+                for pop_, samp_ in zip(pop_size, pop_samples):
+                    N_parti = np.argwhere(fin_parti == pop_)
+                    N_parti_avg.append(np.mean(stab_time[N_parti]))
+                    std.append(np.std(stab_time[N_parti]))
 
-            for j, xpos in enumerate(pop_size):
-                ax.text(xpos, -180, 'Simulations\n'+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
-            xints = [i for i in range(1+int(max(tot_pop)))]
+                ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
+                ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
+                ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
+                ax.scatter(pop_size, N_parti_avg, color = 'black')
 
-            ax.text(2.7, 1750, r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
-            stab_plotter_logistics(ax, tot_pop, xints)
-            plt.savefig('figures/stab_time_equal_dist_std_'+str(dist_)+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
+                for j, xpos in enumerate(pop_size):
+                    ax.text(xpos, -160, 'Simulations\n'+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                xints = [i for i in range(1+int(max(tot_pop)))]
+
+                ax.text(2.7, 1350, r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
+                stab_plotter_logistics(ax, tot_pop, xints)
+                plt.savefig('figures/stab_time_equal_dist_'+str(dist_)+'_std_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
 
 
-spatial_plotter(1.25*0.1|units.parsec)
-energy_plotter()
+#spatial_plotter(1.25 |units.parsec)
+#energy_plotter()
+#animator(1.25 | units.parsec)
 steadytime_massdep_plotter('data/stability_time/*')
 steadytime_distdep_plotter('data/stability_time/*')
-#animator(1.25*0.1|units.parsec)"""

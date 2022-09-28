@@ -2,6 +2,7 @@ from cmath import nan
 from amuse.lab import *
 from amuse.units import units
 from parti_initialiser import *
+from data_init import *
 from physics_func import *
 from evol_func import *
 from amuse.ext.LagrangianRadii import LagrangianRadii
@@ -29,7 +30,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
 
     comp_start = cpu_time.time()
 
-    initial_set = parti
+    initial_set = parti.copy()
     code = Hermite(converter, number_of_workers = 3)
     code.particles.add_particles(parti)
     code.commit_particles()
@@ -51,70 +52,29 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
     init_IMBH_pop = len(parti)
     app_time = 0 | units.s
 
-    IMBH_array = pd.DataFrame()
-    df_IMBH    = pd.DataFrame()
-    for i in range(init_IMBH_pop):
-        parti_KE = 0.5*parti[i].velocity.length()**2
-        temp_PE = []
-        temp_PE = indiv_PE_BH(parti[i], parti, temp_PE)
-        parti_PE = max(temp_PE)
-        df_IMBH_vals = pd.Series({'key_tracker': parti[i].key_tracker, 
-                                  '{}'.format(time): [parti[i].mass, parti[i].position, parti_KE, parti_PE]})
-        df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
-    IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
-
-    com_tracker = pd.DataFrame()
-    df_com_tracker = pd.Series({'x': SMBH_filter(code.particles).center_of_mass()[0].in_(units.parsec),
-                                'y': SMBH_filter(code.particles).center_of_mass()[1].in_(units.parsec),
-                                'z': SMBH_filter(code.particles).center_of_mass()[2].in_(units.parsec)})
-    com_tracker = com_tracker.append(df_com_tracker, ignore_index=True)
-
-    LG_array = pd.DataFrame()
-    df_LG_tracker = pd.Series({'Time': time.in_(units.kyr),
-                               'LG25': LagrangianRadii(code.particles[1:])[5].in_(units.parsec),
-                               'LG50': LagrangianRadii(code.particles[1:])[6].in_(units.parsec),
-                               'LG75': LagrangianRadii(code.particles[1:])[7].in_(units.parsec),
-                               'Tidal Radius': tidal_radius(parti).in_(units.parsec)})
-    LG_array = LG_array.append(df_LG_tracker , ignore_index=True)
-
-    SMBH = MW_SMBH()
     parti_KE = code.kinetic_energy
     parti_BE = code.potential_energy
     E0p = parti_KE + parti_BE 
     E0 = E0p
 
-    energy_tracker = pd.DataFrame()
-    df_energy_tracker = pd.Series({'Time': time.in_(units.kyr), 'Et': E0 , 'dE': 0, 'dEs': 0, 'Appearance': app_time, 
-                                   'Collision Time': 0 | units.s, 'Collision Mass': 0 | units.MSun })
-    energy_tracker = energy_tracker.append(df_energy_tracker, ignore_index=True)
-
-    parti_energy_tracker = pd.DataFrame()
-    df_parti_energy_tracker = pd.Series({'Time': time.in_(units.kyr), "BE": parti_BE.in_(units.J), 
-                                         "KE": parti_KE.in_(units.J), "Total E": E0p})
-    parti_energy_tracker = parti_energy_tracker.append(df_parti_energy_tracker, ignore_index=True)
-
-    tdyn_tracker = pd.DataFrame()
-    df_tdyn = pd.DataFrame()
-    tdyn_val = tdyn_calc(parti) | units.s
-    for i in range(init_IMBH_pop):
-        if i == 0:
-            df_tdyn_vals = pd.Series({'key_tracker': parti[i].key_tracker, '{}'.format(time): [0 | units.s]})
-            df_tdyn = df_tdyn.append(df_tdyn_vals, ignore_index = True)
-        else:
-            df_tdyn_vals = pd.Series({'key_tracker': parti[i].key_tracker, '{}'.format(time): [tdyn_val[i]]})
-            df_tdyn = df_tdyn.append(df_tdyn_vals, ignore_index = True)
-    tdyn_tracker = tdyn_tracker.append(df_tdyn, ignore_index = True)
-    com_tracker = com_tracker.append(df_com_tracker, ignore_index=True)
-
-    IMBHapp = df_timescale(parti[1], cluster_distance, LagrangianRadii(code.particles[1:])[6].in_(units.parsec))
-    decision_scale = (eta*tend)/IMBHapp #
-    print('\nNew particle every: '+str('{:.6}'.format(IMBHapp.value_in(units.yr))+' years'))
-    print('One timestep:       '+str('{:.4}'.format(eta*tend.value_in(units.yr))+' years'))
+    data_trackers = data_initialiser()
+    IMBH_tracker = data_trackers.IMBH_tracker(parti, time, init_IMBH_pop)
+    com_tracker = data_trackers.com_tracker(code)
+    LG_tracker = data_trackers.LG_tracker(cluster_radi, 10**3 | units.MSun, 10**8, parti, time, code)
+    energy_tracker = data_trackers.energy_tracker(E0p, time, app_time)
+    parti_energy_tracker = data_trackers.parti_energy_tracker(parti_BE, parti_KE, E0p, time)
+    coll_tracker = data_trackers.coll_tracker()
+    eventstab_tracker = data_trackers.event_tracker(parti)
 
     IMBH_adder = IMBH_init()
     N_parti = init_IMBH_pop
     N_parti_init = N_parti
     extra_note = ''
+
+    IMBHapp = df_timescale(parti[1], cluster_distance, LagrangianRadii(code.particles[1:])[6].in_(units.parsec))
+    decision_scale = (eta*tend)/IMBHapp #
+    print('\nNew particle every: '+str('{:.6}'.format(IMBHapp.value_in(units.yr))+' years'))
+    print('One timestep:       '+str('{:.4}'.format(eta*tend.value_in(units.yr))+' years'))
 
     ejected = False
     add_iter = 0
@@ -176,9 +136,17 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
                     tcoll = time.in_(units.s) - eta*tend
                     ejected_key_track = parti[-1].key_tracker
                     ejected_mass = parti[-1].mass 
+                    df_coll_tracker = pd.Series({'Collision Time': tcoll.in_(units.kyr), 
+                                                 'Collided Particles': [enc_particles[0].key_tracker, enc_particles[1].key_tracker], 
+                                                 'Initial Mass': [enc_particles[0].mass, enc_particles[1].mass] | units.MSun, 
+                                                 'Emergent Particle': ejected_key_track, 'Collision Mass': merger_mass | units.MSun})
+                    coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True)
+
+                    df_eventstab_tracker = pd.Series({'Initial No. Particles': len(parti)-1, 'Merger Event': 1, 
+                                                      'Collision Time': tcoll.in_(units.kyr), 'Injected Event': 0, 'Injected Time': 0 |units.s})
+                    eventstab_tracker = eventstab_tracker.append(df_eventstab_tracker, ignore_index = True)
 
             df_IMBH = pd.DataFrame()
-            df_tdyn = pd.DataFrame()
             if IMBH_adder.decision(time, decision_scale)==True:
                 print('.........New particle added.........')
                 add_iter = iter
@@ -194,16 +162,20 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
                 code.particles.add_particles(add_IMBH)
                 temp_E2 = code.kinetic_energy + code.potential_energy
 
+                tinj = time.in_(units.s) - eta*tend
                 df_IMBH_vals = pd.Series({'key_tracker': add_IMBH.key_tracker[0]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
-                df_tdyn_vals = pd.Series({'key_tracker': add_IMBH.key_tracker})
-                df_tdyn = df_tdyn.append(df_tdyn_vals, ignore_index = True)
+
                 E0 += (temp_E2-temp_E1)  
                 eta = eta/10
                 decision_scale = (eta*tend)/IMBHapp 
 
-            tdyn_tracker = tdyn_tracker.append(df_tdyn, ignore_index = True)
-            IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
+                df_eventstab_tracker = pd.Series({'Initial No. Particles': len(parti)-1, 'Merger Event': 0, 
+                                                  'Collision Time': 0 | units.s, 'Injected Event': 1, 
+                                                  'Injected Time': tinj.in_(units.kyr)})
+                eventstab_tracker = eventstab_tracker.append(df_eventstab_tracker, ignore_index = True)
+
+            IMBH_tracker = IMBH_tracker.append(df_IMBH, ignore_index=True)
 
         channel_IMBH["from_gravity"].copy()     
         parti.move_to_center()
@@ -212,33 +184,29 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
         tdyn_val = tdyn_calc(parti) | units.yr
 
         df_IMBH = pd.DataFrame()
-        df_tdyn = pd.DataFrame()
         for i in range(N_parti):
             for j in range(len(parti)):
-                if IMBH_array.iloc[[i][0]][0] == parti[j].key_tracker:
-                    parti_KE = 0.5*parti[j].velocity.length()**2
+                if IMBH_tracker.iloc[[i][0]][0] == parti[j].key_tracker:
+                    parti_KE = 0.5*parti[j].mass*parti[j].velocity.length()**2
                     temp_PE = []
                     temp_PE = indiv_PE_BH(parti[j], parti, temp_PE)
                     parti_PE = max(temp_PE)
-                    df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].mass, parti[j].position, parti_KE, parti_PE]})
-                    df_tdyn_vals = pd.Series({'key_tracker': parti[j].key_tracker, '{}'.format(time): [tdyn_val[j]]})
+                    df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].mass, parti[j].position, 
+                                              parti_KE, parti_PE, tdyn_val[j]]})
                     break
                 else:
                     df_IMBH_vals = pd.Series({'{}'.format(time): [np.NaN | units.MSun,
                                                                  [np.NaN | units.parsec, 
                                                                   np.NaN | units.parsec, 
-                                                                  np.NaN | units.parsec]]})
-                    df_tdyn_vals = pd.Series({'key_tracker': nan, '{}'.format(time): [np.NaN | units.s]})
+                                                                  np.NaN | units.parsec],
+                                                                  np.NaN | units.J,
+                                                                  np.NaN | units.J,
+                                                                  np.NaN | units.yr]})
             df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
-            df_tdyn = df_tdyn.append(df_tdyn_vals, ignore_index = True)
 
-        IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
-        IMBH_array['{}'.format(time)] = IMBH_array['{}'.format(time)].shift(-rows)
-        IMBH_array = IMBH_array[pd.notnull(IMBH_array["key_tracker"])]
-
-        tdyn_tracker = tdyn_tracker.append(df_tdyn, ignore_index = True)
-        tdyn_tracker['{}'.format(time)] = tdyn_tracker['{}'.format(time)].shift(-rows)
-        tdyn_tracker = tdyn_tracker[pd.notnull(tdyn_tracker['{}'.format(time)])]
+        IMBH_tracker = IMBH_tracker.append(df_IMBH, ignore_index=True)
+        IMBH_tracker['{}'.format(time)] = IMBH_tracker['{}'.format(time)].shift(-rows)
+        IMBH_tracker = IMBH_tracker[pd.notnull(IMBH_tracker["key_tracker"])]
 
         df_com_tracker = pd.Series({'x': SMBH_filter(code.particles).center_of_mass()[0].in_(units.parsec),
                                     'y': SMBH_filter(code.particles).center_of_mass()[1].in_(units.parsec),
@@ -249,8 +217,9 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
                                    'LG25': LagrangianRadii(code.particles[1:])[5].in_(units.parsec),
                                    'LG50': LagrangianRadii(code.particles[1:])[6].in_(units.parsec),
                                    'LG75': LagrangianRadii(code.particles[1:])[7].in_(units.parsec),
-                                   'Tidal Radius': rtide.in_(units.parsec)})
-        LG_array = LG_array.append(df_LG_tracker , ignore_index=True)
+                                   'Tidal Radius': rtide.in_(units.parsec),
+                                   'Relaxation Time': relax_timescale(cluster_radi, 10**3 | units.MSun, 10**8).in_(units.yr)})
+        LG_tracker = LG_tracker.append(df_LG_tracker , ignore_index=True)
 
         parti_KE = code.kinetic_energy
         parti_BE = code.potential_energy
@@ -305,11 +274,12 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
         stab_tracker.to_pickle('data/stability_time/IMBH_Hermite_Ni'+str(N_parti_init)+'_sim'+str(count)+'_init_dist'
                                +str('{:.3f}'.format(cluster_distance.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(initial_set[1].mass.value_in(units.MSun)))+'.pkl')
         com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        IMBH_array.to_pickle('data/positions_IMBH/IMBH_positions_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        IMBH_tracker.to_pickle('data/positions_IMBH/IMBH_positions_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         parti_energy_tracker.to_pickle('data/particle_energies/particle_energies_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        LG_array.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        tdyn_tracker.to_pickle('data/dynamical_time/IMBH_Dynamical_Time'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        LG_tracker.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        coll_tracker.to_pickle('data/collision_events/IMBH_merge_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        eventstab_tracker.to_pickle('data/event_tracker/IMBH_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         
         lines = ['Simulation: ', "Total CPU Time: "+str(comp_end-comp_start)+' seconds', 
                  'Timestep: '+str(eta),

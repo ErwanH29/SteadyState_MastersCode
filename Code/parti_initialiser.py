@@ -111,6 +111,7 @@ class IMBH_init(object):
         """
 
         sigmaV = 6 # in kms
+
         return np.sqrt(2/np.pi)*(vel**2/sigmaV**3)*np.exp(-vel**2/(2*sigmaV**2))
 
     def velocityList(self):
@@ -128,6 +129,7 @@ class IMBH_init(object):
         vy = np.array(choices(vrange, weights=w, k = 1))*scaley
         vz = np.array(choices(vrange, weights=w, k = 1))*scalez
         velocity = np.concatenate((vx,vy,vz))
+
         return velocity
 
     def kroupa_mass(self):
@@ -194,6 +196,7 @@ class IMBH_init(object):
         IMBH.collision_radius = self.coll_radius(IMBH.radius)
         IMBH.key_tracker = IMBH.key
         IMBH.ejection = 0
+        IMBH.coll_events = 0
 
         IMBH[0].position = SMBH_parti.position
         IMBH[0].velocity = SMBH_parti.velocity
@@ -225,5 +228,6 @@ class IMBH_init(object):
         add_IMBH.radius = self.IMBH_radius(add_IMBH.mass)
         add_IMBH.collision_radius = self.coll_radius(add_IMBH.radius)
         add_IMBH.ejection = 0
+        add_IMBH.coll_events = 0
 
         return add_IMBH

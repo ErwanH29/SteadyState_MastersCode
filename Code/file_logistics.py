@@ -5,7 +5,12 @@ import glob
 import os
 
 def bulk_stat_extractor(file_string):
+    """
+    Function which extracts all files in a given dir.
     
+    Inputs:
+    file_string: The directory wished to extract files from
+    """
     filename = glob.glob(file_string)
     data = [ ]
     
@@ -15,23 +20,23 @@ def bulk_stat_extractor(file_string):
 
     return data
 
-def ejected_extract(complete, ejected, col_len):
+def ejected_extract(set, ejected, col_len):
     """
     Extracts positional info on the ejected particle into an array
     
     Inputs:
-    complete: The complete particle set plotting
-    ejected:  The ejected particle
-    col_len:  The number of time-steps simulated
+    set:     The complete particle set plotting
+    ejected: The ejected particle
+    col_len: The number of time-steps simulated
     """
 
     line_x = np.empty((1, col_len, 1))
     line_y = np.empty((1, col_len, 1))
     line_z = np.empty((1, col_len, 1))
 
-    for i in range(len(complete)):
-        if complete.iloc[i,0] == ejected.iloc[0][4]:
-            temp_comp = complete.iloc[i]
+    for i in range(len(set)):
+        if set.iloc[i,0] == ejected.iloc[0][4]:
+            temp_comp = set.iloc[i]
             temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):
                 coords = temp_comp.iloc[j+1][1]
@@ -81,10 +86,15 @@ def file_opener(file_string):
 
     return temp_data, temp_length
 
-def file_reset(directory):
-    filelist = glob.glob(os.path.join(directory, "*"))
+def file_reset(dir):
+    """
+    Function to remove all files from a directory
+    """
+
+    filelist = glob.glob(os.path.join(dir, "*"))
     for f in filelist:
         os.remove(f)
+
 
 def steadytime_extractor(dir):
     steadytime_data = bulk_stat_extractor(dir)
