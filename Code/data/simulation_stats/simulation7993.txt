@@ -1,0 +1,16 @@
+Simulation: 
+Total CPU Time: 2.4442105293273926 seconds
+Timestep: 0.0001
+Simulated until: 250.0year
+Cluster Radius: 0.1 parsecs
+Masses of IMBH: [  4.00000000e+06   1.00000000e+03   1.00000000e+03   1.00000000e+03
+   1.00000000e+03   1.00000000e+03   1.00000000e+03] MSun
+No. of initial IMBH: 6
+Number of new particles: 0
+Total Number of (Final) IMBH: 7
+IMBH Appearance Rate: 205104.85202 years
+Number of mergers: 0
+End Time: 100000.0 years
+Integrator: Hermite (NO PN)
+Extra Notes: 
+Stopped due to ejection

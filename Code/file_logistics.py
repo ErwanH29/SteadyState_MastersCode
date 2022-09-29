@@ -111,6 +111,7 @@ def steadytime_extractor(dir):
     init_mass_data = np.empty((no_Data, 2))
     inj_mass_data  = np.empty(no_Data)
     eje_mass_data  = np.empty(no_Data)
+    reltime_data   = np.empty(no_Data)
 
     for i in range(no_Data):
         sim_data = steadytime_data[i]
@@ -122,9 +123,10 @@ def steadytime_extractor(dir):
         stab_time_data[i] = sim_data.iloc[0][5].value_in(units.yr)
         init_dist_data[i] = sim_data.iloc[0][6].value_in(units.parsec)
         cluster_radius[i] = sim_data.iloc[0][7].value_in(units.parsec)
-        init_mass_data[i] = [min(sim_data.iloc[0][8].value_in(units.MSun)), max(sim_data.iloc[0][8].value_in(units.MSun))]
+        init_mass_data[i] = [int(min(sim_data.iloc[0][8].value_in(units.MSun))), int(max(sim_data.iloc[0][8].value_in(units.MSun)))]
         inj_mass_data[i]  = sim_data.iloc[0][9].value_in(units.MSun)
         eje_mass_data[i]  = sim_data.iloc[0][10].value_in(units.MSun)
+        #reltime_data[i]   = sim_data.iloc[0][11].value_in(units.yr)
 
     return ini_parti_data, fin_parti_data, number_mergers, simulated_end, ejected_parti, stab_time_data, \
-           init_dist_data, cluster_radius, init_mass_data, inj_mass_data, eje_mass_data
+           init_dist_data, cluster_radius, init_mass_data, inj_mass_data, eje_mass_data, reltime_data

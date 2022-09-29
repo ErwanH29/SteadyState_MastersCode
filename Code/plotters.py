@@ -14,8 +14,8 @@ def colour_picker():
     """
 
     colors = ['red', 'blue', 'orange', 'purple', 'salmon', 'slateblue', 
-              'darkviolet', 'cornflowerblue', 'cyan', 'sienna', 
-              'lightskyblue', 'magenta', 'gold', 'dodgerblue']
+              'gold', 'darkviolet', 'cornflowerblue',  'cyan',
+              'lightskyblue', 'magenta',  'dodgerblue']
 
     return colors
 
@@ -179,7 +179,7 @@ def animator(init_dist):
         ax1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
         ax1.set_xlim(min(line_x[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_x[max(0,skip_zeroth-80):skip_zeroth+1]),
                      max(line_x[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_x[max(0,skip_zeroth-80):skip_zeroth+1]))
-        ax1.set_xlim(min(line_y[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_y[max(0,skip_zeroth-80):skip_zeroth+1]),
+        ax1.set_ylim(min(line_y[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_y[max(0,skip_zeroth-80):skip_zeroth+1]),
                      max(line_y[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_y[max(0,skip_zeroth-80):skip_zeroth+1]))
 
         ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
@@ -413,246 +413,259 @@ def spatial_plotter(init_dist):
 
     return
 
-def stab_plotter_logistics(ax, pop, xints):
-    """
-    Function to set up the various stability time plotters
-    
-    Inputs:
-    ax:     The axis
-    pop:    The population, N, of the data
-    xints:  The integer spacing for which to place the x-labels
-    """
+class stability_time(object):
+    def __init__(self, dir = 'data/stability_time/*'):
+        self.ini_parti_data, self.fin_parti_data, self.number_mergers, self.simulated_end, self.ejected_parti, \
+        self.stab_time_data, self.init_dist_data, self.cluster_radius, self.init_mass_data, self.inj_mass_data, \
+        self.eje_mass_data, self.reltime_data = steadytime_extractor(dir)  
 
-    ax.yaxis.set_ticks_position('both')
-    ax.xaxis.set_ticks_position('both')
-    ax.tick_params(axis="y",direction="in")
-    ax.tick_params(axis="x",direction="in")
-    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.0f'))
-    ax.xaxis.labelpad = 20
-    plt.xticks(xints)
-    plt.xlim(2.5,max(pop)+1)
-    plt.ylim(0, 1500)
-    plt.ylabel(r'Ejection Time [yr]')
-    plt.xlabel(r'Number of IMBH [$N$]')
-    plt.title(r'Black Hole Population vs. Stability Time')
+    def stab_plotter_logistics(self, ax, pop, xints, ydata):
+        """
+        Function to set up the various stability time plotters
+        
+        Inputs:
+        ax:     The axis
+        pop:    The population, N, of the data
+        xints:  The integer spacing for which to place the x-labels
+        ydata:  The y-values for the plot
+        """
 
-def steadytime_distdep_plotter(dir):
-    """
-    Function to plot the steady time with various lines corresponding to different
-    SMBH Distances:
-    
-    Inputs:
-    dir:     The directory for which to gather the data from
-    """
+        ax.yaxis.set_ticks_position('both')
+        ax.xaxis.set_ticks_position('both')
+        ax.tick_params(axis="y",direction="in")
+        ax.tick_params(axis="x",direction="in")
+        ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.0f'))
+        ax.xaxis.labelpad = 20
+        plt.xticks(xints)
+        plt.xlim(2.5,max(pop)+1)
+        plt.ylim(0, 1.2*max(ydata))
+        plt.ylabel(r'Ejection Time [yr]')
+        plt.xlabel(r'Number of IMBH [$N$]')
+        plt.title(r'Black Hole Population vs. Stability Time')
 
-    ini_parti_data, fin_parti_data, number_mergers, simulated_end, ejected_parti, stab_time_data, \
-    init_dist_data, cluster_radius, init_mass_data, inj_mass_data, eje_mass_data = steadytime_extractor(dir)   #Extract all the data from the pickle files
+    def steadytime_distdep_plotter(self):
+        """
+        Function to plot the steady time with various lines corresponding to different
+        SMBH Distances:
+        
+        Inputs:
+        dir:     The directory for which to gather the data from
+        """
 
-    in_mass = np.unique(init_mass_data[:,0], axis = 0) #Get the unique initial mass and distances array
-    in_dist = np.unique(init_dist_data)
-    colourcycler = cycle(colour_picker())
+        in_mass = np.unique(self.init_mass_data[:,0], axis = 0) #Get the unique initial mass and distances array
+        in_dist = np.unique(self.init_dist_data)
+        colourcycler = cycle(colour_picker())
 
-    for mass_ in in_mass:           #For every initial mass, we will plot a separate graph showing different coloured data points
-        fig, ax = plt.subplots()    #depending on their distance to the central SMBH
-        tot_pop = [ ]
-        iter = -1
+        for mass_ in in_mass:           #For every initial mass, we will plot a separate graph showing different coloured data points
+            fig, ax = plt.subplots()    #depending on their distance to the central SMBH
+            tot_pop = [ ]
+            y_max = []  
+            iter = -1
 
-        for dist_ in in_dist:
-            iter += 1
-            init_mass_idx = np.where((init_mass_data == mass_).all(1))[0] #Find indices where data files correspond to the correct initial masses
-            fin_parti = fin_parti_data[init_mass_idx]                     #Filter the needed data based on the data files satisfying condition
-            stab_time = stab_time_data[init_mass_idx]
-            init_dist = init_dist_data[init_mass_idx]
-            dist_arrays = np.where(init_dist == dist_)                     #Find indices corresponding to the correct distances. Here we split
+            for dist_ in in_dist:
+                iter += 1
+                init_mass_idx = np.where((self.init_mass_data == mass_).all(1))[0] #Find indices where data files correspond to the correct initial masses
+                fin_parti = self.fin_parti_data[init_mass_idx]                     #Filter the needed data based on the data files satisfying condition
+                stab_time = self.stab_time_data[init_mass_idx]
+                init_dist = self.init_dist_data[init_mass_idx]
+                dist_arrays = np.where(init_dist == dist_)                     #Find indices corresponding to the correct distances. Here we split
 
-            colours = next(colourcycler)
-            N_parti_avg = [ ]
-            
-            fin_parti = fin_parti[dist_arrays]                             #The data relative to their distances.
-            stab_time = stab_time[dist_arrays]
+                colours = next(colourcycler)
+                N_parti_avg = [ ]
+                
+                fin_parti = fin_parti[dist_arrays]                             #The data relative to their distances.
+                stab_time = stab_time[dist_arrays]
 
-            pop_size, pop_samples = np.unique(fin_parti, return_counts=True)  #Count the number of unique final populations
-            if len(pop_size) == 0:
-                pass
-            else:
-                pop_id = np.argwhere(pop_size > 2)                                #Only look at samples with N>2
-                pop_size = pop_size[pop_id]
+                pop_size, pop_samples = np.unique(fin_parti, return_counts=True)  #Count the number of unique final populations
+                if len(pop_size) == 0:
+                    pass
+                else:
+                    pop_id = np.argwhere(pop_size > 2)                                #Only look at samples with N>2
+                    pop_size = pop_size[pop_id]
 
-                pop_samples = pop_samples[pop_id]
-                tot_pop.append(max(pop_size))
+                    pop_samples = pop_samples[pop_id]
+                    tot_pop.append(max(pop_size))
 
-                for pop_, samp_ in zip(pop_size, pop_samples):
-                    N_parti = np.argwhere(fin_parti == pop_)                      #For every N, we will gather their indices where they are in the pickle file
-                    N_parti_avg.append(np.mean(stab_time[N_parti]))               #This enables us to compute their average between the whole data set                     
-
-                ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black', label = r'$r_{SMBH} =$'+str(dist_)+' pc')
-                for j, xpos in enumerate(pop_size):
-                    if iter == 0:
-                        ax.text(xpos, -160, 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
-                    else:
-                        ax.text(xpos, -160*(1+0.25*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
-            xints = [i for i in range(1+int(max(tot_pop)))]
+                    for pop_, samp_ in zip(pop_size, pop_samples):
+                        N_parti = np.argwhere(fin_parti == pop_)                      #For every N, we will gather their indices where they are in the pickle file
+                        N_parti_avg.append(np.mean(stab_time[N_parti]))               #This enables us to compute their average between the whole data set                     
+                    
+                    y_max.append(max(N_parti_avg))
+                    ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black', label = r'$r_{SMBH} =$'+str(dist_)+' pc')
+                    for j, xpos in enumerate(pop_size):
+                        if iter == 0:
+                            ax.text(xpos, -2500, 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                        else:
+                            ax.text(xpos, -2500*(1+0.4*iter),  'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
+                xints = [i for i in range(1+int(max(tot_pop)))]
 
             order = int('{:.0f}'.format(np.log10(mass_)))
-            ax.text(2.7, 1450, r'$m_{i} \in$ '+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r'$M_\odot$')
-            stab_plotter_logistics(ax, tot_pop, xints)
+            ax.text(0.34*max(tot_pop), 1.125*max(y_max), r'$m_{i} \in$ '+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r'$M_\odot$')
+            self.stab_plotter_logistics(ax, tot_pop, xints, y_max)
             plt.legend()
             plt.savefig('figures/stab_time_equal_mass_'+str(mass_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
 
-    for mass_ in in_mass:      #For every initial mass and distance we will plot a separate graph. This time it includes std spread
-        for dist_ in in_dist:  #For three different distances, every mass has 3 unique plots with errors.
-            plt.clf()
-            fig, ax = plt.subplots()
-            
-            init_mass_idx = np.where((init_mass_data == mass_).all(1))[0]     #Make sure to use only data who has corresponding mass
-            fin_parti = fin_parti_data[init_mass_idx]                         #Filter data through indices satisfying the mass requirement
-            stab_time = stab_time_data[init_mass_idx]
-            init_dist = init_dist_data[init_mass_idx]
-            dist_arrays = np.where(init_dist == dist_)                        #Find indices corresponding to the correct distances. Here we split
-
-            colours = next(colourcycler)
-            N_parti_avg = [ ]
-            std = [ ]
-            
-            fin_parti = fin_parti[dist_arrays]                                #Filtering the filtered data with the correct distances
-            stab_time = stab_time[dist_arrays]
-
-            pop_size, pop_samples = np.unique(fin_parti, return_counts=True)  #Count the number of unique final populations
-            
-            if len(pop_size) == 0:
-                pass
-            else:
-                pop_id = np.argwhere(pop_size > 2)
-                pop_size = pop_size[pop_id]
-                pop_samples = pop_samples[pop_id]
-
-                for pop_, samp_ in zip(pop_size, pop_samples):                    #For the unique populations, compute their average stab time
-                    N_parti = np.argwhere(fin_parti == pop_)                      #and average spread in data.
-                    N_parti_avg.append(np.mean(stab_time[N_parti]))
-                    std.append(np.std(stab_time[N_parti]))
-
-                ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
-                ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
-                ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
-                ax.scatter(pop_size, N_parti_avg, color = 'black')
-
-                for j, xpos in enumerate(pop_size):
-                    ax.text(xpos, -160, 'Simulations\n'+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
+        for mass_ in in_mass:      #For every initial mass and distance we will plot a separate graph. This time it includes std spread
+            for dist_ in in_dist:  #For three different distances, every mass has 3 unique plots with errors.
+                y_max = []
                 
-                order = int('{:.0f}'.format(np.log10(mass_)))
+                plt.clf()
+                fig, ax = plt.subplots()
+                
+                init_mass_idx = np.where((self.init_mass_data == mass_).all(1))[0]     #Make sure to use only data who has corresponding mass
+                fin_parti = self.fin_parti_data[init_mass_idx]                         #Filter data through indices satisfying the mass requirement
+                stab_time = self.stab_time_data[init_mass_idx]
+                init_dist = self.init_dist_data[init_mass_idx]
+                dist_arrays = np.where(init_dist == dist_)                        #Find indices corresponding to the correct distances. Here we split
+
+                colours = next(colourcycler)
+                N_parti_avg = [ ]
+                std = [ ]
+                
+                fin_parti = fin_parti[dist_arrays]                                #Filtering the filtered data with the correct distances
+                stab_time = stab_time[dist_arrays]
+
+                pop_size, pop_samples = np.unique(fin_parti, return_counts=True)  #Count the number of unique final populations
+                
+                if len(pop_size) == 0:
+                    pass
+                else:
+                    pop_id = np.argwhere(pop_size > 2)
+                    pop_size = pop_size[pop_id]
+                    pop_samples = pop_samples[pop_id]
+
+                    for pop_, samp_ in zip(pop_size, pop_samples):                    #For the unique populations, compute their average stab time
+                        N_parti = np.argwhere(fin_parti == pop_)                      #and average spread in data.
+                        N_parti_avg.append(np.mean(stab_time[N_parti]))
+                        std.append(np.std(stab_time[N_parti]))
+
+                    y_max.append(max(np.add(N_parti_avg, std)))
+                    ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
+                    ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
+                    ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
+                    ax.scatter(pop_size, N_parti_avg, color = 'black')
+
+                    for j, xpos in enumerate(pop_size):
+                        ax.text(xpos, -0.115*max(np.add(N_parti_avg, std)), 'Simulations\n'+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
+                    
+                    order = int('{:.0f}'.format(np.log10(mass_)))
+                    xints = [i for i in range(1+int(max(tot_pop)))]
+                    ax.text(0.34*max(tot_pop), 1.05*(max(np.add(N_parti_avg, std))), r'$m_{IMBH}=$'+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r' $M_\odot$'+'\n'+r'$r_{SMBH}=$'+str(dist_)+' pc')
+                    self.stab_plotter_logistics(ax, tot_pop, xints, np.add(N_parti_avg, std))
+                    plt.savefig('figures/stab_time_equal_mass_'+str(mass_)+'_err_dist_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
+
+    def steadytime_massdep_plotter(self):
+
+        in_dist = np.unique(self.init_dist_data)
+        in_mass = np.unique(self.init_mass_data, axis=0)
+        coloursycler = cycle(colour_picker())
+
+
+        for dist_ in in_dist:
+            fig, ax = plt.subplots()
+            tot_pop = []
+            y_max = []     
+            iter = -1   
+            init_dist_idx = np.where((self.init_dist_data == dist_))
+
+            for mass_ in in_mass:
+                iter += 1
+
+                init_mass = self.init_mass_data[init_dist_idx]
+                init_mass = self.init_mass_data[init_dist_idx[0]]
+                fin_parti = self.fin_parti_data[init_dist_idx[0]]
+                stab_time = self.stab_time_data[init_dist_idx[0]]
+
+                colours = next(coloursycler)
+                N_parti_avg = [ ]
+                std = [ ]
+                mass_arrays = np.where((init_mass == mass_).all(1))[0]  #Indices with the correct mass column
+                fin_parti = fin_parti[mass_arrays]
+                stab_time = stab_time[mass_arrays]
+                pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
+
+                if len(pop_size) == 0:
+                    pass
+                else:
+                    pop_id = np.argwhere(pop_size > 2)
+                    pop_size = pop_size[pop_id]
+                    pop_samples = pop_samples[pop_id]
+                    tot_pop.append(max(pop_size))
+
+                    for pop_, samp_ in zip(pop_size, pop_samples):
+                        N_parti = np.argwhere(fin_parti == pop_)
+                        N_parti_avg.append(np.mean(stab_time[N_parti]))
+                        std.append(np.std(stab_time[N_parti]))
+
+                    y_max.append(max(N_parti_avg))
+                    ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black',
+                            label = r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
+                    
+                    for j, xpos in enumerate(pop_size):
+                        if iter == 0:
+                            ax.text(xpos, -0.115*max(N_parti_avg), 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                        else:
+                            ax.text(xpos, -0.115*max(N_parti_avg)*(1+0.4*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
                 xints = [i for i in range(1+int(max(tot_pop)))]
-                ax.text(2.7, 1350, r'$m_{IMBH}=$'+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r' $M_\odot$'+'\n'+r'$r_{SMBH}=$'+str(dist_)+' pc')
-                stab_plotter_logistics(ax, tot_pop, xints)
-                plt.savefig('figures/stab_time_equal_mass_'+str(mass_)+'_err_dist_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
 
-def steadytime_massdep_plotter(dir):
-
-    ini_parti_data, fin_parti_data, number_mergers, simulated_end, ejected_parti, stab_time_data, \
-    init_dist_data, cluster_radius, init_mass_data, inj_mass_data, eje_mass_data = steadytime_extractor(dir)
-
-    in_dist = np.unique(init_dist_data)
-    in_mass = np.unique(init_mass_data, axis=0)
-
-    coloursycler = cycle(colour_picker())
-
-    for dist_ in in_dist:
-        fig, ax = plt.subplots()
-        tot_pop = [ ]     
-        iter = -1   
-
-        for mass_ in in_mass:
-            iter += 1
-            init_dist_idx = np.where((init_dist_data == dist_))
-            init_mass = init_mass_data[init_dist_idx]
-            fin_parti = fin_parti_data[init_dist_idx]
-            stab_time = stab_time_data[init_dist_idx]
-
-            colours = next(coloursycler)
-            N_parti_avg = [ ]
-            std = [ ]
-            mass_arrays = np.where((init_mass == mass_).all(1))[0]  #Indices with the correct mass column
-
-            fin_parti = fin_parti[mass_arrays]
-            stab_time = stab_time[mass_arrays]
-            pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
-
-            if len(pop_size) == 0:
-                pass
-            else:
-                pop_id = np.argwhere(pop_size > 2)
-                pop_size = pop_size[pop_id]
-                pop_samples = pop_samples[pop_id]
-                tot_pop.append(max(pop_size))
-
-                for pop_, samp_ in zip(pop_size, pop_samples):
-                    N_parti = np.argwhere(fin_parti == pop_)
-                    N_parti_avg.append(np.mean(stab_time[N_parti]))
-                    std.append(np.std(stab_time[N_parti]))
-
-                ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black',
-                        label = r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
-
-                for j, xpos in enumerate(pop_size):
-                    if iter == 0:
-                        ax.text(xpos, -160, 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
-                    else:
-                        ax.text(xpos, -160*(1+0.25*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
-            xints = [i for i in range(1+int(max(tot_pop)))]
-
-            ax.text(2.7, 1450, r'$r_{SMBH}=$'+str(dist_)+' pc')
-            stab_plotter_logistics(ax, tot_pop, xints)
+            ax.text(0.34*max(tot_pop), 1.125*max(y_max), r'$r_{SMBH}=$'+str(dist_)+' pc')
+            self.stab_plotter_logistics(ax, tot_pop, xints, y_max)
             plt.legend()
             plt.savefig('figures/stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
 
-    for dist_ in in_dist:
-        for mass_ in in_mass: 
-            plt.clf()
-            fig, ax = plt.subplots()
+        for dist_ in in_dist:
+            for mass_ in in_mass: 
+                y_max = []
 
-            init_dist_idx = np.where((init_dist_data == dist_))
-            init_mass = init_mass_data[init_dist_idx]
-            fin_parti = fin_parti_data[init_dist_idx]
-            stab_time = stab_time_data[init_dist_idx]
+                plt.clf()
+                fig, ax = plt.subplots()
 
-            tot_pop = [ ]
-            colours = next(coloursycler)
-            N_parti_avg = [ ]
-            std = [ ]
-            mass_arrays = np.where((init_mass == mass_).all(1))[0]  #Indices with the correct mass column
+                init_dist_idx = np.where((self.init_dist_data == dist_))
+                init_mass = self.init_mass_data[init_dist_idx]
+                fin_parti = self.fin_parti_data[init_dist_idx]
+                stab_time = self.stab_time_data[init_dist_idx]
 
-            fin_parti = fin_parti[mass_arrays]
-            stab_time = stab_time[mass_arrays]
-            pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
-            pop_id = np.argwhere(pop_size > 2)
-            pop_size = pop_size[pop_id]
+                tot_pop = [ ]
+                colours = next(coloursycler)
+                N_parti_avg = [ ]
+                std = [ ]
+                mass_arrays = np.where((init_mass == mass_).all(1))[0]  #Indices with the correct mass column
 
-            if len(pop_size) == 0:
-                pass
-            else:
-                pop_samples = pop_samples[pop_id]
-                tot_pop.append(max(pop_size))
+                fin_parti = fin_parti[mass_arrays]
+                stab_time = stab_time[mass_arrays]
+                pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
+                pop_id = np.argwhere(pop_size > 2)
+                pop_size = pop_size[pop_id]
 
-                for pop_, samp_ in zip(pop_size, pop_samples):
-                    N_parti = np.argwhere(fin_parti == pop_)
-                    N_parti_avg.append(np.mean(stab_time[N_parti]))
-                    std.append(np.std(stab_time[N_parti]))
+                if len(pop_size) == 0:
+                    pass
+                else:
+                    pop_samples = pop_samples[pop_id]
+                    tot_pop.append(max(pop_size))
 
-                ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
-                ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
-                ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
-                ax.scatter(pop_size, N_parti_avg, color = 'black')
+                    for pop_, samp_ in zip(pop_size, pop_samples):
+                        N_parti = np.argwhere(fin_parti == pop_)
+                        N_parti_avg.append(np.mean(stab_time[N_parti]))
+                        std.append(np.std(stab_time[N_parti]))
 
-                for j, xpos in enumerate(pop_size):
-                    ax.text(xpos, -160, 'Simulations\n'+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
-                xints = [i for i in range(1+int(max(tot_pop)))]
+                    y_max.append(max(np.add(N_parti_avg, std)))
+                    ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
+                    ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
+                    ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
+                    ax.scatter(pop_size, N_parti_avg, color = 'black')
 
-                ax.text(2.7, 1350, r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
-                stab_plotter_logistics(ax, tot_pop, xints)
-                plt.savefig('figures/stab_time_equal_dist_'+str(dist_)+'_std_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
+                    for j, xpos in enumerate(pop_size):
+                        ax.text(xpos, -0.13*max(np.add(N_parti_avg, std)), 'Simulations\n'+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                    xints = [i for i in range(1+int(max(tot_pop)))]
 
+                    ax.text(0.34*max(tot_pop), 1.05*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
+                    self.stab_plotter_logistics(ax, tot_pop, xints, np.add(N_parti_avg, std))
+                    plt.savefig('figures/stab_time_equal_dist_'+str(dist_)+'_std_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
+spatial_plotter(0.1 |units.parsec)
+st = stability_time()
+st.steadytime_massdep_plotter()
+st.steadytime_distdep_plotter()
+animator(1 | units.parsec)
 
-#spatial_plotter(1.25 |units.parsec)
-#energy_plotter()
-#animator(1.25 | units.parsec)
-steadytime_massdep_plotter('data/stability_time/*')
-steadytime_distdep_plotter('data/stability_time/*')
+energy_plotter()
+

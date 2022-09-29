@@ -127,20 +127,19 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
                     enc_particles = Particles(particles=[stopping_condition.particles(0)[ci],
                                                          stopping_condition.particles(1)[ci]])
                     enc_particles = enc_particles.get_intersecting_subset_in(parti)
-                    print('Particles in enc:  ', enc_particles)
+                    ejected_key_track = parti[-1].key_tracker
+                    df_coll_tracker = pd.Series({'Collision Time': tcoll.in_(units.kyr), 
+                                                 'Collided Particles': [enc_particles[0].key_tracker, enc_particles[1].key_tracker], 
+                                                 'Initial Mass': [enc_particles[0].mass, enc_particles[1].mass] | units.MSun, 
+                                                 'Emergent Particle': ejected_key_track, 'Collision Mass': merger_mass | units.MSun})                    
+                    coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True)                    
                     merged_parti  = merge_IMBH(parti, enc_particles, code.model_time)
                     parti.synchronize_to(code.particles)
                     merger_mass = merged_parti.mass.sum()
                     energy_after = code.potential_energy + code.kinetic_energy
                     print('Energy change:     ', energy_after/energy_before - 1)
                     tcoll = time.in_(units.s) - eta*tend
-                    ejected_key_track = parti[-1].key_tracker
                     ejected_mass = parti[-1].mass 
-                    df_coll_tracker = pd.Series({'Collision Time': tcoll.in_(units.kyr), 
-                                                 'Collided Particles': [enc_particles[0].key_tracker, enc_particles[1].key_tracker], 
-                                                 'Initial Mass': [enc_particles[0].mass, enc_particles[1].mass] | units.MSun, 
-                                                 'Emergent Particle': ejected_key_track, 'Collision Mass': merger_mass | units.MSun})
-                    coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True)
 
                     df_eventstab_tracker = pd.Series({'Initial No. Particles': len(parti)-1, 'Merger Event': 1, 
                                                       'Collision Time': tcoll.in_(units.kyr), 'Injected Event': 0, 'Injected Time': 0 |units.s})
@@ -166,9 +165,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
                 df_IMBH_vals = pd.Series({'key_tracker': add_IMBH.key_tracker[0]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
 
-                E0 += (temp_E2-temp_E1)  
-                eta = eta/10
-                decision_scale = (eta*tend)/IMBHapp 
+                E0 += (temp_E2-temp_E1) 
 
                 df_eventstab_tracker = pd.Series({'Initial No. Particles': len(parti)-1, 'Merger Event': 0, 
                                                   'Collision Time': 0 | units.s, 'Injected Event': 1, 
@@ -248,7 +245,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
     code.stop()
     comp_end = cpu_time.time()
 
-    if iter > 10 + add_iter and iter > 5: #200/(init_IMBH_pop**(init_IMBH_pop/3)):
+    if iter > 2 + add_iter and iter > 2: #200/(init_IMBH_pop**(init_IMBH_pop/3)):
         no_plot = False
         print("Total Merging Events: ", Nenc)
         print('Total integration time: ', comp_end-comp_start)
@@ -268,7 +265,8 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
                                  'Initial Particle Mass': initial_set[1:].mass.in_(units.MSun),
                                  'Added Particle Mass': added_mass.in_(units.MSun),
                                  'Ejected/Merger Mass': ejected_mass.in_(units.MSun),
-                                 'Computation Time': str(comp_end-comp_start)})
+                                 'Computation Time': str(comp_end-comp_start),
+                                 'Relaxation Time': relax_timescale(cluster_radi, 10**3 | units.MSun, 10**8).in_(units.yr)})
         stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
 
         stab_tracker.to_pickle('data/stability_time/IMBH_Hermite_Ni'+str(N_parti_init)+'_sim'+str(count)+'_init_dist'

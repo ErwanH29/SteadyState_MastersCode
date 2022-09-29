@@ -3,11 +3,11 @@ from plotters import *
 from file_logistics import *
 from evol import *
 
-eta  = 1e-4
-tend = 1e5 | units.yr
+eta  = 1e-3
+tend = 1e6 | units.yr
 cluster_mass = 1e7  | units.MSun
 cluster_radi = 1e-3 | units.parsec
-cluster_dist = 0.1 | units.parsec
+cluster_dist = 1 | units.parsec
 conv = nbody_system.nbody_to_si(cluster_mass, cluster_radi)
 """
 prompt = input(('WARNING: About to delete all files. Are you sure (y|n)?'))
@@ -18,12 +18,9 @@ prompt = input(('WARNING: About to delete all files. Are you sure (y|n)?'))
 
 no_sim = 3000
 
-for ipop_ in [8, 9, 10]: #IMBH+SMBH
+for ipop_ in [5, 6, 7, 8, 9, 10]: #IMBH+SMBH
     initial_pop = ipop_
     remove_files = True
-
-    if ipop_ > 7:
-        eta = 1e-5
 
     if (remove_files):
         file_reset('data/center_of_mass')
