@@ -2,53 +2,26 @@ from amuse.lab import *
 from amuse.units import (units, constants)
 from amuse.ic.plummer import new_plummer_model
 from amuse.ic.kingmodel import new_king_model
+from amuse.ext.galactic_potentials import Plummer_profile
 from amuse.ic.scalo import new_scalo_mass_distribution
 from random import random, randint, choices
 import numpy as np
+from amuse.ext.LagrangianRadii import LagrangianRadii
 
 class MW_SMBH(object):
+    """
+    Class which defines the central SMBH
+    """
     def __init__(self, mass = 4.e6 | units.MSun,
                  position = [0, 0, 0] | units.parsec,
                  velocity = [0, 0, 0] | (units.AU/units.yr)):
-        """
-        Initialising function for the SMBH class.
-        """
     
         self.mass = mass
         self.position = position
         self.velocity = velocity
         self.bh_rad = (2*constants.G*mass)/(constants.c**2)
 
-    def get_gravity_at_point(self, eps, x, y, z):
-        """
-        Function which gathers the gravitational acceleration induced
-        at any given point.
-        Inputs:
-        eps:     Integrator softening parameter
-        x, y, z: Cartesian coordinates of the object wanting to compute
-                 potential energy of.
-        """     
-
-        dx = x - self.position.x
-        dy = y - self.position.y
-        dz = z - self.position.z
-        radius = (dx*dx + dy*dy + dz*dz).sqrt()
-        radius3 = radius*radius*radius
-        fr = -constants.G*self.mass/radius3
-        ax = fr*dx
-        ay = fr*dy
-        az = fr*dz
-
-        return ax, ay, az
-
     def get_potential_at_point(self, eps, x, y, z):
-        """
-        Function calculating the potential of the SMBH at any point
-        Inputs:
-        eps:     Integrator softening parameter
-        x, y, z: Cartesian coordinates of the object wanting to compute
-                 potential energy of.
-        """
 
         dx = x - self.position.x
         dy = y - self.position.y
@@ -58,11 +31,47 @@ class MW_SMBH(object):
 
         return phi
 
+class globular_cluster(object):
+    """
+    Class which defines the GC you want to simulate
+    """
+
+    def __init__(self, no_stars = 1e5,
+                 mass = 1.e6 | units.MSun,
+                 cluster_radi = 1e-1 | units.parsec,
+                 cluster_dist = 1.4 | units.parsec,
+                 position = [0, 0, 0] | units.parsec,
+                 velocity = [0, 0, 0] | (units.AU/units.yr)):
+
+        self.gc_pop = no_stars
+        self.gc_mass = mass
+        self.gc_rad  = cluster_radi
+        self.gc_dist = cluster_dist
+        self.gc_pos = position
+        self.gc_velocity = velocity
+        self.gc_conv = nbody_system.nbody_to_si(mass, cluster_radi)
+
+        self.plum = Plummer_profile(self.gc_mass, self.gc_rad)
+
+    def d_update(self, x_c, y_c, z_c):
+        """
+        Function which defines and updates the cluster center
+        """
+
+        self.gc_pos[0] = x_c
+        self.gc_pos[1] = y_c
+        self.gc_pos[2] = z_c
+        
+    def get_potential_at_point(self, eps, x, y, z):
+        return self.plum.get_potential_at_point(eps, 
+                                        x-self.gc_pos[0], 
+                                        y-self.gc_pos[1], 
+                                        z-self.gc_pos[2])
+
 class IMBH_init(object):
     def __init__(self):
         self.N = 0
         self.mass = 1000 | units.MSun
-        return
 
     def N_count(self):
         """
@@ -80,9 +89,6 @@ class IMBH_init(object):
         return (2*constants.G*mass)/(constants.c**2)
 
     def coll_radius(self, radius):
-        """
-        Function which sets the IMBH collision radius based on Zwart et al. 2021
-        """
         return 10*radius
 
     def decision(self, time, app_rate):
@@ -110,7 +116,7 @@ class IMBH_init(object):
         vel:    The velocity range for which to sample the weights from
         """
 
-        sigmaV = 6 # in kms
+        sigmaV = 15 # in kms
 
         return np.sqrt(2/np.pi)*(vel**2/sigmaV**3)*np.exp(-vel**2/(2*sigmaV**2))
 
@@ -119,7 +125,7 @@ class IMBH_init(object):
         Function to give a velocity for an initialised particle
         """
 
-        vrange = np.linspace(0, 5*np.sqrt(6)) # in kms
+        vrange = np.linspace(0, 50) # in kms
         r=[-1,1]
         w = self.ProbFunc(vrange)
         scalex = [np.random.choice(r)]
@@ -128,9 +134,8 @@ class IMBH_init(object):
         vx = np.array(choices(vrange, weights=w, k = 1))*scalex
         vy = np.array(choices(vrange, weights=w, k = 1))*scaley
         vz = np.array(choices(vrange, weights=w, k = 1))*scalez
-        velocity = np.concatenate((vx,vy,vz))
-
-        return velocity
+ 
+        return np.concatenate((vx,vy,vz))
 
     def kroupa_mass(self):
         return new_kroupa_mass_distribution(1, 50 | units.MSun, 10**5 | units.MSun)
@@ -145,85 +150,83 @@ class IMBH_init(object):
     def custom_mass(self, constant):
         return constant
 
-    def plummer_distr(self, converter):
-        self.Plummer_N = 20
-        return new_plummer_model(self.Plummer_N, radius_cutoff = 20, convert_nbody = converter)
+    def plummer_distr(self, N):
+        gc_code = globular_cluster()
+        distr = new_plummer_model(N, convert_nbody = gc_code.gc_conv)
+        rhmass = LagrangianRadii(distr)[6].in_(units.parsec)
+        return distr, rhmass
 
     def king_distr(self, converter):
         N = 20
         beta = -9
         return new_king_model(N, W0 = beta, convert_nbody = converter)
 
-    def IMBH_first(self, init_dist, init_parti, converter):
+    def IMBH_first(self, init_parti):
         """
         Function to initialise the first IMBH population.
         The first particle forms the center of the cluster
 
         Inputs:
-        init_dist:  The distance from central SMBH the cluster will be
+        init_parti: The (2+N) number of IMBH particles you wish to simulate
         converter:  Converter used to translate nbody_system to SI units
         """
         
         SMBH_parti = MW_SMBH()
-        IMBH = Particles(init_parti)
-        self.N += len(IMBH)
-        r = [-1,1]
+        gc_code = globular_cluster()
+        self.N += init_parti+2
 
-        for i in range(self.N):
-            IMBH[i].position = 3*self.plummer_distr(converter)[randint(0,self.N)].position
-            IMBH[i].velocity = self.velocityList() * (1 | units.AU/units.yr)
+        gc_particles, rhmass = self.plummer_distr(10**4)
+        gc_particles.velocity = self.velocityList() * (1 | units.AU/units.yr)
+        gc_particles.ejection = 0
+        gc_particles.coll_events = 0
 
-        for particle in IMBH:
-            if particle.position.length() < 500 | units.AU:
-                particle.position *= (500 | units.AU) / particle.position.length()
+        gc_particles[:self.N].radius = self.IMBH_radius(gc_particles[:self.N].mass)
+        gc_particles[:self.N].collision_radius = self.coll_radius(gc_particles[:self.N].radius)
+        gc_particles[:self.N].key_tracker = gc_particles[:self.N].key
+        gc_particles[2:self.N].mass = self.mass
+        gc_particles[0:2].velocity  = [0, 0, 0] | units.AU/units.yr
+        gc_particles[1].position = gc_particles.center_of_mass()
 
-        IMBH[2:].position += 0.2*IMBH[1].position
-        IMBH[1].position  = [0, 0, 0] | units.AU
-        IMBH[1].velocity  = [0, 0, 0] | units.AU/units.yr
+        gc_particles.scale_to_standard(convert_nbody=gc_code.gc_conv)
 
-        for i in range(self.N-2):
-            velx_vect = float((IMBH[i+2].x - IMBH[1].x).value_in(units.AU))
-            vely_vect = float((IMBH[i+2].y - IMBH[1].y).value_in(units.AU))
-            velz_vect = float((IMBH[i+2].z - IMBH[1].z).value_in(units.AU))
-        vel_vect  = [velx_vect, vely_vect, velz_vect]
-        veldist   = np.sqrt((velx_vect**2+vely_vect**2+velz_vect**2))
+        gc_particles[2:self.N].mass = self.mass
+        gc_particles[0].mass = SMBH_parti.mass
+        gc_particles[0].radius = self.IMBH_radius(gc_particles[0].mass)
+        gc_particles[0].collision_radius = self.coll_radius(gc_particles[0].radius)        
+        gc_particles[0].position = [0, 0, 0] | units.AU
+        gc_particles[0].velocity = [0, 0, 0] | units.AU/units.yr
 
-        IMBH[2:].velocity = -1 * IMBH[2:].velocity * (vel_vect)/(veldist)
-        IMBH[1:].mass     = self.mass
-        IMBH[1:].x += init_dist
-        IMBH[1:].vy += 1.15*(constants.G*SMBH_parti.mass/IMBH.position.length()).sqrt()
-        IMBH.radius = self.IMBH_radius(IMBH.mass)
-        IMBH.collision_radius = self.coll_radius(IMBH.radius)
-        IMBH.key_tracker = IMBH.key
-        IMBH.ejection = 0
-        IMBH.coll_events = 0
+        gc_particles[1].mass = gc_code.gc_mass
+        gc_particles[1].radius = 0 | units.m
+        gc_particles[1].collision_radius = 0 | units.m
 
-        IMBH[0].position = SMBH_parti.position
-        IMBH[0].velocity = SMBH_parti.velocity
-        IMBH[0].mass     = SMBH_parti.mass
+        gc_particles[1:].x += gc_code.gc_dist
+        for part_ in gc_particles[1:]:
+            part_.vy += (constants.G*SMBH_parti.mass/gc_code.gc_dist).sqrt()
+        sim_particles = gc_particles[:self.N]
 
-        IMBH.move_to_center()  
+        return sim_particles, rhmass
 
-        return IMBH
-
-    def add_IMBH(self, pos, converter):
+    def add_IMBH(self, globular):
         """
         Function which adds an IMBH particle to the cluster
         
         Inputs:
         pos:       The current c.o.m position of the cluster
-        converter: The converter to go between SI and Nbody units
         """
+
+        gc_code = globular_cluster()
 
         self.N += 1
         add_IMBH = Particles(1)
         add_IMBH.mass = self.mass
-        add_IMBH.position  = self.plummer_distr(converter)[randint(0,(self.Plummer_N-1))].position
-        add_IMBH.position += pos
+        add_IMBH.position = gc_code.gc_rad * [np.random.uniform(0,1)*np.random.choice([-1,1]), 
+                                              np.random.uniform(0,1)*np.random.choice([-1,1]), 
+                                              np.random.uniform(0.1,1)*np.random.choice([-1,1])]
+        add_IMBH.position += globular.position
 
-        dist_vector = ((add_IMBH.x-pos.x)**2+(add_IMBH.y-pos.y)**2+(add_IMBH.z-pos.z)**2).sqrt()
         add_IMBH.velocity = self.velocityList() * (1 | units.AU/units.yr)
-        add_IMBH.velocity *= (-1.15 * (add_IMBH.position-pos))/(dist_vector) 
+        add_IMBH.velocity += globular.velocity
         add_IMBH.key_tracker = add_IMBH.key
         add_IMBH.radius = self.IMBH_radius(add_IMBH.mass)
         add_IMBH.collision_radius = self.coll_radius(add_IMBH.radius)

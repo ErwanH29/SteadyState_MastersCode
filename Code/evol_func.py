@@ -35,7 +35,6 @@ def bin_global(parti1, parti2):
 def calc_momentum(indivp):
     """
     Function which calculates the momentum of the particles in collision
-
     Inputs:
     indivp: The colliding particles
     """
@@ -55,7 +54,6 @@ def file_counter():
 def find_nearest(array, value):
     """
     Function to find the nearest value in an array for a particular element.
-
     Inputs:
     array:  The array for which has all the elements
     value:  The value to compare the elements with
@@ -94,7 +92,6 @@ def merge_IMBH(parti, particles_in_encounter, tcoll):
     new_particle.velocity = com_vel
     new_particle.radius = (2*constants.G*new_particle.mass)/(constants.c**2)
     new_particle.collision_radius = new_particle.radius * 10
-    
     parti.add_particles(new_particle)
     parti.remove_particles(particles_in_encounter)
     return new_particle
@@ -121,12 +118,7 @@ def nearest_neighbour(indivp, pset):
     return min(min_dist)
 
 def SMBH_filter(pset):
-    return pset[pset.mass < 10**6 | units.MSun]
-
-
-def tidal_radius1(parti):
-    SMBH = MW_SMBH()
-    return (2/3)*(1/3 * SMBH_filter(parti).mass.sum()/SMBH.mass * (SMBH_filter(parti).center_of_mass()).length()**3)**(1/3)
+    return pset[pset.mass < 5*10**4 | units.MSun]
 
 def tidal_radius(pset):
     """
@@ -137,14 +129,17 @@ def tidal_radius(pset):
     """
 
     SMBH = MW_SMBH()
+    gc_code = globular_cluster()
 
     new_parti = Particle()
-    new_parti.mass = SMBH_filter(pset).mass.sum()
+    new_parti.mass = gc_code.gc_mass
     new_parti.position = SMBH_filter(pset).center_of_mass()
     new_parti.velocity = SMBH_filter(pset).center_of_mass_velocity()
 
     m1, m2, semimajor, ecc, inc, argp, ascn, tanom = bin_global(pset[0], new_parti)
     perigal = semimajor*(1-ecc)
     xe = ((3+ecc)**-1 * (new_parti.mass)/SMBH.mass * (perigal)**3)**(1/3)
+    xe = ((new_parti.mass)/SMBH.mass * gc_code.gc_dist**3)**(1/3)
 
-    return (2/3)*(xe)
+    return xe
+

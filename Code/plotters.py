@@ -1,3 +1,4 @@
+from sqlite3 import adapt
 from amuse.lab import *
 from parti_initialiser import *
 from file_logistics import *
@@ -42,7 +43,7 @@ def animator(init_dist):
 
     for i in range(col_len):
         vals = energy_tracker.iloc[i]
-        time[i][0] = vals[0].value_in(units.yr)
+        time[i][0] = vals[0].value_in(units.Myr)
         dE_array[i][0] = vals[2]
 
     col_len = len(IMBH_tracker.iloc[0])-2
@@ -50,8 +51,8 @@ def animator(init_dist):
     line_y = np.empty((len(IMBH_tracker), col_len, 1))
     line_z = np.empty((len(IMBH_tracker), col_len, 1))
 
-    for i in range(len(IMBH_tracker)-1):
-        tIMBH_tracker = IMBH_tracker.iloc[i+1]
+    for i in range(len(IMBH_tracker)):
+        tIMBH_tracker = IMBH_tracker.iloc[i]
         tIMBH_tracker = tIMBH_tracker.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
         for j in range(col_len):
             coords = tIMBH_tracker.iloc[j+1][1]
@@ -74,10 +75,10 @@ def animator(init_dist):
 
     for i in range(col_len):
         vals = Lag_tracker.iloc[i]
-        LG25_array[i][0] = vals[1].value_in(units.AU)
-        LG50_array[i][0] = vals[2].value_in(units.AU)
-        LG75_array[i][0] = vals[3].value_in(units.AU)
-        rtid_array[i][0] = vals[4].value_in(units.AU)
+        LG25_array[i][0] = vals[1].value_in(units.pc)
+        LG50_array[i][0] = vals[2].value_in(units.pc)
+        LG75_array[i][0] = vals[3].value_in(units.pc)
+        rtid_array[i][0] = vals[4].value_in(units.pc)
 
     totsys_lim = init_dist.value_in(units.pc)
 
@@ -89,32 +90,50 @@ def animator(init_dist):
 
     def animate_3D(col_len):
         skip_zeroth = col_len + 1
+        iter = -1
+
         if skip_zeroth %100 == 0:
             print('Current 3D frame: ', skip_zeroth)
 
         ax3D1.clear()
         ax3D2.clear()
-        ax3D1.set_title(str("{:.3f}".format(time[skip_zeroth][0])+" yr"), loc = 'left') 
+        ax3D1.set_title(str("{:.3f}".format(time[skip_zeroth][0])+" Myr"), loc = 'left') 
         ax3D1.set_xlim3d(-1.05*totsys_lim, 1.05*totsys_lim)
         ax3D1.set_ylim3d(-1.05*totsys_lim, 1.05*totsys_lim)
         ax3D1.set_zlim3d(-1.05*totsys_lim, 1.05*totsys_lim)
 
         for i in range(len(IMBH_tracker)):
-            ax3D1.scatter(line_x[i][max(0,skip_zeroth-20):skip_zeroth+1], 
-                          line_y[i][max(0,skip_zeroth-20):skip_zeroth+1], 
-                          line_z[i][max(0,skip_zeroth-20):skip_zeroth+1], 
-                          s =1, c = colours[i], lw = 2)
-            ax3D1.scatter(line_x[i][skip_zeroth], line_y[i][skip_zeroth], line_z[i][skip_zeroth], 
-                          c = colours[i], edgecolors = 'black', s = 50)
+            iter += 1
+            if iter > len(colours):
+                iter = 0
+                
+            if i == 0:
+                pass
+            if i == 1:
+                ax3D1.scatter((line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_x[0][max(0,skip_zeroth-20):skip_zeroth+1]), 
+                              (line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_y[0][max(0,skip_zeroth-20):skip_zeroth+1]), 
+                              (line_z[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_z[0][max(0,skip_zeroth-20):skip_zeroth+1]), 
+                               ls=':', c = 'black', lw = 2)
 
-            ax3D2.scatter(206265*(line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_x[max(0,skip_zeroth-20):skip_zeroth+1]),
-                          206265*(line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_y[max(0,skip_zeroth-20):skip_zeroth+1]),
-                          206265*(line_z[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_z[max(0,skip_zeroth-20):skip_zeroth+1]), 
-                          s =1, c = colours[i], lw = 2)
-            ax3D2.scatter(206265*(line_x[i][skip_zeroth]-com_x[skip_zeroth]), 
-                          206265*(line_y[i][skip_zeroth]-com_y[skip_zeroth]), 
-                          206265*(line_z[i][skip_zeroth]-com_z[skip_zeroth]),
-                          c = colours[i], edgecolors = 'black', s = 40)
+            if i > 1:
+                ax3D1.scatter((line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_x[0][max(0,skip_zeroth-20):skip_zeroth+1]), 
+                              (line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_y[0][max(0,skip_zeroth-20):skip_zeroth+1]), 
+                              (line_z[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_z[0][max(0,skip_zeroth-20):skip_zeroth+1]), 
+                              s =1, c = colours[iter-2], lw = 2)
+                ax3D1.scatter((line_x[i][skip_zeroth]-line_x[0][skip_zeroth]), 
+                              (line_y[i][skip_zeroth]-line_y[0][skip_zeroth]), 
+                              (line_z[i][skip_zeroth]-line_z[0][skip_zeroth]), 
+                               c = colours[iter-2], edgecolors = 'black', s = 50)
+
+                ax3D2.scatter((line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_x[max(0,skip_zeroth-20):skip_zeroth+1]),
+                              (line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_y[max(0,skip_zeroth-20):skip_zeroth+1]),
+                              (line_z[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_z[max(0,skip_zeroth-20):skip_zeroth+1]), 
+                               s =1, c = colours[iter-2], lw = 2)
+                ax3D2.scatter((line_x[i][skip_zeroth]-com_x[skip_zeroth]), 
+                              (line_y[i][skip_zeroth]-com_y[skip_zeroth]), 
+                              (line_z[i][skip_zeroth]-com_z[skip_zeroth]),
+                               c = colours[iter-2], edgecolors = 'black', s = 40)
+
         for ax_ in [ax3D1, ax3D2]:
             ax_.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
             ax_.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
@@ -122,8 +141,8 @@ def animator(init_dist):
             
         ax3D1.scatter(0,0, color = 'black', s = 100 )
         ax3D1.set_xlabel(r'$x$-Coordinate [pc]')
-        ax3D2.set_xlabel(r'$x$-Coordinate [AU]')
-        ax3D2.set_ylabel(r'$y$-Coordinate [AU]')
+        ax3D2.set_xlabel(r'$x$-Coordinate [pc]')
+        ax3D2.set_ylabel(r'$y$-Coordinate [pc]')
 
     anim3D = animation.FuncAnimation(fig, animate_3D, interval = 100, frames=(col_len-1))
     anim3D.save('figures/animation3D'+str(count)+'.gif', writer='pillow')
@@ -137,8 +156,8 @@ def animator(init_dist):
     for ax_ in [ax1, ax2, ax3, ax4]:
         ax_.xaxis.set_ticks_position('both')
         ax_.yaxis.set_ticks_position('both')
-        ax_.tick_params(axis="y",direction="in")
-        ax_.tick_params(axis="x",direction="in")
+        ax_.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax_.yaxis.set_minor_locator(mtick.AutoMinorLocator())
 
     def animate(col_len):
         skip_zeroth = col_len + 1
@@ -147,6 +166,12 @@ def animator(init_dist):
             
         for ax_ in [ax1, ax2, ax3, ax4]:
             ax_.clear()
+            ax_.yaxis.set_ticks_position('both')
+            ax_.xaxis.set_ticks_position('both')
+            ax_.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+            ax_.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+            ax_.tick_params(axis="y", which = 'both', direction="in")
+            ax_.tick_params(axis="x", which = 'both', direction="in")    
         
         for i in range(len(IMBH_tracker)):
             ax1.scatter(line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_x[max(0,skip_zeroth-20):skip_zeroth+1],
@@ -155,11 +180,14 @@ def animator(init_dist):
             ax1.scatter(line_x[i][skip_zeroth]-com_x[skip_zeroth], line_y[i][skip_zeroth]-com_y[skip_zeroth],
                         c = colours[i], edgecolors = 'black', s = 40)
 
-            ax3.scatter(line_x[i][max(0,skip_zeroth-20):skip_zeroth+1], line_y[i][max(0,skip_zeroth-20):skip_zeroth+1], 
+            ax3.scatter((line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_x[0][max(0,skip_zeroth-20):skip_zeroth+1]), 
+                        (line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_y[0][max(0,skip_zeroth-20):skip_zeroth+1]), 
                         s =1, c = colours[i], lw = 2)
-            ax3.scatter(line_x[i][skip_zeroth], line_y[i][skip_zeroth], c = colours[i], edgecolors = 'black', s = 50)
+            ax3.scatter((line_x[i][skip_zeroth]-line_x[0][skip_zeroth]), 
+                        (line_y[i][skip_zeroth]-line_y[0][skip_zeroth]), 
+                        c = colours[i], edgecolors = 'black', s = 50)
 
-            ax4.plot(time[3:skip_zeroth+1], 3*(rtid_array[3:skip_zeroth+1]), color = 'black', linestyle = ':', label = r'$3r_{tidal}$')
+            ax4.plot(time[3:skip_zeroth+1], (rtid_array[3:skip_zeroth+1]), color = 'black', linestyle = ':', label = r'$r_{tidal}$')
             ax4.plot(time[3:skip_zeroth+1], (LG25_array[3:skip_zeroth+1]), color = 'red',  label = r'$r_{25,L}$')
             ax4.plot(time[3:skip_zeroth+1], (LG50_array[3:skip_zeroth+1]), color = 'black', label = r'$r_{50,L}$')
             ax4.plot(time[3:skip_zeroth+1], (LG75_array[3:skip_zeroth+1]), color = 'blue',   label = r'$r_{75,L}$')
@@ -172,9 +200,9 @@ def animator(init_dist):
             ax_.set_ylabel(r'$y$-Coordinate [pc]')
 
         for ax_ in [ax2, ax4]:
-            ax_.set_xlabel(r'Time [yr]')
+            ax_.set_xlabel(r'Time [Myr]')
 
-        ax1.set_title(str("{:.0f}".format(time[skip_zeroth][0])+" yr"), loc = 'left')   
+        ax1.set_title(str("{:.0f}".format(time[skip_zeroth][0])+" Myr"), loc = 'left')   
         ax1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
         ax1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
         ax1.set_xlim(min(line_x[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_x[max(0,skip_zeroth-80):skip_zeroth+1]),
@@ -192,13 +220,12 @@ def animator(init_dist):
         ax3.set_xlim(-1.05*totsys_lim, 1.05*totsys_lim)
         ax3.set_ylim(-totsys_lim, totsys_lim)  
 
-        ax4.set_ylabel(r'Distance [AU]')
+        ax4.set_ylabel(r'Distance [pc]')
 
     anim = animation.FuncAnimation(fig, animate, interval = 100, frames=(col_len-1))
     anim.save('figures/animation2D'+str(count)+'.gif', writer='pillow')
 
     return 
-
         
 def energy_plotter():
     """
@@ -223,12 +250,12 @@ def energy_plotter():
 
     for i in range(col_len):
         vals = energy_tracker.iloc[i]
-        time[0][i][0] = vals[0].value_in(units.yr)
+        time[0][i][0] = vals[0].value_in(units.Myr)
         Et_array[0][i][0] = vals[1].value_in(units.J)
         dE_array[0][i][0] = vals[2]
         dEs_array[0][i][0] = vals[3]
-        IMBH_birth[0][i][0] = vals[4].value_in(units.yr)
-        collisions[0][i][0] = vals[5].value_in(units.yr)
+        IMBH_birth[0][i][0] = vals[4].value_in(units.Myr)
+        collisions[0][i][0] = vals[5].value_in(units.Myr)
         merger_mass[0][i][0] = vals[6].value_in(units.MSun)
 
         vals = IMBH_energy_tracker.iloc[i]
@@ -246,13 +273,17 @@ def energy_plotter():
     ax2 = fig.add_subplot(222)
     ax1.set_title('Energy Conservation')
     ax2.set_title('Total Energy Evolution')
+
     for ax_ in [ax1, ax2]:
         ax_.yaxis.set_ticks_position('both')
         ax_.xaxis.set_ticks_position('both')
-        ax_.tick_params(axis="y",direction="in")
-        ax_.tick_params(axis="x",direction="in")
-        ax_.set_xlabel(r'Time [yr]')
+        ax_.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax_.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax_.tick_params(axis="y", which = 'both', direction="in")
+        ax_.tick_params(axis="x", which = 'both', direction="in")    
+        ax_.set_xlabel(r'Time [Myr]')
         ax_.set_yscale('log')
+
     ax1.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
     ax2.set_ylabel(r'Energy [J]')
     ax2.set_ylim(0.1*min(abs(BE_array[0][:])), 5*max(KE_array[0][:]))
@@ -274,7 +305,7 @@ def energy_plotter():
         IMBH_app = IMBH_birth[0][app_id[:,0]+1]
         totE_app = abs(TotE_array[0][app_id[:,0]+1])
         ax1.scatter(IMBH_app, dE_app, marker = 'x', color = 'red', zorder = 2)
-        ax2.scatter(IMBH_app, totE_app, color = 'black', zorder = 4)
+        ax2.scatter(IMBH_app, totE_app, marker = 'x', color = 'red', zorder = 4)
     plt.savefig('figures/energy_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()
@@ -287,12 +318,13 @@ def spatial_plotter(init_dist):
     outputs: Plots of the evolution of the system in Cartesian coordinates
     """
 
+    gc_code = globular_cluster()
     count = file_counter()
-    ejec_parti, col_len   = file_opener('data/stability_time/*')
-    com_tracker, col_len  = file_opener('data/center_of_mass/*')
+    ejec_parti, col_len = file_opener('data/stability_time/*')
+    com_tracker, col_len = file_opener('data/center_of_mass/*')
     IMBH_tracker, col_len = file_opener('data/positions_IMBH/*')
-    Lag_tracker, col_len  = file_opener('data/lagrangians/*')
-    com_x, com_y, com_z   = file_manipulator(col_len, com_tracker)
+    Lag_tracker, col_len = file_opener('data/lagrangians/*')
+    com_x, com_y, com_z = file_manipulator(col_len, com_tracker)
 
     time = np.empty((1, col_len, 1))
     LG25_array  = np.empty((1, col_len, 1))
@@ -300,13 +332,13 @@ def spatial_plotter(init_dist):
     LG75_array  = np.empty((1, col_len, 1))
     rtide_array = np.empty((1, col_len, 1))
 
-    for i in range(col_len-1):
-        vals = Lag_tracker.iloc[i+1]
-        time[0][i+1][0] = vals[0].value_in(units.yr)
-        LG25_array[0][i+1][0]  = vals[1].value_in(units.AU)
-        LG50_array[0][i+1][0]  = vals[2].value_in(units.AU)
-        LG75_array[0][i+1][0]  = vals[3].value_in(units.AU)
-        rtide_array[0][i+1][0] = vals[4].value_in(units.AU)
+    for i in range(col_len):
+        vals = Lag_tracker.iloc[i]
+        time[0][i][0] = vals[0].value_in(units.Myr)
+        LG25_array[0][i][0]  = vals[1].value_in(units.pc)
+        LG50_array[0][i][0]  = vals[2].value_in(units.pc)
+        LG75_array[0][i][0]  = vals[3].value_in(units.pc)
+        rtide_array[0][i][0] = vals[4].value_in(units.pc)
 
     line_x = np.empty((len(IMBH_tracker), col_len, 1))
     line_y = np.empty((len(IMBH_tracker), col_len, 1))
@@ -314,8 +346,9 @@ def spatial_plotter(init_dist):
     tdyn   = np.empty((len(IMBH_tracker), col_len, 1))
 
     colours = colour_picker()
-    for i in range(len(IMBH_tracker)-1):
-        tIMBH_tracker = IMBH_tracker.iloc[i+1]
+
+    for i in range(len(IMBH_tracker)):
+        tIMBH_tracker = IMBH_tracker.iloc[i]
         tIMBH_tracker = tIMBH_tracker.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
         for j in range(col_len):
             coords = tIMBH_tracker.iloc[j+1][1]
@@ -326,14 +359,21 @@ def spatial_plotter(init_dist):
                 line_x[i][j][0] = coords[0].value_in(units.pc)
                 line_y[i][j][0] = coords[1].value_in(units.pc)
                 line_z[i][j][0] = coords[2].value_in(units.pc)
-                tdyn[i][j][0] = tdynval.value_in(units.yr)
+                tdyn[i][j][0] = tdynval.value_in(units.Myr)
 
     ejected_x, ejected_y, ejected_z = ejected_extract(IMBH_tracker, ejec_parti, col_len)
+    ejected_x[:][abs(ejected_x[:]) < 10**-5] = np.NaN
+    ejected_y[:][abs(ejected_y[:]) < 10**-5] = np.NaN
+    ejected_z[:][abs(ejected_z[:]) < 10**-5] = np.NaN
+    ejected_x[:][abs(ejected_x[:]) > 10**5] = np.NaN
+    ejected_y[:][abs(ejected_y[:]) > 10**5] = np.NaN
+    ejected_z[:][abs(ejected_z[:]) > 10**5] = np.NaN
+
+    ejected_dist = np.sqrt((ejected_x-com_x)**2+(ejected_y-com_y)**2+(ejected_z-com_z)**2)
 
     line_x[:][abs(line_x[:]) < 10**-5] = np.NaN
     line_y[:][abs(line_y[:]) < 10**-5] = np.NaN
     line_z[:][abs(line_z[:]) < 10**-5] = np.NaN
-
     line_x[:][abs(line_x[:]) > 1e8] = np.NaN
     line_y[:][abs(line_y[:]) > 1e8] = np.NaN
     line_z[:][abs(line_z[:]) > 1e8] = np.NaN 
@@ -351,62 +391,71 @@ def spatial_plotter(init_dist):
     ax2.set_title('Ejected IMBH Focus')
 
     for ax_ in [ax1, ax2]:
-        ax_.set_xlabel(r'$x$-Coordinate [AU]')
-        ax_.set_ylabel(r'$y$-Coordinate [AU]')
+        ax_.set_xlabel(r'$x$-Coordinate [pc]')
+        ax_.set_ylabel(r'$y$-Coordinate [pc]')
     ax3.set_xlabel(r'$x$-Coordinate [pc]')
     ax3.set_ylabel(r'$y$-Coordinate [pc]')
-    ax4.set_xlabel(r'Time [yr]')
-    ax4.set_ylabel(r'Lagrangian Radius [AU]')
+    ax4.set_xlabel(r'Time [Myr]')
+    ax4.set_ylabel(r'Distance [pc]')
 
     for ax_ in [ax1, ax2, ax3, ax4]:
         ax_.yaxis.set_ticks_position('both')
         ax_.xaxis.set_ticks_position('both')
-        ax_.tick_params(axis="y",direction="in")
-        ax_.tick_params(axis="x",direction="in")       
+        ax_.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax_.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax_.tick_params(axis="y", which = 'both', direction="in")
+        ax_.tick_params(axis="x", which = 'both', direction="in")       
 
-    maxx = [ ]
-    minx = [ ]
-    miny = [ ]
-    maxy = [ ]
-
+    iter = -1
     for i in range(len(IMBH_tracker)):
-        xval = 206265*(line_x[i][1:]-com_x[1:])
-        yval = 206265*(line_y[i][1:]-com_y[1:])
-        
-        minx.append(1.1*min(xval))
-        maxx.append(1.1*max(xval))
-        miny.append(1.1*min(yval))
-        maxy.append(1.1*max(yval))
+        iter += 1
+        if i == 0:
+            adapt_c = 'black'
+            ax3.scatter((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = adapt_c, zorder = 1, s = 21)
+            ax3.scatter((line_x[i][-1]-line_x[0][-1]), (line_y[i][-1]-line_y[0][-1]), c = adapt_c, s = 250, zorder = 3)
+            ax3.scatter((line_x[i][0]-line_x[0][0]), (line_y[i][0]-line_y[0][0]), alpha = 0.7, c = adapt_c, s = 250, zorder = 2)
+        if i == 1:
+            ax3.plot((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = adapt_c, ls = '--', zorder = 1)
+        if iter > len(colours):
+            iter = 0
+        if i > 1:
+            xval = (line_x[i][1:]-com_x[1:])
+            yval = (line_y[i][1:]-com_y[1:])
 
-        ax1.scatter(xval, yval, s = 5, c = colours[i], zorder = 1)
-        ax1.scatter(206265*(line_x[i][1]-com_x[1]), 206265*(line_y[i][1]-com_y[1]), 
-                    alpha = 0.7, c = colours[i], edgecolors = 'black', s = 50, zorder = 2)
-        ax1.scatter(206265*(line_x[i][-1]-com_x[-1]), 206265*(line_y[i][-1]-com_y[-1]), 
-                    c = colours[i], edgecolors = 'black', s = 50, zorder = 3)
-        ax3.scatter(line_x[i][:-1], line_y[i][:-1], c = colours[i], zorder = 1, s = 1)
-        ax3.scatter(line_x[i][-1], line_y[i][-1], c = colours[i], edgecolors = 'black', s = 50, zorder = 3)
-        ax3.scatter(line_x[i][1], line_y[i][1], alpha = 0.7, c = colours[i], edgecolors = 'black', s = 50, zorder = 2)
-        ax2.scatter(206265*(line_x[i][:-1]-ejected_x[0][:-1]), 206265*(line_y[i][:-1]-ejected_y[0][:-1]), 
-                    c = colours[i], s = 5, zorder = 1)
-        ax2.scatter(206265*(line_x[i][0]-ejected_x[0][0]), 206265*(line_y[i][0]-ejected_y[0][0]), 
-                    alpha = 0.7,c = colours[i], edgecolors = 'black', s = 50, zorder=2)
-        ax2.scatter(206265*(line_x[i][-2]-ejected_x[0][-2]), 206265*(line_y[i][-2]-ejected_y[0][-2]), 
-                    c = colours[i], edgecolors = 'black', s = 50, zorder=3)
-    ax3.scatter(0,0, color = 'black', s = 250, zorder = 2)
-    ax4.plot(time[0][3:], 3*rtide_array[0][3:], color = 'black',  label = r'$3r_{tidal}$', linestyle = ":")
+            ax1.scatter(xval, yval, c = colours[iter-2], zorder = 1, s = 5)
+            ax1.scatter(line_x[i][0]-com_x[0], line_y[i][0]-com_y[0], 
+                        alpha = 0.7, c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 2)
+            ax1.scatter(line_x[i][-1]-com_x[-1], line_y[i][-1]-com_y[-1], 
+                        c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 3)
+
+            ax2.scatter(line_x[i][:-1]-ejected_x[0][:-1], line_y[i][:-1]-ejected_y[0][:-1], 
+                        c = colours[iter-2], s = 5, zorder = 1)
+            ax2.scatter(line_x[i][0]-ejected_x[0][0], line_y[i][0]-ejected_y[0][0], 
+                        alpha = 0.7,c = colours[iter-2], edgecolors = 'black', s = 50, zorder=2)
+            ax2.scatter(line_x[i][-2]-ejected_x[0][-2], line_y[i][-2]-ejected_y[0][-2], 
+                        c = colours[iter-2], edgecolors = 'black', s = 50, zorder=3)
+
+            ax3.scatter((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = colours[iter-2], zorder = 1, s = 1)
+            ax3.scatter((line_x[i][-1]-line_x[0][-1]), (line_y[i][-1]-line_y[0][-1]), c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 3)
+            ax3.scatter((line_x[i][0]-line_x[i][0]), (line_y[i][0]-line_y[0][0]), alpha = 0.7, c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 2)
+
+    #ax3.scatter(0,0, color = 'black', s = 250, zorder = 2)
+    ax4.plot(time[0][3:], rtide_array[0][3:], color = 'black',  label = r'$r_{tidal}$', linestyle = ":")
     ax4.plot(time[0][3:], LG25_array[0][3:],  color = 'red',   label = r'$r_{25,L}$')
-    ax4.plot(time[0][3:], LG50_array[0][3:],  color = 'black', label = r'$r_{50,L}$')
+    #ax4.plot(time[0][3:], LG50_array[0][3:],  color = 'black', label = r'$r_{50,L}$')
     ax4.plot(time[0][3:], LG75_array[0][3:],  color = 'blue',  label = r'$r_{75,L}$')
+    ax4.plot(time[0][3:], ejected_dist[0][3:], color = 'black', label = 'Ejected Particle')
     ax4.legend()
 
-    ax1.set_xlim(min(minx), max(maxx))
-    ax1.set_ylim(min(miny), max(maxy))
-    ax2.set_xlim(-1000,1000)
-    ax2.set_ylim(-1000,1000)
-    ax3.set_xlim(-1.15*init_dist.value_in(units.pc), 1.15*init_dist.value_in(units.pc))
+    ax2.set_xlim(-1.05*gc_code.gc_dist.value_in(units.pc), 1.05*gc_code.gc_dist.value_in(units.pc))
+    ax2.set_ylim(-1.05*gc_code.gc_dist.value_in(units.pc), 1.05*gc_code.gc_dist.value_in(units.pc)) 
+    ax3.set_xlim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc))
     ax3.set_ylim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc)) 
 
-    ax1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.0f'))
+    ax4.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
+    ax4.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+    ax4.set_xlim(time[0][3], time[0][-1])
+    ax4.set_ylim(0, 1.1*max(rtide_array[0]))
     plt.savefig('figures/spatial_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()
@@ -432,16 +481,18 @@ class stability_time(object):
 
         ax.yaxis.set_ticks_position('both')
         ax.xaxis.set_ticks_position('both')
-        ax.tick_params(axis="y",direction="in")
-        ax.tick_params(axis="x",direction="in")
-        ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.0f'))
+        ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.tick_params(axis="y", which = 'both', direction="in")
+        ax.tick_params(axis="x", which = 'both', direction="in")    
+        ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
         ax.xaxis.labelpad = 20
         plt.xticks(xints)
         plt.xlim(2.5,max(pop)+1)
         plt.ylim(0, 1.2*max(ydata))
-        plt.ylabel(r'Ejection Time [yr]')
+        plt.ylabel(r'Ejection Time [Myr]')
         plt.xlabel(r'Number of IMBH [$N$]')
-        plt.title(r'Black Hole Population vs. Stability Time')
+        plt.title(r'Chaotic Black Hole Population vs. Stability Time')
 
     def steadytime_distdep_plotter(self):
         """
@@ -454,10 +505,10 @@ class stability_time(object):
 
         in_mass = np.unique(self.init_mass_data[:,0], axis = 0) #Get the unique initial mass and distances array
         in_dist = np.unique(self.init_dist_data)
-        colourcycler = cycle(colour_picker())
 
         for mass_ in in_mass:           #For every initial mass, we will plot a separate graph showing different coloured data points
             fig, ax = plt.subplots()    #depending on their distance to the central SMBH
+            colourcycler = cycle(colour_picker())
             tot_pop = [ ]
             y_max = []  
             iter = -1
@@ -503,7 +554,7 @@ class stability_time(object):
             ax.text(0.34*max(tot_pop), 1.125*max(y_max), r'$m_{i} \in$ '+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r'$M_\odot$')
             self.stab_plotter_logistics(ax, tot_pop, xints, y_max)
             plt.legend()
-            plt.savefig('figures/stab_time_equal_mass_'+str(mass_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
+            plt.savefig('figures/chaotic_stab_time_equal_mass_'+str(mass_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
 
         for mass_ in in_mass:      #For every initial mass and distance we will plot a separate graph. This time it includes std spread
             for dist_ in in_dist:  #For three different distances, every mass has 3 unique plots with errors.
@@ -552,14 +603,12 @@ class stability_time(object):
                     xints = [i for i in range(1+int(max(tot_pop)))]
                     ax.text(0.34*max(tot_pop), 1.05*(max(np.add(N_parti_avg, std))), r'$m_{IMBH}=$'+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r' $M_\odot$'+'\n'+r'$r_{SMBH}=$'+str(dist_)+' pc')
                     self.stab_plotter_logistics(ax, tot_pop, xints, np.add(N_parti_avg, std))
-                    plt.savefig('figures/stab_time_equal_mass_'+str(mass_)+'_err_dist_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
+                    plt.savefig('figures/chaotic_stab_time_equal_mass_'+str(mass_)+'_err_dist_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
 
     def steadytime_massdep_plotter(self):
 
         in_dist = np.unique(self.init_dist_data)
         in_mass = np.unique(self.init_mass_data, axis=0)
-        coloursycler = cycle(colour_picker())
-
 
         for dist_ in in_dist:
             fig, ax = plt.subplots()
@@ -567,6 +616,7 @@ class stability_time(object):
             y_max = []     
             iter = -1   
             init_dist_idx = np.where((self.init_dist_data == dist_))
+            coloursycler = cycle(colour_picker())
 
             for mass_ in in_mass:
                 iter += 1
@@ -605,13 +655,13 @@ class stability_time(object):
                         if iter == 0:
                             ax.text(xpos, -0.115*max(N_parti_avg), 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
                         else:
-                            ax.text(xpos, -0.115*max(N_parti_avg)*(1+0.4*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
+                            ax.text(xpos, -0.115*max(N_parti_avg)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
                 xints = [i for i in range(1+int(max(tot_pop)))]
 
             ax.text(0.34*max(tot_pop), 1.125*max(y_max), r'$r_{SMBH}=$'+str(dist_)+' pc')
             self.stab_plotter_logistics(ax, tot_pop, xints, y_max)
             plt.legend()
-            plt.savefig('figures/stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
+            plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
 
         for dist_ in in_dist:
             for mass_ in in_mass: 
@@ -660,12 +710,13 @@ class stability_time(object):
 
                     ax.text(0.34*max(tot_pop), 1.05*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
                     self.stab_plotter_logistics(ax, tot_pop, xints, np.add(N_parti_avg, std))
-                    plt.savefig('figures/stab_time_equal_dist_'+str(dist_)+'_std_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
-spatial_plotter(0.1 |units.parsec)
+                    plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_std_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
+
+
+#spatial_plotter(1.5 |units.parsec)
+#energy_plotter()
+#animator(1.5 | units.parsec)
+
 st = stability_time()
 st.steadytime_massdep_plotter()
 st.steadytime_distdep_plotter()
-animator(1 | units.parsec)
-
-energy_plotter()
-

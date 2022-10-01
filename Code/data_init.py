@@ -22,7 +22,7 @@ class data_initialiser(object):
         for i in range(init_pop):
             parti_KE = 0.5*pset[i].mass*pset[i].velocity.length()**2
             temp_PE = []
-            temp_PE = indiv_PE_BH(pset[i], pset, temp_PE)
+            temp_PE = indiv_PE_all(pset[i], pset, temp_PE)
             parti_PE = max(temp_PE)
             df_IMBH_vals = pd.Series({'key_tracker': pset[i].key_tracker, 
                                       '{}'.format(time): [pset[i].mass, pset[i].position, 
@@ -72,15 +72,33 @@ class data_initialiser(object):
 
         return LG_array
 
-    
     def energy_tracker(self, E0, time, app_time):
+        """
+        Data set to track the energy evolution of the system
+        
+        Inputs:
+        E0:       The initial energy
+        time:     The initial time
+        app_time: The time a new particle appears
+        """
+
         energy_tracker = pd.DataFrame()
         df_energy_tracker = pd.Series({'Time': time.in_(units.kyr), 'Et': E0 , 'dE': 0, 'dEs': 0, 'Appearance': app_time, 
-                                    'Collision Time': 0 | units.s, 'Collision Mass': 0 | units.MSun })
+                                       'Collision Time': 0 | units.s, 'Collision Mass': 0 | units.MSun })
         energy_tracker = energy_tracker.append(df_energy_tracker, ignore_index=True)
         return energy_tracker
 
     def parti_energy_tracker(self, BE, KE, E0, time):
+        """
+        Data set which tracks the inidivual particle energy
+        
+        Inputs:
+        BE:     The particles maximum binding energy
+        KE:     The particles kinetic energy
+        E0:     The particles total energy
+        time:   The time of the
+        """
+        
         parti_energy_tracker = pd.DataFrame()
         df_parti_energy_tracker = pd.Series({'Time': time.in_(units.kyr), "BE": BE.in_(units.J), 
                                             "KE": KE.in_(units.J), "Total E": E0})
@@ -90,7 +108,7 @@ class data_initialiser(object):
     def coll_tracker(self):
         coll_tracker = pd.DataFrame()
         df_coll_tracker = pd.Series({'Collision Time': 0 | units.s, 'Collided Particles': [0, 0], 'Initial Mass': [0, 0] | units.MSun,
-                                    'Emergent Particle': 0, 'Collision Mass': 0 | units.MSun})
+                                     'Emergent Particle': 0, 'Collision Mass': 0 | units.MSun})
         coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True)
         return coll_tracker
 
@@ -100,4 +118,3 @@ class data_initialiser(object):
                                         'Collision Time': 0 | units.s, 'Injected Event': 0, 'Injected Time': 0 |units.s})
         eventstab_tracker = eventstab_tracker.append(df_eventstab_tracker, ignore_index = True)
         return eventstab_tracker
-

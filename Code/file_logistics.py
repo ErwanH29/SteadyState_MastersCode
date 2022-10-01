@@ -118,9 +118,9 @@ def steadytime_extractor(dir):
         ini_parti_data[i] = sim_data.iloc[0][0]
         fin_parti_data[i] = sim_data.iloc[0][1]
         number_mergers[i] = sim_data.iloc[0][2]
-        simulated_end[i]  = sim_data.iloc[0][3].value_in(units.yr)
+        simulated_end[i]  = sim_data.iloc[0][3].value_in(units.Myr)
         ejected_parti[i]  = sim_data.iloc[0][4]
-        stab_time_data[i] = sim_data.iloc[0][5].value_in(units.yr)
+        stab_time_data[i] = sim_data.iloc[0][5].value_in(units.Myr)
         init_dist_data[i] = sim_data.iloc[0][6].value_in(units.parsec)
         cluster_radius[i] = sim_data.iloc[0][7].value_in(units.parsec)
         init_mass_data[i] = [int(min(sim_data.iloc[0][8].value_in(units.MSun))), int(max(sim_data.iloc[0][8].value_in(units.MSun)))]

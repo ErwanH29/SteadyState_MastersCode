@@ -5,29 +5,31 @@ from evol_func import *
 import numpy as np
 
 
-def df_timescale(indivp, clust_rad, halfmass):
+def df_timescale(halfmass):
     """
     Dynamical friction timescale to compute the time needed before IMBH enters cluster.
     Uses eqn. 8.12 of Tremaine and Binney (2007).
     
     Inputs:
-    indivp:     Single particle of the initialised set to extract approx. value from.
-    clust_rad:  The initial radius of the cluster particles orbit at
     halfmass:   The half-mass radius of the complete particle set (IMBH)
     dist_const: The radius constant used in TB07
     vel_const:  The vel. constant used in TB07
     mass_const: The mass constant used in TB07
-    sigmav:     Assumed to be ~ (circular_velocity)/(sqrt(2)) as per TB07
     """
 
     dist_const = 5 | units.kpc
     vel_const  = 200 | units.kms
     mass_const = 10**8 | units.MSun
-    sigmav = (np.sqrt(2))**-1 * indivp.velocity.length()
-    rh = halfmass
-    rtyp = (constants.G*indivp.mass)/(indivp.velocity.length()**2)
-    Lambda = (indivp.position.length()/max(rh, rtyp))
-    return 19/(np.log(Lambda))*(clust_rad/dist_const)**2 * (sigmav / vel_const) * (mass_const/indivp.mass) * 1 | units.Gyr
+    gc_code = globular_cluster()
+    IMBH_code = IMBH_init()
+
+    sigmav = 15 | units.kms #HARDCODED VALUE
+    Lambda = (gc_code.gc_rad/halfmass)
+
+    df_val = 19/(np.log(Lambda))*(gc_code.gc_rad/dist_const)**2 * (sigmav / vel_const) \
+            * (mass_const/(IMBH_code.mass)) * 1 | units.Gyr
+
+    return df_val
 
 def df_velchange(indivp, vel_disp, no_stars):
     """
@@ -50,13 +52,13 @@ def df_velchange(indivp, vel_disp, no_stars):
 def indiv_max_PE(indivp, set):
     """
     Finding a particles' maximum PE
-
     Input:
     indivp:  The individual particle computing BE for
     set:     The complete particle set
     """
 
     SMBH = MW_SMBH()
+    GC = globular_cluster()
 
     temp_PE_array = []
     for j in range(len(set)):
@@ -65,15 +67,15 @@ def indiv_max_PE(indivp, set):
         else:
             distance = (indivp.position.length()-set[j].position.length())
             temp_PE  = ((constants.G*indivp.mass*set[j].mass)/abs(distance) \
-                        + indivp.mass * SMBH.get_potential_at_point(0, indivp.x, indivp.y, indivp.z))
+                        + indivp.mass * SMBH.get_potential_at_point(0, indivp.x, indivp.y, indivp.z)
+                        + indivp.mass * GC.get_potential_at_point(0, indivp.x, indivp.y, indivp.z))
             temp_PE_array.append(temp_PE)
 
     return max(temp_PE_array)
 
-def indiv_PE_BH(indivp, set, array):
+def indiv_PE_all(indivp, set, array):
     """
     Finding a particles' individual PE based on its closest binary
-
     Input:
     indivp:  The individual particle computing BE for
     set:     The complete particle set
@@ -91,27 +93,23 @@ def indiv_PE_BH(indivp, set, array):
 
     return array
 
-def indiv_PE(indivp, set, array):
+def indiv_PE_closest(indivp, set, array):
     """
     Finding a particles' individual PE based on its closest binary
-
     Input:
     indivp:  The individual particle computing BE for
     set:     The complete particle set
     """
 
     SMBH = MW_SMBH()
-
+    GC = globular_cluster()
     for comp_ in set:
-        if indivp == comp_ or comp_.mass > 10**6 | units.MSun:
+        if indivp == comp_:
             pass
         else:
-            x_pos = indivp.x - comp_.position.x
-            y_pos = indivp.y - comp_.position.y
-            z_pos = indivp.z - comp_.position.z
-            distance = (x_pos*x_pos + y_pos*y_pos + z_pos*z_pos).sqrt()
-            
-            temp_PE  = abs(((constants.G*indivp.mass*comp_.mass)/abs(distance)))
+            distance = (indivp.position.length()-comp_.position.length())
+            temp_PE  = abs((constants.G*indivp.mass*comp_.mass)/abs(distance) \
+                     + indivp.mass*(GC.get_potential_at_point(0, indivp.x, indivp.y, indivp.z)))
             array.append(temp_PE)
 
     return array

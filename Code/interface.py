@@ -5,20 +5,19 @@ from evol import *
 
 eta  = 1e-3
 tend = 1e6 | units.yr
-cluster_mass = 1e7  | units.MSun
-cluster_radi = 1e-3 | units.parsec
-cluster_dist = 1 | units.parsec
-conv = nbody_system.nbody_to_si(cluster_mass, cluster_radi)
-"""
-prompt = input(('WARNING: About to delete all files. Are you sure (y|n)?'))
-    if prompt == y:
+
+SMBH_code = MW_SMBH()
+gc_code = globular_cluster()
+code_conv = nbody_system.nbody_to_si((gc_code.gc_mass+SMBH_code.mass), gc_code.gc_dist)
+
+"""prompt = input(('WARNING: About to delete all files. Are you sure (y|n)?'))
+if prompt == 'y':
     file_reset('data/simulation_stats')
-    file_reset('data/stability_time')
-"""
+    file_reset('data/stability_time')"""
 
-no_sim = 3000
+no_sim = 2000
 
-for ipop_ in [5, 6, 7, 8, 9, 10]: #IMBH+SMBH
+for ipop_ in [3]: #IMBH
     initial_pop = ipop_
     remove_files = True
 
@@ -29,6 +28,8 @@ for ipop_ in [5, 6, 7, 8, 9, 10]: #IMBH+SMBH
         file_reset('data/lagrangians')
         file_reset('data/particle_energies')
         file_reset('data/positions_IMBH')
+        file_reset('data/collision_events')
+        file_reset('data/event_tracker')
         #file_reset('data/simulation_stats')
         #file_reset('data/stability_time')
         file_reset('figures')
@@ -36,16 +37,17 @@ for ipop_ in [5, 6, 7, 8, 9, 10]: #IMBH+SMBH
     for i in range(no_sim):
         print('=========== Simulation '+str(i+1)+'/'+str(no_sim)+' Running ===========')
         IMBH_code = IMBH_init()
-        IMBH_parti = IMBH_code.IMBH_first(cluster_dist, initial_pop, conv)
-        failed_simul = evolve_system(IMBH_parti, tend, eta, cluster_dist, cluster_radi , conv)
+        IMBH_parti, rhmass = IMBH_code.IMBH_first(initial_pop)
+        failed_simul = evolve_system(IMBH_parti, tend, eta, gc_code.gc_dist, gc_code.gc_rad, 
+                                     gc_code.gc_mass, rhmass, code_conv)
         if (failed_simul):
             pass
 
         else:
             #print('...Plotting Figures...')
-            #spatial_plotter(1.25*cluster_dist)
+            #spatial_plotter(1.25*gc_code.gc_dist)
             #energy_plotter()
 
             anim = False
             if (anim):
-                animator(2*cluster_dist)
+                animator(2*gc_code.gc_dist)

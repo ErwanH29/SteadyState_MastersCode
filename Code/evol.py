@@ -1,4 +1,3 @@
-from cmath import nan
 from amuse.lab import *
 from amuse.units import units
 from parti_initialiser import *
@@ -11,7 +10,7 @@ import numpy as np
 import pandas as pd
 import time as cpu_time
 
-def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
+def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass, cluster_rhmass, converter):
     """
     Bulk of the simulation. Uses Hermite integrator to evolve the system while bridging it.
     Keeps track of the particles' position and stores it in a pickle file.
@@ -25,10 +24,13 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
     converter:        Variable used to convert between nbody units and SI
     """
 
-    set_printing_strategy("custom", preferred_units = [units.MSun, units.AU, units.yr, units.AU/units.yr, units.J],
+    set_printing_strategy("custom", preferred_units = [units.MSun, units.pc, units.yr, units.AU/units.yr, units.J],
                                     precision = 20, prefix = "", separator = " ", suffix = "")
 
     comp_start = cpu_time.time()
+
+    gc_code = globular_cluster()
+    IMBH_adder = IMBH_init()
 
     initial_set = parti.copy()
     code = Hermite(converter, number_of_workers = 3)
@@ -66,12 +68,11 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
     coll_tracker = data_trackers.coll_tracker()
     eventstab_tracker = data_trackers.event_tracker(parti)
 
-    IMBH_adder = IMBH_init()
     N_parti = init_IMBH_pop
     N_parti_init = N_parti
     extra_note = ''
 
-    IMBHapp = df_timescale(parti[1], cluster_distance, LagrangianRadii(code.particles[1:])[6].in_(units.parsec))
+    IMBHapp = df_timescale(cluster_rhmass)
     decision_scale = (eta*tend)/IMBHapp #
     print('\nNew particle every: '+str('{:.6}'.format(IMBHapp.value_in(units.yr))+' years'))
     print('One timestep:       '+str('{:.4}'.format(eta*tend.value_in(units.yr))+' years'))
@@ -92,20 +93,24 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
         channel_IMBH["to_gravity"].copy()
         code.evolve_model(time)
 
-        avgx_cluster = SMBH_filter(parti).x.mean().value_in(units.AU)
-        avgy_cluster = SMBH_filter(parti).y.mean().value_in(units.AU)
-        avgz_cluster = SMBH_filter(parti).z.mean().value_in(units.AU)
-        avg_clustpos = [avgx_cluster, avgy_cluster, avgz_cluster] * 1 | units.AU
+        gc_code.d_update(parti[1].x, parti[1].y, parti[1].z)
 
         rtide = tidal_radius(parti)
         for particle in SMBH_filter(parti):
-            parti_KE = 0.5*particle.mass*(particle.velocity.length())**2
+            rel_vel = ((particle.vx-parti[1].vx)**2+(particle.vy-parti[1].vy)**2+(particle.vz-parti[1].vz)**2).sqrt()
+            parti_KE = 0.5*particle.mass*(rel_vel)**2
             temp_PE = [ ]
-            temp_PE = indiv_PE(particle, parti, temp_PE)
+            temp_PE = indiv_PE_closest(particle, parti, temp_PE)
             parti_BE = max(temp_PE)
-            dist_core = particle.position - avg_clustpos
+            parti_BE += abs(particle.mass*gc_code.get_potential_at_point(0, particle.x, particle.y, particle.z))
+            dist_core = particle.position - parti[1].position
 
-            if parti_KE > parti_BE and dist_core.length() > 3*rtide:
+            if parti_KE > parti_BE and dist_core.length() < rtide:
+                print('KE > BE but inside tidal')
+            if parti_KE < parti_BE and dist_core.length() > rtide:
+                print('KE < BE but outside tidal')
+                
+            if parti_KE > parti_BE and dist_core.length() > rtide:
                 ejected = True
                 ejected_key_track = particle.key_tracker
                 ejected_mass = particle.mass
@@ -153,8 +158,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
                 N_parti += 1
                 app_time = time
                 temp_E1 = code.kinetic_energy + code.potential_energy
-                temp_pos = SMBH_filter(code.particles).center_of_mass()
-                add_IMBH = IMBH_adder.add_IMBH(temp_pos, converter)
+                add_IMBH = IMBH_adder.add_IMBH(parti[1])
                 add_IMBH.velocity += SMBH_filter(code.particles).center_of_mass_velocity()
                 added_mass = add_IMBH.mass
                 parti.add_particle(add_IMBH)
@@ -175,8 +179,6 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
             IMBH_tracker = IMBH_tracker.append(df_IMBH, ignore_index=True)
 
         channel_IMBH["from_gravity"].copy()     
-        parti.move_to_center()
-
         rows = (N_parti)
         tdyn_val = tdyn_calc(parti) | units.yr
 
@@ -186,7 +188,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
                 if IMBH_tracker.iloc[[i][0]][0] == parti[j].key_tracker:
                     parti_KE = 0.5*parti[j].mass*parti[j].velocity.length()**2
                     temp_PE = []
-                    temp_PE = indiv_PE_BH(parti[j], parti, temp_PE)
+                    temp_PE = indiv_PE_all(parti[j], parti, temp_PE)
                     parti_PE = max(temp_PE)
                     df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].mass, parti[j].position, 
                                               parti_KE, parti_PE, tdyn_val[j]]})
@@ -211,9 +213,9 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
         com_tracker = com_tracker.append(df_com_tracker, ignore_index=True)
 
         df_LG_tracker = pd.Series({'Time': time.in_(units.kyr),
-                                   'LG25': LagrangianRadii(code.particles[1:])[5].in_(units.parsec),
-                                   'LG50': LagrangianRadii(code.particles[1:])[6].in_(units.parsec),
-                                   'LG75': LagrangianRadii(code.particles[1:])[7].in_(units.parsec),
+                                   'LG25': LagrangianRadii(code.particles[2:])[5].in_(units.parsec),
+                                   'LG50': LagrangianRadii(code.particles[2:])[6].in_(units.parsec),
+                                   'LG75': LagrangianRadii(code.particles[2:])[7].in_(units.parsec),
                                    'Tidal Radius': rtide.in_(units.parsec),
                                    'Relaxation Time': relax_timescale(cluster_radi, 10**3 | units.MSun, 10**8).in_(units.yr)})
         LG_tracker = LG_tracker.append(df_LG_tracker , ignore_index=True)
@@ -236,8 +238,8 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
 
         df_parti_energy_tracker = pd.Series({'Iteration': 0, "BE": parti_BE.in_(units.J), "KE": parti_KE.in_(units.J), "Total E": Etp})
         parti_energy_tracker = parti_energy_tracker.append(df_parti_energy_tracker, ignore_index=True)
-        time1 = time
 
+        time1 = time
         app_time = 0 | units.s
         if (ejected) or len(parti) < 4:
             time = tend
@@ -257,12 +259,12 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
 
         stab_timescale = time1 - app_time
         stab_tracker = pd.DataFrame()
-        df_stabtime = pd.Series({'Initial Particles': (init_IMBH_pop-1), 'Final Particles': (len(parti)-1), 
+        df_stabtime = pd.Series({'Initial Particles': (init_IMBH_pop-2), 'Final Particles': (len(parti)-2), 
                                  'Number of Mergers': Nenc, 'Simulated Till': time1.in_(units.yr),
                                  'Ejected Particle': ejected_key_track, 'Stability Time': stab_timescale, 
                                  'Initial Distance': cluster_distance.in_(units.parsec), 
                                  'Cluster Radius': cluster_radi.in_(units.pc),
-                                 'Initial Particle Mass': initial_set[1:].mass.in_(units.MSun),
+                                 'Initial Particle Mass': initial_set[2:].mass.in_(units.MSun),
                                  'Added Particle Mass': added_mass.in_(units.MSun),
                                  'Ejected/Merger Mass': ejected_mass.in_(units.MSun),
                                  'Computation Time': str(comp_end-comp_start),
@@ -284,7 +286,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter):
                  'Simulated until: '+str(time1.value_in(units.yr))+str('year'), 
                  'Cluster Radius: '+str(cluster_distance.value_in(units.parsec))+' parsecs', 
                  'Masses of IMBH: '+str(parti.mass.value_in(units.MSun))+' MSun',
-                 "No. of initial IMBH: "+str(init_IMBH_pop-1), 
+                 "No. of initial IMBH: "+str(init_IMBH_pop-2), 
                  'Number of new particles: '+str(N_parti-N_parti_init),
                  'Total Number of (Final) IMBH: '+str(len(parti)), 
                  'IMBH Appearance Rate: '+str(IMBHapp.value_in(units.yr))+' years',
