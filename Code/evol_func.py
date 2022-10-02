@@ -4,8 +4,6 @@ from amuse.ext.orbital_elements import orbital_elements_from_binary
 from parti_initialiser import *
 from evol_func import *
 import numpy as np
-import fnmatch
-import os
 
 def bin_global(parti1, parti2):
     """
@@ -41,15 +39,6 @@ def calc_momentum(indivp):
 
     mom_value = (indivp.mass * indivp.velocity).sum()
     return mom_value
-
-def file_counter():
-    """
-    Function which counts the number of files in a directory.
-    """
-
-    dir_path = r'data/simulation_stats/'
-    count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
-    return count
 
 def find_nearest(array, value):
     """
@@ -131,15 +120,10 @@ def tidal_radius(pset):
     SMBH = MW_SMBH()
     gc_code = globular_cluster()
 
-    new_parti = Particle()
-    new_parti.mass = gc_code.gc_mass
-    new_parti.position = SMBH_filter(pset).center_of_mass()
-    new_parti.velocity = SMBH_filter(pset).center_of_mass_velocity()
-
-    m1, m2, semimajor, ecc, inc, argp, ascn, tanom = bin_global(pset[0], new_parti)
+    m1, m2, semimajor, ecc, inc, argp, ascn, tanom = bin_global(pset[0], pset[1])
     perigal = semimajor*(1-ecc)
-    xe = ((3+ecc)**-1 * (new_parti.mass)/SMBH.mass * (perigal)**3)**(1/3)
-    xe = ((new_parti.mass)/SMBH.mass * gc_code.gc_dist**3)**(1/3)
+    xe = ((3+ecc)**-1 * (pset[1].mass)/SMBH.mass * (perigal)**3)**(1/3)
+#    xe = ((pset[1].mass)/SMBH.mass * gc_code.gc_dist**3)**(1/3)
 
     return xe
 

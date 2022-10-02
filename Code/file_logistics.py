@@ -2,6 +2,7 @@ from amuse.lab import *
 import pickle as pkl
 import numpy as np
 import glob
+import fnmatch
 import os
 
 def bulk_stat_extractor(file_string):
@@ -35,7 +36,7 @@ def ejected_extract(set, ejected, col_len):
     line_z = np.empty((1, col_len, 1))
 
     for i in range(len(set)):
-        if set.iloc[i,0] == ejected.iloc[0][4]:
+        if set.iloc[i,0] == ejected.iloc[0][5]:
             temp_comp = set.iloc[i]
             temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):
@@ -48,6 +49,15 @@ def ejected_extract(set, ejected, col_len):
                     line_z[0][j][0] = coords[2].value_in(units.pc)
     
     return line_x, line_y, line_z
+
+def file_counter():
+    """
+    Function which counts the number of files in a directory.
+    """
+
+    dir_path = r'data/simulation_stats/'
+    count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
+    return count
 
 def file_manipulator(col_len, data):
     """
@@ -103,6 +113,7 @@ def steadytime_extractor(dir):
     ini_parti_data = np.empty(no_Data)
     fin_parti_data = np.empty(no_Data)
     number_mergers = np.empty(no_Data)
+    cum_merge_mass = np.empty(no_Data)
     simulated_end  = np.empty(no_Data)
     ejected_parti  = np.empty(no_Data)
     stab_time_data = np.empty(no_Data)
@@ -118,15 +129,16 @@ def steadytime_extractor(dir):
         ini_parti_data[i] = sim_data.iloc[0][0]
         fin_parti_data[i] = sim_data.iloc[0][1]
         number_mergers[i] = sim_data.iloc[0][2]
-        simulated_end[i]  = sim_data.iloc[0][3].value_in(units.Myr)
-        ejected_parti[i]  = sim_data.iloc[0][4]
-        stab_time_data[i] = sim_data.iloc[0][5].value_in(units.Myr)
-        init_dist_data[i] = sim_data.iloc[0][6].value_in(units.parsec)
-        cluster_radius[i] = sim_data.iloc[0][7].value_in(units.parsec)
-        init_mass_data[i] = [int(min(sim_data.iloc[0][8].value_in(units.MSun))), int(max(sim_data.iloc[0][8].value_in(units.MSun)))]
-        inj_mass_data[i]  = sim_data.iloc[0][9].value_in(units.MSun)
-        eje_mass_data[i]  = sim_data.iloc[0][10].value_in(units.MSun)
+        cum_merge_mass[i] = sim_data.iloc[0][3].value_in(units.MSun)
+        simulated_end[i]  = sim_data.iloc[0][4].value_in(units.Myr)
+        ejected_parti[i]  = sim_data.iloc[0][5]
+        stab_time_data[i] = sim_data.iloc[0][6].value_in(units.Myr)
+        init_dist_data[i] = sim_data.iloc[0][7].value_in(units.parsec)
+        cluster_radius[i] = sim_data.iloc[0][8].value_in(units.parsec)
+        init_mass_data[i] = [int(min(sim_data.iloc[0][9].value_in(units.MSun))), int(max(sim_data.iloc[0][9].value_in(units.MSun)))]
+        inj_mass_data[i]  = sim_data.iloc[0][10].value_in(units.MSun)
+        eje_mass_data[i]  = sim_data.iloc[0][11].value_in(units.MSun)
         #reltime_data[i]   = sim_data.iloc[0][11].value_in(units.yr)
 
-    return ini_parti_data, fin_parti_data, number_mergers, simulated_end, ejected_parti, stab_time_data, \
+    return ini_parti_data, fin_parti_data, number_mergers, cum_merge_mass, simulated_end, ejected_parti, stab_time_data, \
            init_dist_data, cluster_radius, init_mass_data, inj_mass_data, eje_mass_data, reltime_data

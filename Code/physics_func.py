@@ -103,7 +103,7 @@ def indiv_PE_closest(indivp, set, array):
 
     SMBH = MW_SMBH()
     GC = globular_cluster()
-    for comp_ in set:
+    for comp_ in set[1:]:
         if indivp == comp_:
             pass
         else:

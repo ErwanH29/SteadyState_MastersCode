@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import matplotlib.animation as animation
 import numpy as np
-from evol_func import file_counter
 from itertools import cycle
 
 def colour_picker():
@@ -283,7 +282,7 @@ def energy_plotter():
         ax_.tick_params(axis="x", which = 'both', direction="in")    
         ax_.set_xlabel(r'Time [Myr]')
         ax_.set_yscale('log')
-
+    ax1.set_xlim(time[0][5], time[0][-1])
     ax1.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
     ax2.set_ylabel(r'Energy [J]')
     ax2.set_ylim(0.1*min(abs(BE_array[0][:])), 5*max(KE_array[0][:]))
@@ -304,6 +303,7 @@ def energy_plotter():
         dE_app = dE_array[0][app_id[:,0]+1]
         IMBH_app = IMBH_birth[0][app_id[:,0]+1]
         totE_app = abs(TotE_array[0][app_id[:,0]+1])
+
         ax1.scatter(IMBH_app, dE_app, marker = 'x', color = 'red', zorder = 2)
         ax2.scatter(IMBH_app, totE_app, marker = 'x', color = 'red', zorder = 4)
     plt.savefig('figures/energy_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
@@ -320,7 +320,7 @@ def spatial_plotter(init_dist):
 
     gc_code = globular_cluster()
     count = file_counter()
-    ejec_parti, col_len = file_opener('data/stability_time/*')
+    ejec_parti, col_len = file_opener('data/chaotic_simulation/*')
     com_tracker, col_len = file_opener('data/center_of_mass/*')
     IMBH_tracker, col_len = file_opener('data/positions_IMBH/*')
     Lag_tracker, col_len = file_opener('data/lagrangians/*')
@@ -331,6 +331,7 @@ def spatial_plotter(init_dist):
     LG50_array  = np.empty((1, col_len, 1))
     LG75_array  = np.empty((1, col_len, 1))
     rtide_array = np.empty((1, col_len, 1))
+    relax_time  = np.empty((1, col_len, 1))
 
     for i in range(col_len):
         vals = Lag_tracker.iloc[i]
@@ -339,6 +340,7 @@ def spatial_plotter(init_dist):
         LG50_array[0][i][0]  = vals[2].value_in(units.pc)
         LG75_array[0][i][0]  = vals[3].value_in(units.pc)
         rtide_array[0][i][0] = vals[4].value_in(units.pc)
+        relax_time[0][i][0]  = vals[5].value_in(units.Myr)
 
     line_x = np.empty((len(IMBH_tracker), col_len, 1))
     line_y = np.empty((len(IMBH_tracker), col_len, 1))
@@ -381,22 +383,28 @@ def spatial_plotter(init_dist):
     tdyn[:][tdyn[:] < 10**-30] = np.NaN
     tdyn[:][tdyn[:] > 10**10] = np.NaN
 
-    fig = plt.figure(figsize=(12.5, 8))
-    ax1 = fig.add_subplot(221)
-    ax2 = fig.add_subplot(222)
-    ax3 = fig.add_subplot(223)
-    ax4 = fig.add_subplot(224)
+    fig = plt.figure(figsize=(12.5, 15))
+    ax1 = fig.add_subplot(321)
+    ax2 = fig.add_subplot(322)
+    ax3 = fig.add_subplot(323)
+    ax4 = fig.add_subplot(324)
+    ax5 = fig.add_subplot(325)
+    ax6 = fig.add_subplot(326)
     
     ax1.set_title('Cluster Center of Mass')
-    ax2.set_title('Ejected IMBH Focus')
+    ax3.set_title('Ejected IMBH Focus')
+    ax4.set_title('Complete System')
+    ax5.set_title('Distance Evolution of IMBH Particles')
+    ax6.set_title('Cluster Relaxation Timescale TO FIX')
 
-    for ax_ in [ax1, ax2]:
+    for ax_ in [ax1, ax2, ax3, ax4]:
         ax_.set_xlabel(r'$x$-Coordinate [pc]')
         ax_.set_ylabel(r'$y$-Coordinate [pc]')
-    ax3.set_xlabel(r'$x$-Coordinate [pc]')
-    ax3.set_ylabel(r'$y$-Coordinate [pc]')
-    ax4.set_xlabel(r'Time [Myr]')
-    ax4.set_ylabel(r'Distance [pc]')
+
+    ax5.set_xlabel(r'Time [Myr]')
+    ax5.set_ylabel(r'Distance [pc]')
+    ax6.set_xlabel(r'Time [Myr]')
+    ax6.set_ylabel(r'Relaxation Time [Myr]')
 
     for ax_ in [ax1, ax2, ax3, ax4]:
         ax_.yaxis.set_ticks_position('both')
@@ -411,51 +419,65 @@ def spatial_plotter(init_dist):
         iter += 1
         if i == 0:
             adapt_c = 'black'
-            ax3.scatter((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = adapt_c, zorder = 1, s = 21)
-            ax3.scatter((line_x[i][-1]-line_x[0][-1]), (line_y[i][-1]-line_y[0][-1]), c = adapt_c, s = 250, zorder = 3)
-            ax3.scatter((line_x[i][0]-line_x[0][0]), (line_y[i][0]-line_y[0][0]), alpha = 0.7, c = adapt_c, s = 250, zorder = 2)
+            ax4.scatter((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = adapt_c, zorder = 1, s = 21)
+            ax4.scatter((line_x[i][-1]-line_x[0][-1]), (line_y[i][-1]-line_y[0][-1]), c = adapt_c, s = 250, zorder = 3)
+            ax4.scatter((line_x[i][0]-line_x[0][0]), (line_y[i][0]-line_y[0][0]), alpha = 0.7, c = adapt_c, s = 250, zorder = 2)
         if i == 1:
-            ax3.plot((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = adapt_c, ls = '--', zorder = 1)
+            ax4.plot((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = adapt_c, ls = '--', zorder = 1)
         if iter > len(colours):
             iter = 0
         if i > 1:
-            xval = (line_x[i][1:]-com_x[1:])
-            yval = (line_y[i][1:]-com_y[1:])
+            xval = (line_x[i][1:]-line_x[1][1:])
+            yval = (line_y[i][1:]-line_y[1][1:])
 
-            ax1.scatter(xval, yval, c = colours[iter-2], zorder = 1, s = 5)
-            ax1.scatter(line_x[i][0]-com_x[0], line_y[i][0]-com_y[0], 
-                        alpha = 0.7, c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 2)
-            ax1.scatter(line_x[i][-1]-com_x[-1], line_y[i][-1]-com_y[-1], 
-                        c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 3)
+            for ax_ in [ax1, ax2]:
+                ax_.scatter(xval, yval, c = colours[iter-2], zorder = 1, s = 5)
+                ax_.scatter(line_x[i][-1]-line_x[1][-1], line_y[i][-1]-line_y[1][-1], 
+                            c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 3)
+            ax1.scatter(line_x[i][1]-line_x[1][1], line_y[i][1]-line_y[1][1], 
+                        alpha = 0.7, c = colours[iter-2], edgecolors = 'black', s = 30, zorder = 2)
 
-            ax2.scatter(line_x[i][:-1]-ejected_x[0][:-1], line_y[i][:-1]-ejected_y[0][:-1], 
+            ax3.scatter(line_x[i][:-1]-ejected_x[0][:-1], line_y[i][:-1]-ejected_y[0][:-1], 
                         c = colours[iter-2], s = 5, zorder = 1)
-            ax2.scatter(line_x[i][0]-ejected_x[0][0], line_y[i][0]-ejected_y[0][0], 
-                        alpha = 0.7,c = colours[iter-2], edgecolors = 'black', s = 50, zorder=2)
-            ax2.scatter(line_x[i][-2]-ejected_x[0][-2], line_y[i][-2]-ejected_y[0][-2], 
+            ax3.scatter(line_x[i][1]-ejected_x[0][1], line_y[i][1]-ejected_y[0][1], 
+                        alpha = 0.7,c = colours[iter-2], edgecolors = 'black', s = 30, zorder=2)
+            ax3.scatter(line_x[i][-2]-ejected_x[0][-2], line_y[i][-2]-ejected_y[0][-2], 
                         c = colours[iter-2], edgecolors = 'black', s = 50, zorder=3)
 
-            ax3.scatter((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = colours[iter-2], zorder = 1, s = 1)
-            ax3.scatter((line_x[i][-1]-line_x[0][-1]), (line_y[i][-1]-line_y[0][-1]), c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 3)
-            ax3.scatter((line_x[i][0]-line_x[i][0]), (line_y[i][0]-line_y[0][0]), alpha = 0.7, c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 2)
+            ax4.scatter((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = colours[iter-2], zorder = 1, s = 1)
+            ax4.scatter((line_x[i][-1]-line_x[0][-1]), (line_y[i][-1]-line_y[0][-1]), c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 3)
+            ax4.scatter((line_x[i][1]-line_x[0][1]), (line_y[i][1]-line_y[0][1]), alpha = 0.7, c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 2)
 
-    #ax3.scatter(0,0, color = 'black', s = 250, zorder = 2)
-    ax4.plot(time[0][3:], rtide_array[0][3:], color = 'black',  label = r'$r_{tidal}$', linestyle = ":")
-    ax4.plot(time[0][3:], LG25_array[0][3:],  color = 'red',   label = r'$r_{25,L}$')
-    #ax4.plot(time[0][3:], LG50_array[0][3:],  color = 'black', label = r'$r_{50,L}$')
-    ax4.plot(time[0][3:], LG75_array[0][3:],  color = 'blue',  label = r'$r_{75,L}$')
-    ax4.plot(time[0][3:], ejected_dist[0][3:], color = 'black', label = 'Ejected Particle')
-    ax4.legend()
+    cluster_rad1 = plt.Circle((0,0), gc_code.gc_rad.value_in(units.pc), edgecolor = 'black', fill=False, ls = ':', label = 'Cluster Radius')
+    cluster_rad2 = plt.Circle((0,0), gc_code.gc_rad.value_in(units.pc), edgecolor = 'black', fill=False, ls = ':', label = 'Cluster Radius')
+    tidal_rad   = plt.Circle((0,0), rtide_array[0][1], edgecolor = 'black', fill=False, ls = '-.', label = 'Tidal Radius')
+    ax1.add_patch(cluster_rad1)
+    ax2.add_patch(tidal_rad)
+    ax2.add_patch(cluster_rad2)
+    ax1.legend(loc = 1)
+    ax2.legend(loc = 1)
 
-    ax2.set_xlim(-1.05*gc_code.gc_dist.value_in(units.pc), 1.05*gc_code.gc_dist.value_in(units.pc))
-    ax2.set_ylim(-1.05*gc_code.gc_dist.value_in(units.pc), 1.05*gc_code.gc_dist.value_in(units.pc)) 
-    ax3.set_xlim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc))
-    ax3.set_ylim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc)) 
+    ax5.plot(time[0][3:], rtide_array[0][3:], color = 'black',  label = r'$r_{tidal}$')
+    ax5.plot(time[0][3:], LG25_array[0][3:],  color = 'red',   label = r'$r_{25,L}$')
+    ax5.plot(time[0][3:], LG75_array[0][3:],  color = 'blue',  label = r'$r_{75,L}$')
+    ax5.plot(time[0][3:], ejected_dist[0][3:], color = 'orange', label = 'Ejected Particle')
+    ax5.legend()
 
-    ax4.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
-    ax4.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-    ax4.set_xlim(time[0][3], time[0][-1])
-    ax4.set_ylim(0, 1.1*max(rtide_array[0]))
+    ax6.plot(time[0][3:], relax_time[0][3:], color = 'black',  label = r'$r_{tidal}$', linestyle = ":")
+    ax6.legend()
+
+    ax1.set_xlim(-1.25*gc_code.gc_rad.value_in(units.pc), 1.25*gc_code.gc_rad.value_in(units.pc))
+    ax1.set_ylim(-1.25*gc_code.gc_rad.value_in(units.pc), 1.25*gc_code.gc_rad.value_in(units.pc)) 
+    for ax_ in [ax2, ax3]:
+        ax_.set_xlim(-1.3*rtide_array[0][0], 1.3*rtide_array[0][0])
+        ax_.set_ylim(-1.3*rtide_array[0][0], 1.3*rtide_array[0][0])
+    ax4.set_xlim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc))
+    ax4.set_ylim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc)) 
+
+    ax5.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
+    ax5.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+    ax5.set_xlim(time[0][3], time[0][-1])
+    ax5.set_ylim(0, 2*max(rtide_array[0]))
     plt.savefig('figures/spatial_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()
@@ -463,10 +485,10 @@ def spatial_plotter(init_dist):
     return
 
 class stability_time(object):
-    def __init__(self, dir = 'data/stability_time/*'):
-        self.ini_parti_data, self.fin_parti_data, self.number_mergers, self.simulated_end, self.ejected_parti, \
-        self.stab_time_data, self.init_dist_data, self.cluster_radius, self.init_mass_data, self.inj_mass_data, \
-        self.eje_mass_data, self.reltime_data = steadytime_extractor(dir)  
+    def __init__(self, dirC = 'data/chaotic_simulation/*'):
+        self.chaos_ini_parti_data, self.chaos_fin_parti_data, self.chaos_number_mergers, self.chaos_cumulative_mm, self.chaos_simulated_end, self.chaos_ejected_parti, \
+        self.chaos_stab_time_data, self.chaos_init_dist_data, self.chaos_cluster_radius, self.chaos_init_mass_data, self.chaos_inj_mass_data, \
+        self.chaos_eje_mass_data, self.chaos_reltime_data = steadytime_extractor(dirC)  
 
     def stab_plotter_logistics(self, ax, pop, xints, ydata):
         """
@@ -498,13 +520,9 @@ class stability_time(object):
         """
         Function to plot the steady time with various lines corresponding to different
         SMBH Distances:
-        
-        Inputs:
-        dir:     The directory for which to gather the data from
         """
-
-        in_mass = np.unique(self.init_mass_data[:,0], axis = 0) #Get the unique initial mass and distances array
-        in_dist = np.unique(self.init_dist_data)
+        in_mass = np.unique(self.chaos_init_mass_data[:,0], axis = 0) #Get the unique initial mass and distances array
+        in_dist = np.unique(self.chaos_init_dist_data)
 
         for mass_ in in_mass:           #For every initial mass, we will plot a separate graph showing different coloured data points
             fig, ax = plt.subplots()    #depending on their distance to the central SMBH
@@ -515,10 +533,10 @@ class stability_time(object):
 
             for dist_ in in_dist:
                 iter += 1
-                init_mass_idx = np.where((self.init_mass_data == mass_).all(1))[0] #Find indices where data files correspond to the correct initial masses
-                fin_parti = self.fin_parti_data[init_mass_idx]                     #Filter the needed data based on the data files satisfying condition
-                stab_time = self.stab_time_data[init_mass_idx]
-                init_dist = self.init_dist_data[init_mass_idx]
+                init_mass_idx = np.where((self.chaos_init_mass_data == mass_).all(1))[0] #Find indices where data files correspond to the correct initial masses
+                fin_parti = self.chaos_fin_parti_data[init_mass_idx]                     #Filter the needed data based on the data files satisfying condition
+                stab_time = self.chaos_stab_time_data[init_mass_idx]
+                init_dist = self.chaos_init_dist_data[init_mass_idx]
                 dist_arrays = np.where(init_dist == dist_)                     #Find indices corresponding to the correct distances. Here we split
 
                 colours = next(colourcycler)
@@ -563,10 +581,10 @@ class stability_time(object):
                 plt.clf()
                 fig, ax = plt.subplots()
                 
-                init_mass_idx = np.where((self.init_mass_data == mass_).all(1))[0]     #Make sure to use only data who has corresponding mass
-                fin_parti = self.fin_parti_data[init_mass_idx]                         #Filter data through indices satisfying the mass requirement
-                stab_time = self.stab_time_data[init_mass_idx]
-                init_dist = self.init_dist_data[init_mass_idx]
+                init_mass_idx = np.where((self.chaos_init_mass_data == mass_).all(1))[0]     #Make sure to use only data who has corresponding mass
+                fin_parti = self.chaos_fin_parti_data[init_mass_idx]                         #Filter data through indices satisfying the mass requirement
+                stab_time = self.chaos_stab_time_data[init_mass_idx]
+                init_dist = self.chaos_init_dist_data[init_mass_idx]
                 dist_arrays = np.where(init_dist == dist_)                        #Find indices corresponding to the correct distances. Here we split
 
                 colours = next(colourcycler)
@@ -607,24 +625,24 @@ class stability_time(object):
 
     def steadytime_massdep_plotter(self):
 
-        in_dist = np.unique(self.init_dist_data)
-        in_mass = np.unique(self.init_mass_data, axis=0)
+        in_dist = np.unique(self.chaos_init_dist_data)
+        in_mass = np.unique(self.chaos_init_mass_data, axis=0)
 
         for dist_ in in_dist:
             fig, ax = plt.subplots()
             tot_pop = []
             y_max = []     
             iter = -1   
-            init_dist_idx = np.where((self.init_dist_data == dist_))
+            init_dist_idx = np.where((self.chaos_init_dist_data == dist_))
             coloursycler = cycle(colour_picker())
 
             for mass_ in in_mass:
                 iter += 1
 
-                init_mass = self.init_mass_data[init_dist_idx]
-                init_mass = self.init_mass_data[init_dist_idx[0]]
-                fin_parti = self.fin_parti_data[init_dist_idx[0]]
-                stab_time = self.stab_time_data[init_dist_idx[0]]
+                init_mass = self.chaos_init_mass_data[init_dist_idx]
+                init_mass = self.chaos_init_mass_data[init_dist_idx[0]]
+                fin_parti = self.chaos_fin_parti_data[init_dist_idx[0]]
+                stab_time = self.chaos_stab_time_data[init_dist_idx[0]]
 
                 colours = next(coloursycler)
                 N_parti_avg = [ ]
@@ -670,10 +688,10 @@ class stability_time(object):
                 plt.clf()
                 fig, ax = plt.subplots()
 
-                init_dist_idx = np.where((self.init_dist_data == dist_))
-                init_mass = self.init_mass_data[init_dist_idx]
-                fin_parti = self.fin_parti_data[init_dist_idx]
-                stab_time = self.stab_time_data[init_dist_idx]
+                init_dist_idx = np.where((self.chaos_init_dist_data == dist_))
+                init_mass = self.chaos_init_mass_data[init_dist_idx]
+                fin_parti = self.chaos_fin_parti_data[init_dist_idx]
+                stab_time = self.chaos_stab_time_data[init_dist_idx]
 
                 tot_pop = [ ]
                 colours = next(coloursycler)
@@ -712,8 +730,8 @@ class stability_time(object):
                     self.stab_plotter_logistics(ax, tot_pop, xints, np.add(N_parti_avg, std))
                     plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_std_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
 
-
-#spatial_plotter(1.5 |units.parsec)
+#gc_code = globular_cluster()
+#spatial_plotter(1.15*gc_code.gc_dist)
 #energy_plotter()
 #animator(1.5 | units.parsec)
 

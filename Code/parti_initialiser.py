@@ -220,17 +220,18 @@ class IMBH_init(object):
         self.N += 1
         add_IMBH = Particles(1)
         add_IMBH.mass = self.mass
-        add_IMBH.position = gc_code.gc_rad * [np.random.uniform(0,1)*np.random.choice([-1,1]), 
-                                              np.random.uniform(0,1)*np.random.choice([-1,1]), 
-                                              np.random.uniform(0.1,1)*np.random.choice([-1,1])]
+        add_IMBH.position = gc_code.gc_rad * [np.random.uniform(0.85,1)*np.random.choice([-1,1]), 
+                                              np.random.uniform(0.85,1)*np.random.choice([-1,1]), 
+                                              np.random.uniform(0.85,1)*np.random.choice([-1,1])]
         add_IMBH.position += globular.position
-
         add_IMBH.velocity = self.velocityList() * (1 | units.AU/units.yr)
+        add_IMBH.velocity = np.sqrt(abs(gc_code.get_potential_at_point(0, add_IMBH.x, add_IMBH.y, add_IMBH.z)) )* (add_IMBH.velocity)/(add_IMBH.velocity.length())
         add_IMBH.velocity += globular.velocity
         add_IMBH.key_tracker = add_IMBH.key
         add_IMBH.radius = self.IMBH_radius(add_IMBH.mass)
         add_IMBH.collision_radius = self.coll_radius(add_IMBH.radius)
         add_IMBH.ejection = 0
         add_IMBH.coll_events = 0
+
 
         return add_IMBH

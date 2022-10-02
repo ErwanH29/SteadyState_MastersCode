@@ -24,15 +24,17 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
     converter:        Variable used to convert between nbody units and SI
     """
 
-    set_printing_strategy("custom", preferred_units = [units.MSun, units.pc, units.yr, units.AU/units.yr, units.J],
+    set_printing_strategy("custom", preferred_units = [units.MSun, units.pc, units.kyr, units.AU/units.yr, units.J],
                                     precision = 20, prefix = "", separator = " ", suffix = "")
 
     comp_start = cpu_time.time()
 
+    SMBH_code = MW_SMBH()
     gc_code = globular_cluster()
     IMBH_adder = IMBH_init()
 
     initial_set = parti.copy()
+
     code = Hermite(converter, number_of_workers = 3)
     code.particles.add_particles(parti)
     code.commit_particles()
@@ -51,8 +53,16 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
     time = 0 | units.yr
     iter = 0
     Nenc = 0
+    app_time2 = time
+    cum_merger_mass = 0 | units.MSun
+    stab_time_init = 0 | units.s
+
     init_IMBH_pop = len(parti)
-    app_time = 0 | units.s
+    add_iter = 0
+    N_parti = init_IMBH_pop
+    N_parti_init = N_parti
+    ejected = False
+    extra_note = ''
 
     parti_KE = code.kinetic_energy
     parti_BE = code.potential_energy
@@ -62,30 +72,25 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
     data_trackers = data_initialiser()
     IMBH_tracker = data_trackers.IMBH_tracker(parti, time, init_IMBH_pop)
     com_tracker = data_trackers.com_tracker(code)
-    LG_tracker = data_trackers.LG_tracker(cluster_radi, 10**3 | units.MSun, 10**8, parti, time, code)
-    energy_tracker = data_trackers.energy_tracker(E0p, time, app_time)
+    LG_tracker = data_trackers.LG_tracker(cluster_radi, IMBH_adder.mass, gc_code.gc_pop, parti, time, code)
+    energy_tracker = data_trackers.energy_tracker(E0p, time, 0 | units.s)
     parti_energy_tracker = data_trackers.parti_energy_tracker(parti_BE, parti_KE, E0p, time)
     coll_tracker = data_trackers.coll_tracker()
     eventstab_tracker = data_trackers.event_tracker(parti)
-
-    N_parti = init_IMBH_pop
-    N_parti_init = N_parti
-    extra_note = ''
 
     IMBHapp = df_timescale(cluster_rhmass)
     decision_scale = (eta*tend)/IMBHapp #
     print('\nNew particle every: '+str('{:.6}'.format(IMBHapp.value_in(units.yr))+' years'))
     print('One timestep:       '+str('{:.4}'.format(eta*tend.value_in(units.yr))+' years'))
 
-    ejected = False
-    add_iter = 0
     while time < tend:
         iter += 1
+        app_time = 0 | units.s
         if iter %100 == 0:
             print('Iteration: ', iter)
 
-        merger_mass = 0  | units.MSun
-        added_mass = 0   | units.MSun
+        merger_mass = 0 | units.MSun
+        added_mass = 0 | units.MSun
         ejected_mass = 0 | units.MSun
         tcoll = 0 | units.yr
 
@@ -102,14 +107,27 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
             temp_PE = [ ]
             temp_PE = indiv_PE_closest(particle, parti, temp_PE)
             parti_BE = max(temp_PE)
-            parti_BE += abs(particle.mass*gc_code.get_potential_at_point(0, particle.x, particle.y, particle.z))
+            #parti_BE += abs(particle.mass*gc_code.get_potential_at_point(0, particle.x, particle.y, particle.z))
+            #parti_SMBH_BE = abs(particle.mass*SMBH_code.get_potential_at_point(0, (particle.x-parti[0].x), (particle.y-parti[0].y), (particle.z-parti[0].x)))
             dist_core = particle.position - parti[1].position
+            dist_SMBH = particle.position - parti[0].position
 
             if parti_KE > parti_BE and dist_core.length() < rtide:
                 print('KE > BE but inside tidal')
             if parti_KE < parti_BE and dist_core.length() > rtide:
                 print('KE < BE but outside tidal')
                 
+
+            if dist_SMBH.length() < 0.2*gc_code.gc_dist:
+                ejected = True
+                ejected_key_track = particle.key_tracker
+                ejected_mass = particle.mass
+                print('...Leaving Simulation - Particle bound to SMBH...')
+                print('Ejected time:         ', time)
+                print('Ejected iter:         ', iter)
+                extra_note = 'Stopped due to particle bound with SMBH'
+                break
+            
             if parti_KE > parti_BE and dist_core.length() > rtide:
                 ejected = True
                 ejected_key_track = particle.key_tracker
@@ -119,47 +137,65 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
                 print('Ejected iter:         ', iter)
                 extra_note = 'Stopped due to ejection'
                 break
+
             else:
                 pass
 
+        mergebin = 0
+        injbin = 0
         if ejected == False:
             if stopping_condition.is_set():
                 print("........Encounter Detected........")
                 print('Collision at step: ', iter)
                 energy_before = code.potential_energy + code.kinetic_energy
                 for ci in range(len(stopping_condition.particles(0))):
+                    mergebin = 1
                     Nenc += 1
+                    app_time = time
+                    app_time2 = time
+
                     enc_particles = Particles(particles=[stopping_condition.particles(0)[ci],
                                                          stopping_condition.particles(1)[ci]])
                     enc_particles = enc_particles.get_intersecting_subset_in(parti)
                     ejected_key_track = parti[-1].key_tracker
+                    merged_parti  = merge_IMBH(parti, enc_particles, code.model_time)
+                    merger_mass = merged_parti.mass.sum()
+                    cum_merger_mass += merger_mass
                     df_coll_tracker = pd.Series({'Collision Time': tcoll.in_(units.kyr), 
                                                  'Collided Particles': [enc_particles[0].key_tracker, enc_particles[1].key_tracker], 
                                                  'Initial Mass': [enc_particles[0].mass, enc_particles[1].mass] | units.MSun, 
                                                  'Emergent Particle': ejected_key_track, 'Collision Mass': merger_mass | units.MSun})                    
-                    coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True)                    
-                    merged_parti  = merge_IMBH(parti, enc_particles, code.model_time)
+                    coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True)   
+
+                    stab_timescale = time - stab_time_init
+                    data_trackers.stable_sim_tracker(parti, injbin, mergebin, merger_mass, stab_timescale)
+                    stab_time_init = time
+
                     parti.synchronize_to(code.particles)
-                    merger_mass = merged_parti.mass.sum()
                     energy_after = code.potential_energy + code.kinetic_energy
                     print('Energy change:     ', energy_after/energy_before - 1)
                     tcoll = time.in_(units.s) - eta*tend
-                    ejected_mass = parti[-1].mass 
 
                     df_eventstab_tracker = pd.Series({'Initial No. Particles': len(parti)-1, 'Merger Event': 1, 
                                                       'Collision Time': tcoll.in_(units.kyr), 'Injected Event': 0, 'Injected Time': 0 |units.s})
                     eventstab_tracker = eventstab_tracker.append(df_eventstab_tracker, ignore_index = True)
 
             df_IMBH = pd.DataFrame()
-            if IMBH_adder.decision(time, decision_scale)==True:
-                print('.........New particle added.........')
+            #if IMBH_adder.decision(time, decision_scale)==True:
+            if time % IMBHapp < (eta*tend) and iter > 1:
                 add_iter = iter
+                print('.........New particle added.........')
                 print('Added on step: ', add_iter)
+                print('Added at time: ', str('{:.3f}'.format(time.value_in(units.kyr))), ' kyr')
+                injbin = 1
                 N_parti += 1
+                Nenc = 0
+
                 app_time = time
+                app_time2 = time
                 temp_E1 = code.kinetic_energy + code.potential_energy
+
                 add_IMBH = IMBH_adder.add_IMBH(parti[1])
-                add_IMBH.velocity += SMBH_filter(code.particles).center_of_mass_velocity()
                 added_mass = add_IMBH.mass
                 parti.add_particle(add_IMBH)
                 code.particles.add_particles(add_IMBH)
@@ -168,6 +204,10 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
                 tinj = time.in_(units.s) - eta*tend
                 df_IMBH_vals = pd.Series({'key_tracker': add_IMBH.key_tracker[0]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
+
+                stab_timescale = time - stab_time_init
+                data_trackers.stable_sim_tracker(parti, injbin, mergebin, merger_mass, stab_timescale)
+                stab_time_init = time
 
                 E0 += (temp_E2-temp_E1) 
 
@@ -217,7 +257,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
                                    'LG50': LagrangianRadii(code.particles[2:])[6].in_(units.parsec),
                                    'LG75': LagrangianRadii(code.particles[2:])[7].in_(units.parsec),
                                    'Tidal Radius': rtide.in_(units.parsec),
-                                   'Relaxation Time': relax_timescale(cluster_radi, 10**3 | units.MSun, 10**8).in_(units.yr)})
+                                   'Relaxation Time': relax_timescale(cluster_radi, IMBH_adder.mass, gc_code.gc_pop).in_(units.yr)})
         LG_tracker = LG_tracker.append(df_LG_tracker , ignore_index=True)
 
         parti_KE = code.kinetic_energy
@@ -240,15 +280,16 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
         parti_energy_tracker = parti_energy_tracker.append(df_parti_energy_tracker, ignore_index=True)
 
         time1 = time
-        app_time = 0 | units.s
         if (ejected) or len(parti) < 4:
             time = tend
     
     code.stop()
     comp_end = cpu_time.time()
+    comp_time = comp_end-comp_start
 
-    if iter > 2 + add_iter and iter > 2: #200/(init_IMBH_pop**(init_IMBH_pop/3)):
+    if iter > 5 + add_iter and iter > 20:
         no_plot = False
+        chaos_stab_timescale = time1 - app_time2
         print("Total Merging Events: ", Nenc)
         print('Total integration time: ', comp_end-comp_start)
         print('...Dumping Files...')
@@ -257,22 +298,8 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
         if time1 == tend:
             ejected_key_track = parti[1].key_tracker
 
-        stab_timescale = time1 - app_time
-        stab_tracker = pd.DataFrame()
-        df_stabtime = pd.Series({'Initial Particles': (init_IMBH_pop-2), 'Final Particles': (len(parti)-2), 
-                                 'Number of Mergers': Nenc, 'Simulated Till': time1.in_(units.yr),
-                                 'Ejected Particle': ejected_key_track, 'Stability Time': stab_timescale, 
-                                 'Initial Distance': cluster_distance.in_(units.parsec), 
-                                 'Cluster Radius': cluster_radi.in_(units.pc),
-                                 'Initial Particle Mass': initial_set[2:].mass.in_(units.MSun),
-                                 'Added Particle Mass': added_mass.in_(units.MSun),
-                                 'Ejected/Merger Mass': ejected_mass.in_(units.MSun),
-                                 'Computation Time': str(comp_end-comp_start),
-                                 'Relaxation Time': relax_timescale(cluster_radi, 10**3 | units.MSun, 10**8).in_(units.yr)})
-        stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
-
-        stab_tracker.to_pickle('data/stability_time/IMBH_Hermite_Ni'+str(N_parti_init)+'_sim'+str(count)+'_init_dist'
-                               +str('{:.3f}'.format(cluster_distance.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(initial_set[1].mass.value_in(units.MSun)))+'.pkl')
+        data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, 
+                                          chaos_stab_timescale, added_mass, ejected_mass, comp_time)
         com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         IMBH_tracker.to_pickle('data/positions_IMBH/IMBH_positions_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
