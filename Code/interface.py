@@ -1,5 +1,6 @@
 from parti_initialiser import *
-from plotters import *
+from spatial_plotters import *
+from steady_plotters import *
 from file_logistics import *
 from evol import *
 
@@ -23,16 +24,17 @@ remove_files = True
 
 if (remove_files):
     file_reset('data/center_of_mass')
+    file_reset('data/chaotic_simulation')
+    file_reset('data/collision_events')
     file_reset('data/dynamical_time')
     file_reset('data/energy')
+    file_reset('data/event_tracker')
     file_reset('data/lagrangians')
     file_reset('data/particle_energies')
     file_reset('data/positions_IMBH')
     file_reset('data/collision_events')
-    file_reset('data/event_tracker')
     file_reset('data/simulation_stats')
     file_reset('data/stable_simulation')
-    file_reset('data/chaotic_simulation')
     file_reset('figures')
 
 for i in range(no_sim):

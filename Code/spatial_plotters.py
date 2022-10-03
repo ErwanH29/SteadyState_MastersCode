@@ -6,7 +6,34 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import matplotlib.animation as animation
 import numpy as np
-from itertools import cycle
+
+class plotter_setup():
+    def val_filter(self, arr):
+        arr[:][abs(arr[:]) < 10**-5] = np.NaN
+        arr[:][abs(arr[:]) > 10**5] = np.NaN
+        return arr
+         
+    def tickers(self, ax):
+        """
+        Function to give outlay for the axis
+        """
+
+        ax.yaxis.set_ticks_position('both')
+        ax.xaxis.set_ticks_position('both')
+        ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.tick_params(axis="y", which = 'both', direction="in")
+        ax.tick_params(axis="x", which = 'both', direction="in")    
+        return ax
+
+    def xy_pc(self, ax):
+        """
+        Function which gives the x,y labels if they are in [pc]
+        """
+
+        ax.set_xlabel(r'$x$-Coordinate [pc]')
+        ax.set_ylabel(r'$x$-Coordinate [pc]')
+        return ax
 
 def colour_picker():
     """
@@ -28,7 +55,8 @@ def animator(init_dist):
     """
 
     print('!!!!! You have chosen to animate. This will take a while !!!!!')
-    plt.clf()
+    
+    plot_ini = plotter_setup()
     count = file_counter()
 
     Lag_tracker, col_len = file_opener('data/lagrangians/*')
@@ -64,8 +92,7 @@ def animator(init_dist):
 
     temp_coord_array = [line_x, line_y, line_z]
     for arr_ in temp_coord_array:
-        arr_[:][abs(arr_[:]) < 10**-5] = np.NaN
-        arr_[:][abs(arr_[:]) > 1e8] = np.NaN
+        plot_ini.val_filter(arr_)
 
     LG25_array = np.empty((col_len, 1))
     LG50_array = np.empty((col_len, 1))
@@ -81,6 +108,7 @@ def animator(init_dist):
 
     totsys_lim = init_dist.value_in(units.pc)
 
+    plt.clf()
     plt.ioff()
     fig = plt.figure()
     ax3D1 = fig.add_subplot(121, projection="3d")
@@ -140,8 +168,7 @@ def animator(init_dist):
             
         ax3D1.scatter(0,0, color = 'black', s = 100 )
         ax3D1.set_xlabel(r'$x$-Coordinate [pc]')
-        ax3D2.set_xlabel(r'$x$-Coordinate [pc]')
-        ax3D2.set_ylabel(r'$y$-Coordinate [pc]')
+        plot_ini.xy_pc(ax3D2)
 
     anim3D = animation.FuncAnimation(fig, animate_3D, interval = 100, frames=(col_len-1))
     anim3D.save('figures/animation3D'+str(count)+'.gif', writer='pillow')
@@ -152,25 +179,13 @@ def animator(init_dist):
     ax3 = fig.add_subplot(223)
     ax4 = fig.add_subplot(224)
 
-    for ax_ in [ax1, ax2, ax3, ax4]:
-        ax_.xaxis.set_ticks_position('both')
-        ax_.yaxis.set_ticks_position('both')
-        ax_.xaxis.set_minor_locator(mtick.AutoMinorLocator())
-        ax_.yaxis.set_minor_locator(mtick.AutoMinorLocator())
-
     def animate(col_len):
         skip_zeroth = col_len + 1
         if skip_zeroth %100 == 0:
             print('Current frame: ', skip_zeroth)
             
         for ax_ in [ax1, ax2, ax3, ax4]:
-            ax_.clear()
-            ax_.yaxis.set_ticks_position('both')
-            ax_.xaxis.set_ticks_position('both')
-            ax_.xaxis.set_minor_locator(mtick.AutoMinorLocator())
-            ax_.yaxis.set_minor_locator(mtick.AutoMinorLocator())
-            ax_.tick_params(axis="y", which = 'both', direction="in")
-            ax_.tick_params(axis="x", which = 'both', direction="in")    
+            plot_ini.tickers(ax_) 
         
         for i in range(len(IMBH_tracker)):
             ax1.scatter(line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_x[max(0,skip_zeroth-20):skip_zeroth+1],
@@ -195,8 +210,7 @@ def animator(init_dist):
         ax2.plot(time[:skip_zeroth+1], abs(dE_array[:skip_zeroth+1]), color = 'black')
 
         for ax_ in [ax1, ax3]:
-            ax_.set_xlabel(r'$x$-Coordinate [pc]')
-            ax_.set_ylabel(r'$y$-Coordinate [pc]')
+            plot_ini.xy_pc(ax_)
 
         for ax_ in [ax2, ax4]:
             ax_.set_xlabel(r'Time [Myr]')
@@ -231,6 +245,7 @@ def energy_plotter():
     Function to plot the energy evolution of the system
     """
 
+    plot_ini = plotter_setup()
     count = file_counter()
     energy_tracker, col_len = file_opener('data/energy/*')
     IMBH_energy_tracker, col_len = file_opener('data/particle_energies/*')
@@ -274,12 +289,7 @@ def energy_plotter():
     ax2.set_title('Total Energy Evolution')
 
     for ax_ in [ax1, ax2]:
-        ax_.yaxis.set_ticks_position('both')
-        ax_.xaxis.set_ticks_position('both')
-        ax_.xaxis.set_minor_locator(mtick.AutoMinorLocator())
-        ax_.yaxis.set_minor_locator(mtick.AutoMinorLocator())
-        ax_.tick_params(axis="y", which = 'both', direction="in")
-        ax_.tick_params(axis="x", which = 'both', direction="in")    
+        plot_ini.tickers(ax_)  
         ax_.set_xlabel(r'Time [Myr]')
         ax_.set_yscale('log')
     ax1.set_xlim(time[0][5], time[0][-1])
@@ -315,9 +325,9 @@ def energy_plotter():
 def spatial_plotter(init_dist):
     """
     Function to plot the evolution of the system
-    outputs: Plots of the evolution of the system in Cartesian coordinates
     """
 
+    plot_ini = plotter_setup()
     gc_code = globular_cluster()
     count = file_counter()
     ejec_parti, col_len = file_opener('data/chaotic_simulation/*')
@@ -364,21 +374,12 @@ def spatial_plotter(init_dist):
                 tdyn[i][j][0] = tdynval.value_in(units.Myr)
 
     ejected_x, ejected_y, ejected_z = ejected_extract(IMBH_tracker, ejec_parti, col_len)
-    ejected_x[:][abs(ejected_x[:]) < 10**-5] = np.NaN
-    ejected_y[:][abs(ejected_y[:]) < 10**-5] = np.NaN
-    ejected_z[:][abs(ejected_z[:]) < 10**-5] = np.NaN
-    ejected_x[:][abs(ejected_x[:]) > 10**5] = np.NaN
-    ejected_y[:][abs(ejected_y[:]) > 10**5] = np.NaN
-    ejected_z[:][abs(ejected_z[:]) > 10**5] = np.NaN
-
+    for arr_ in [ejected_x, ejected_y, ejected_z]:
+        plot_ini.val_filter(arr_)
     ejected_dist = np.sqrt((ejected_x-com_x)**2+(ejected_y-com_y)**2+(ejected_z-com_z)**2)
 
-    line_x[:][abs(line_x[:]) < 10**-5] = np.NaN
-    line_y[:][abs(line_y[:]) < 10**-5] = np.NaN
-    line_z[:][abs(line_z[:]) < 10**-5] = np.NaN
-    line_x[:][abs(line_x[:]) > 1e8] = np.NaN
-    line_y[:][abs(line_y[:]) > 1e8] = np.NaN
-    line_z[:][abs(line_z[:]) > 1e8] = np.NaN 
+    for arr_ in [line_x, line_y, line_z]:
+        plot_ini.val_filter(arr_)
 
     tdyn[:][tdyn[:] < 10**-30] = np.NaN
     tdyn[:][tdyn[:] > 10**10] = np.NaN
@@ -398,8 +399,7 @@ def spatial_plotter(init_dist):
     ax6.set_title('Cluster Relaxation Timescale TO FIX')
 
     for ax_ in [ax1, ax2, ax3, ax4]:
-        ax_.set_xlabel(r'$x$-Coordinate [pc]')
-        ax_.set_ylabel(r'$y$-Coordinate [pc]')
+        plot_ini.xy_pc(ax_)
 
     ax5.set_xlabel(r'Time [Myr]')
     ax5.set_ylabel(r'Distance [pc]')
@@ -407,12 +407,7 @@ def spatial_plotter(init_dist):
     ax6.set_ylabel(r'Relaxation Time [Myr]')
 
     for ax_ in [ax1, ax2, ax3, ax4]:
-        ax_.yaxis.set_ticks_position('both')
-        ax_.xaxis.set_ticks_position('both')
-        ax_.xaxis.set_minor_locator(mtick.AutoMinorLocator())
-        ax_.yaxis.set_minor_locator(mtick.AutoMinorLocator())
-        ax_.tick_params(axis="y", which = 'both', direction="in")
-        ax_.tick_params(axis="x", which = 'both', direction="in")       
+        plot_ini.tickers(ax_)      
 
     iter = -1
     for i in range(len(IMBH_tracker)):
@@ -483,258 +478,3 @@ def spatial_plotter(init_dist):
     plt.close()
 
     return
-
-class stability_time(object):
-    def __init__(self, dirC = 'data/chaotic_simulation/*'):
-        self.chaos_ini_parti_data, self.chaos_fin_parti_data, self.chaos_number_mergers, self.chaos_cumulative_mm, self.chaos_simulated_end, self.chaos_ejected_parti, \
-        self.chaos_stab_time_data, self.chaos_init_dist_data, self.chaos_cluster_radius, self.chaos_init_mass_data, self.chaos_inj_mass_data, \
-        self.chaos_eje_mass_data, self.chaos_reltime_data = steadytime_extractor(dirC)  
-
-    def stab_plotter_logistics(self, ax, pop, xints, ydata):
-        """
-        Function to set up the various stability time plotters
-        
-        Inputs:
-        ax:     The axis
-        pop:    The population, N, of the data
-        xints:  The integer spacing for which to place the x-labels
-        ydata:  The y-values for the plot
-        """
-
-        ax.yaxis.set_ticks_position('both')
-        ax.xaxis.set_ticks_position('both')
-        ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
-        ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
-        ax.tick_params(axis="y", which = 'both', direction="in")
-        ax.tick_params(axis="x", which = 'both', direction="in")    
-        ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
-        ax.xaxis.labelpad = 20
-        plt.xticks(xints)
-        plt.xlim(2.5,max(pop)+1)
-        plt.ylim(0, 1.2*max(ydata))
-        plt.ylabel(r'Ejection Time [Myr]')
-        plt.xlabel(r'Number of IMBH [$N$]')
-        plt.title(r'Chaotic Black Hole Population vs. Stability Time')
-
-    def steadytime_distdep_plotter(self):
-        """
-        Function to plot the steady time with various lines corresponding to different
-        SMBH Distances:
-        """
-        in_mass = np.unique(self.chaos_init_mass_data[:,0], axis = 0) #Get the unique initial mass and distances array
-        in_dist = np.unique(self.chaos_init_dist_data)
-
-        for mass_ in in_mass:           #For every initial mass, we will plot a separate graph showing different coloured data points
-            fig, ax = plt.subplots()    #depending on their distance to the central SMBH
-            colourcycler = cycle(colour_picker())
-            tot_pop = [ ]
-            y_max = []  
-            iter = -1
-
-            for dist_ in in_dist:
-                iter += 1
-                init_mass_idx = np.where((self.chaos_init_mass_data == mass_).all(1))[0] #Find indices where data files correspond to the correct initial masses
-                fin_parti = self.chaos_fin_parti_data[init_mass_idx]                     #Filter the needed data based on the data files satisfying condition
-                stab_time = self.chaos_stab_time_data[init_mass_idx]
-                init_dist = self.chaos_init_dist_data[init_mass_idx]
-                dist_arrays = np.where(init_dist == dist_)                     #Find indices corresponding to the correct distances. Here we split
-
-                colours = next(colourcycler)
-                N_parti_avg = [ ]
-                
-                fin_parti = fin_parti[dist_arrays]                             #The data relative to their distances.
-                stab_time = stab_time[dist_arrays]
-
-                pop_size, pop_samples = np.unique(fin_parti, return_counts=True)  #Count the number of unique final populations
-                if len(pop_size) == 0:
-                    pass
-                else:
-                    pop_id = np.argwhere(pop_size > 2)                                #Only look at samples with N>2
-                    pop_size = pop_size[pop_id]
-
-                    pop_samples = pop_samples[pop_id]
-                    tot_pop.append(max(pop_size))
-
-                    for pop_, samp_ in zip(pop_size, pop_samples):
-                        N_parti = np.argwhere(fin_parti == pop_)                      #For every N, we will gather their indices where they are in the pickle file
-                        N_parti_avg.append(np.mean(stab_time[N_parti]))               #This enables us to compute their average between the whole data set                     
-                    
-                    y_max.append(max(N_parti_avg))
-                    ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black', label = r'$r_{SMBH} =$'+str(dist_)+' pc')
-                    for j, xpos in enumerate(pop_size):
-                        if iter == 0:
-                            ax.text(xpos, -2500, 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
-                        else:
-                            ax.text(xpos, -2500*(1+0.4*iter),  'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
-                xints = [i for i in range(1+int(max(tot_pop)))]
-
-            order = int('{:.0f}'.format(np.log10(mass_)))
-            ax.text(0.34*max(tot_pop), 1.125*max(y_max), r'$m_{i} \in$ '+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r'$M_\odot$')
-            self.stab_plotter_logistics(ax, tot_pop, xints, y_max)
-            plt.legend()
-            plt.savefig('figures/chaotic_stab_time_equal_mass_'+str(mass_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
-
-        for mass_ in in_mass:      #For every initial mass and distance we will plot a separate graph. This time it includes std spread
-            for dist_ in in_dist:  #For three different distances, every mass has 3 unique plots with errors.
-                y_max = []
-                
-                plt.clf()
-                fig, ax = plt.subplots()
-                
-                init_mass_idx = np.where((self.chaos_init_mass_data == mass_).all(1))[0]     #Make sure to use only data who has corresponding mass
-                fin_parti = self.chaos_fin_parti_data[init_mass_idx]                         #Filter data through indices satisfying the mass requirement
-                stab_time = self.chaos_stab_time_data[init_mass_idx]
-                init_dist = self.chaos_init_dist_data[init_mass_idx]
-                dist_arrays = np.where(init_dist == dist_)                        #Find indices corresponding to the correct distances. Here we split
-
-                colours = next(colourcycler)
-                N_parti_avg = [ ]
-                std = [ ]
-                
-                fin_parti = fin_parti[dist_arrays]                                #Filtering the filtered data with the correct distances
-                stab_time = stab_time[dist_arrays]
-
-                pop_size, pop_samples = np.unique(fin_parti, return_counts=True)  #Count the number of unique final populations
-                
-                if len(pop_size) == 0:
-                    pass
-                else:
-                    pop_id = np.argwhere(pop_size > 2)
-                    pop_size = pop_size[pop_id]
-                    pop_samples = pop_samples[pop_id]
-
-                    for pop_, samp_ in zip(pop_size, pop_samples):                    #For the unique populations, compute their average stab time
-                        N_parti = np.argwhere(fin_parti == pop_)                      #and average spread in data.
-                        N_parti_avg.append(np.mean(stab_time[N_parti]))
-                        std.append(np.std(stab_time[N_parti]))
-
-                    y_max.append(max(np.add(N_parti_avg, std)))
-                    ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
-                    ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
-                    ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
-                    ax.scatter(pop_size, N_parti_avg, color = 'black')
-
-                    for j, xpos in enumerate(pop_size):
-                        ax.text(xpos, -0.115*max(np.add(N_parti_avg, std)), 'Simulations\n'+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
-                    
-                    order = int('{:.0f}'.format(np.log10(mass_)))
-                    xints = [i for i in range(1+int(max(tot_pop)))]
-                    ax.text(0.34*max(tot_pop), 1.05*(max(np.add(N_parti_avg, std))), r'$m_{IMBH}=$'+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r' $M_\odot$'+'\n'+r'$r_{SMBH}=$'+str(dist_)+' pc')
-                    self.stab_plotter_logistics(ax, tot_pop, xints, np.add(N_parti_avg, std))
-                    plt.savefig('figures/chaotic_stab_time_equal_mass_'+str(mass_)+'_err_dist_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
-
-    def steadytime_massdep_plotter(self):
-
-        in_dist = np.unique(self.chaos_init_dist_data)
-        in_mass = np.unique(self.chaos_init_mass_data, axis=0)
-
-        for dist_ in in_dist:
-            fig, ax = plt.subplots()
-            tot_pop = []
-            y_max = []     
-            iter = -1   
-            init_dist_idx = np.where((self.chaos_init_dist_data == dist_))
-            coloursycler = cycle(colour_picker())
-
-            for mass_ in in_mass:
-                iter += 1
-
-                init_mass = self.chaos_init_mass_data[init_dist_idx]
-                init_mass = self.chaos_init_mass_data[init_dist_idx[0]]
-                fin_parti = self.chaos_fin_parti_data[init_dist_idx[0]]
-                stab_time = self.chaos_stab_time_data[init_dist_idx[0]]
-
-                colours = next(coloursycler)
-                N_parti_avg = [ ]
-                std = [ ]
-                mass_arrays = np.where((init_mass == mass_).all(1))[0]  #Indices with the correct mass column
-                fin_parti = fin_parti[mass_arrays]
-                stab_time = stab_time[mass_arrays]
-                pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
-
-                if len(pop_size) == 0:
-                    pass
-                else:
-                    pop_id = np.argwhere(pop_size > 2)
-                    pop_size = pop_size[pop_id]
-                    pop_samples = pop_samples[pop_id]
-                    tot_pop.append(max(pop_size))
-
-                    for pop_, samp_ in zip(pop_size, pop_samples):
-                        N_parti = np.argwhere(fin_parti == pop_)
-                        N_parti_avg.append(np.mean(stab_time[N_parti]))
-                        std.append(np.std(stab_time[N_parti]))
-
-                    y_max.append(max(N_parti_avg))
-                    ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black',
-                            label = r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
-                    
-                    for j, xpos in enumerate(pop_size):
-                        if iter == 0:
-                            ax.text(xpos, -0.115*max(N_parti_avg), 'Simulations\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
-                        else:
-                            ax.text(xpos, -0.115*max(N_parti_avg)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
-                xints = [i for i in range(1+int(max(tot_pop)))]
-
-            ax.text(0.34*max(tot_pop), 1.125*max(y_max), r'$r_{SMBH}=$'+str(dist_)+' pc')
-            self.stab_plotter_logistics(ax, tot_pop, xints, y_max)
-            plt.legend()
-            plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
-
-        for dist_ in in_dist:
-            for mass_ in in_mass: 
-                y_max = []
-
-                plt.clf()
-                fig, ax = plt.subplots()
-
-                init_dist_idx = np.where((self.chaos_init_dist_data == dist_))
-                init_mass = self.chaos_init_mass_data[init_dist_idx]
-                fin_parti = self.chaos_fin_parti_data[init_dist_idx]
-                stab_time = self.chaos_stab_time_data[init_dist_idx]
-
-                tot_pop = [ ]
-                colours = next(coloursycler)
-                N_parti_avg = [ ]
-                std = [ ]
-                mass_arrays = np.where((init_mass == mass_).all(1))[0]  #Indices with the correct mass column
-
-                fin_parti = fin_parti[mass_arrays]
-                stab_time = stab_time[mass_arrays]
-                pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
-                pop_id = np.argwhere(pop_size > 2)
-                pop_size = pop_size[pop_id]
-
-                if len(pop_size) == 0:
-                    pass
-                else:
-                    pop_samples = pop_samples[pop_id]
-                    tot_pop.append(max(pop_size))
-
-                    for pop_, samp_ in zip(pop_size, pop_samples):
-                        N_parti = np.argwhere(fin_parti == pop_)
-                        N_parti_avg.append(np.mean(stab_time[N_parti]))
-                        std.append(np.std(stab_time[N_parti]))
-
-                    y_max.append(max(np.add(N_parti_avg, std)))
-                    ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
-                    ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
-                    ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
-                    ax.scatter(pop_size, N_parti_avg, color = 'black')
-
-                    for j, xpos in enumerate(pop_size):
-                        ax.text(xpos, -0.13*max(np.add(N_parti_avg, std)), 'Simulations\n'+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
-                    xints = [i for i in range(1+int(max(tot_pop)))]
-
-                    ax.text(0.34*max(tot_pop), 1.05*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
-                    self.stab_plotter_logistics(ax, tot_pop, xints, np.add(N_parti_avg, std))
-                    plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_std_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
-
-#gc_code = globular_cluster()
-#spatial_plotter(1.15*gc_code.gc_dist)
-#energy_plotter()
-#animator(1.5 | units.parsec)
-
-st = stability_time()
-st.steadytime_massdep_plotter()
-st.steadytime_distdep_plotter()

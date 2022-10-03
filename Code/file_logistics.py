@@ -105,8 +105,7 @@ def file_reset(dir):
     for f in filelist:
         os.remove(f)
 
-
-def steadytime_extractor(dir):
+def stats_chaos_extractor(dir):
     steadytime_data = bulk_stat_extractor(dir)
     no_Data = len(steadytime_data)
     
@@ -142,3 +141,32 @@ def steadytime_extractor(dir):
 
     return ini_parti_data, fin_parti_data, number_mergers, cum_merge_mass, simulated_end, ejected_parti, stab_time_data, \
            init_dist_data, cluster_radius, init_mass_data, inj_mass_data, eje_mass_data, reltime_data
+
+def stats_stable_extractor(dir):
+    steadytime_data = bulk_stat_extractor(dir)
+    no_Data = len(steadytime_data)
+    
+    ini_parti_data = np.empty(no_Data)
+    inj_event_data = np.empty(no_Data)
+    merge_no_data  = np.empty(no_Data)
+    mergerm_data   = np.empty(no_Data)
+    simulated_end  = np.empty(no_Data)
+    initial_dist   = np.empty(no_Data)
+    cluster_rad    = np.empty(no_Data)
+    init_parti_m   = np.empty((no_Data, 2))
+    trelax_data    = np.empty(no_Data)
+
+    for i in range(no_Data):
+        sim_data = steadytime_data[i]
+        ini_parti_data[i] = sim_data.iloc[0][0]
+        inj_event_data[i] = sim_data.iloc[0][1]
+        merge_no_data[i]  = sim_data.iloc[0][2]
+        mergerm_data[i]   = sim_data.iloc[0][3].value_in(units.MSun)
+        simulated_end[i]  = sim_data.iloc[0][4].value_in(units.Myr)
+        initial_dist[i]   = sim_data.iloc[0][5].value_in(units.pc)
+        cluster_rad[i]    = sim_data.iloc[0][6].value_in(units.pc)
+        init_parti_m[i]   = [int(min(sim_data.iloc[0][7].value_in(units.MSun))), int(max(sim_data.iloc[0][7].value_in(units.MSun)))]
+        trelax_data[i]    = sim_data.iloc[0][8].value_in(units.Myr)
+
+    return ini_parti_data, inj_event_data, merge_no_data, mergerm_data, simulated_end, initial_dist, \
+           cluster_rad, init_parti_m, trelax_data

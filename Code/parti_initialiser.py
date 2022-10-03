@@ -185,8 +185,14 @@ class IMBH_init(object):
         gc_particles[:self.N].key_tracker = gc_particles[:self.N].key
         gc_particles[2:self.N].mass = self.mass
         gc_particles[0:2].velocity  = [0, 0, 0] | units.AU/units.yr
+        for part_ in gc_particles[2:self.N]:
+            if part_.x > gc_code.gc_rad:
+                part_.x = gc_code.gc_rad
+            if part_.y > gc_code.gc_rad:
+                part_.y = gc_code.gc_rad
+            if part_.z > gc_code.gc_rad:
+                part_.z = gc_code.gc_rad
         gc_particles[1].position = gc_particles.center_of_mass()
-
         gc_particles.scale_to_standard(convert_nbody=gc_code.gc_conv)
 
         gc_particles[2:self.N].mass = self.mass
@@ -232,6 +238,5 @@ class IMBH_init(object):
         add_IMBH.collision_radius = self.coll_radius(add_IMBH.radius)
         add_IMBH.ejection = 0
         add_IMBH.coll_events = 0
-
 
         return add_IMBH

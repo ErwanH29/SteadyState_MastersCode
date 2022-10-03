@@ -107,8 +107,6 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
             temp_PE = [ ]
             temp_PE = indiv_PE_closest(particle, parti, temp_PE)
             parti_BE = max(temp_PE)
-            #parti_BE += abs(particle.mass*gc_code.get_potential_at_point(0, particle.x, particle.y, particle.z))
-            #parti_SMBH_BE = abs(particle.mass*SMBH_code.get_potential_at_point(0, (particle.x-parti[0].x), (particle.y-parti[0].y), (particle.z-parti[0].x)))
             dist_core = particle.position - parti[1].position
             dist_SMBH = particle.position - parti[0].position
 
@@ -116,9 +114,8 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
                 print('KE > BE but inside tidal')
             if parti_KE < parti_BE and dist_core.length() > rtide:
                 print('KE < BE but outside tidal')
-                
 
-            if dist_SMBH.length() < 0.2*gc_code.gc_dist:
+            if dist_SMBH.length() < 0.3*gc_code.gc_dist:
                 ejected = True
                 ejected_key_track = particle.key_tracker
                 ejected_mass = particle.mass
@@ -287,7 +284,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
     comp_end = cpu_time.time()
     comp_time = comp_end-comp_start
 
-    if iter > 5 + add_iter and iter > 20:
+    if iter > 5 + add_iter and iter > 40:
         no_plot = False
         chaos_stab_timescale = time1 - app_time2
         print("Total Merging Events: ", Nenc)
@@ -298,8 +295,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
         if time1 == tend:
             ejected_key_track = parti[1].key_tracker
 
-        data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, 
-                                          chaos_stab_timescale, added_mass, ejected_mass, comp_time)
+       
         com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         IMBH_tracker.to_pickle('data/positions_IMBH/IMBH_positions_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
@@ -307,7 +303,9 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
         LG_tracker.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         coll_tracker.to_pickle('data/collision_events/IMBH_merge_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         eventstab_tracker.to_pickle('data/event_tracker/IMBH_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        
+        data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, 
+                                          chaos_stab_timescale, added_mass, ejected_mass, comp_time)
+
         lines = ['Simulation: ', "Total CPU Time: "+str(comp_end-comp_start)+' seconds', 
                  'Timestep: '+str(eta),
                  'Simulated until: '+str(time1.value_in(units.yr))+str('year'), 
