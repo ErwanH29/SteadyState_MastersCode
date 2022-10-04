@@ -39,9 +39,11 @@ class data_initialiser(object):
                                  'Computation Time': str(comp_time),
                                  'Relaxation Time': relax_timescale(gc_code.gc_rad, gc_code.gc_mass, 10**5).in_(units.yr)})
         stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
-        stab_tracker.to_pickle('data/chaotic_simulation/IMBH_Hermite_Ni'+str(len(init_pop)-2)+'_sim'+str(count)+'_init_dist'
+        #stab_tracker.to_pickle('data/chaotic_simulation/IMBH_Hermite_Ni'+str(len(init_pop)-2)+'_sim'+str(count)+'_init_dist'
+         #                      +str('{:.3f}'.format(gc_code.gc_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(init_pop[2].mass.value_in(units.MSun)))+'.pkl')
+        stab_tracker.to_pickle('data/no_addition/chaotic_simulation/IMBH_Hermite_Ni'+str(len(init_pop)-2)+'_sim'+str(count)+'_init_dist'
                                +str('{:.3f}'.format(gc_code.gc_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(init_pop[2].mass.value_in(units.MSun)))+'.pkl')
-    
+             
     def coll_tracker(self):
         coll_tracker = pd.DataFrame()
         df_coll_tracker = pd.Series({'Collision Time': 0 | units.s, 'Collided Particles': [0, 0], 

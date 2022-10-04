@@ -17,14 +17,14 @@ if prompt == 'y':
     file_reset('data/chaotic_simulation')
     file_reset('data/stability_time')"""
 
-no_sim = 5000
+no_sim = 2000
 
 initial_pop = 3
 remove_files = True
 
 if (remove_files):
     file_reset('data/center_of_mass')
-    file_reset('data/chaotic_simulation')
+    #file_reset('data/chaotic_simulation')
     file_reset('data/collision_events')
     file_reset('data/dynamical_time')
     file_reset('data/energy')
@@ -33,24 +33,26 @@ if (remove_files):
     file_reset('data/particle_energies')
     file_reset('data/positions_IMBH')
     file_reset('data/collision_events')
-    file_reset('data/simulation_stats')
-    file_reset('data/stable_simulation')
+    #file_reset('data/simulation_stats')
+    #file_reset('data/stable_simulation')
     file_reset('figures')
 
-for i in range(no_sim):
-    print('=========== Simulation '+str(i+1)+'/'+str(no_sim)+' Running ===========')
-    IMBH_code = IMBH_init()
-    IMBH_parti, rhmass = IMBH_code.IMBH_first(initial_pop)
-    failed_simul = evolve_system(IMBH_parti, tend, eta, gc_code.gc_dist, gc_code.gc_rad, 
-                                    gc_code.gc_mass, rhmass, code_conv)
-    if (failed_simul):
-        pass
+for j in [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]:
+    initial_pop = j
+    for i in range(no_sim):
+        print('=========== Simulation '+str(i+1)+'/'+str(no_sim)+' Running ===========')
+        IMBH_code = IMBH_init()
+        IMBH_parti, rhmass = IMBH_code.IMBH_first(initial_pop)
+        failed_simul = evolve_system(IMBH_parti, tend, eta, gc_code.gc_dist, gc_code.gc_rad, 
+                                        gc_code.gc_mass, rhmass, code_conv)
+        if (failed_simul):
+            pass
 
-    else:
-        #print('...Plotting Figures...')
-        #spatial_plotter(1.25*gc_code.gc_dist)
-        #energy_plotter()
+        else:
+            #print('...Plotting Figures...')
+            #spatial_plotter(1.25*gc_code.gc_dist)
+            #energy_plotter()
 
-        anim = False
-        if (anim):
-            animator(2*gc_code.gc_dist)
+            anim = False
+            if (anim):
+                animator(2*gc_code.gc_dist)

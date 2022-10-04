@@ -78,9 +78,11 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
     coll_tracker = data_trackers.coll_tracker()
     eventstab_tracker = data_trackers.event_tracker(parti)
 
+    """
     IMBHapp = df_timescale(cluster_rhmass)
     decision_scale = (eta*tend)/IMBHapp #
     print('\nNew particle every: '+str('{:.6}'.format(IMBHapp.value_in(units.yr))+' years'))
+    """
     print('One timestep:       '+str('{:.4}'.format(eta*tend.value_in(units.yr))+' years'))
 
     while time < tend:
@@ -144,6 +146,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
             if stopping_condition.is_set():
                 print("........Encounter Detected........")
                 print('Collision at step: ', iter)
+                print('Simulation will now stop')
                 energy_before = code.potential_energy + code.kinetic_energy
                 for ci in range(len(stopping_condition.particles(0))):
                     mergebin = 1
@@ -177,7 +180,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
                                                       'Collision Time': tcoll.in_(units.kyr), 'Injected Event': 0, 'Injected Time': 0 |units.s})
                     eventstab_tracker = eventstab_tracker.append(df_eventstab_tracker, ignore_index = True)
 
-            df_IMBH = pd.DataFrame()
+            """df_IMBH = pd.DataFrame()
             #if IMBH_adder.decision(time, decision_scale)==True:
             if time % IMBHapp < (eta*tend) and iter > 1:
                 add_iter = iter
@@ -213,7 +216,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
                                                   'Injected Time': tinj.in_(units.kyr)})
                 eventstab_tracker = eventstab_tracker.append(df_eventstab_tracker, ignore_index = True)
 
-            IMBH_tracker = IMBH_tracker.append(df_IMBH, ignore_index=True)
+            IMBH_tracker = IMBH_tracker.append(df_IMBH, ignore_index=True)"""
 
         channel_IMBH["from_gravity"].copy()     
         rows = (N_parti)
@@ -277,16 +280,17 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
         parti_energy_tracker = parti_energy_tracker.append(df_parti_energy_tracker, ignore_index=True)
 
         time1 = time
-        if (ejected) or len(parti) < 4:
+        if (ejected) or Nenc > 0:
             time = tend
     
     code.stop()
     comp_end = cpu_time.time()
     comp_time = comp_end-comp_start
 
-    if iter > 5 + add_iter and iter > 40:
+    if iter > 5 + add_iter and iter > 10:
         no_plot = False
-        chaos_stab_timescale = time1 - app_time2
+        #chaos_stab_timescale = time1 - app_time2
+        chaos_stab_timescale = time1
         print("Total Merging Events: ", Nenc)
         print('Total integration time: ', comp_end-comp_start)
         print('...Dumping Files...')
@@ -294,7 +298,6 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
 
         if time1 == tend:
             ejected_key_track = parti[1].key_tracker
-
        
         com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         IMBH_tracker.to_pickle('data/positions_IMBH/IMBH_positions_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
@@ -308,13 +311,14 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
 
         lines = ['Simulation: ', "Total CPU Time: "+str(comp_end-comp_start)+' seconds', 
                  'Timestep: '+str(eta),
-                 'Simulated until: '+str(time1.value_in(units.yr))+str('year'), 
-                 'Cluster Radius: '+str(cluster_distance.value_in(units.parsec))+' parsecs', 
+                 'Simulated until: '+str(time1.value_in(units.yr))+str(' years'), 
+                 'Cluster Radius: '+str(gc_code.gc_rad.value_in(units.parsec))+' parsecs', 
+                 'Cluster Distance: '+str(cluster_distance.value_in(units.parsec))+' parsecs', 
                  'Masses of IMBH: '+str(parti.mass.value_in(units.MSun))+' MSun',
                  "No. of initial IMBH: "+str(init_IMBH_pop-2), 
                  'Number of new particles: '+str(N_parti-N_parti_init),
-                 'Total Number of (Final) IMBH: '+str(len(parti)), 
-                 'IMBH Appearance Rate: '+str(IMBHapp.value_in(units.yr))+' years',
+                 'Total Number of (Final) IMBH: '+str(len(parti)-2), 
+                # 'IMBH Appearance Rate: '+str(IMBHapp.value_in(units.yr))+' years',
                  'Number of mergers: '+str(Nenc), 'End Time: '+str(tend.value_in(units.yr))+' years', 
                  'Integrator: Hermite (NO PN)',
                  'Extra Notes: ', extra_note]
