@@ -35,7 +35,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
 
     initial_set = parti.copy()
 
-    code = Hermite(converter, number_of_workers = 3)
+    code = Hermite(converter, number_of_workers = 20)
     code.particles.add_particles(parti)
     code.commit_particles()
     stopping_condition = code.stopping_conditions.collision_detection
@@ -166,6 +166,8 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
                                                  'Initial Mass': [enc_particles[0].mass, enc_particles[1].mass] | units.MSun, 
                                                  'Emergent Particle': ejected_key_track, 'Collision Mass': merger_mass | units.MSun})                    
                     coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True)   
+
+                    
 
                     stab_timescale = time - stab_time_init
                     data_trackers.stable_sim_tracker(parti, injbin, mergebin, merger_mass, stab_timescale)
@@ -299,13 +301,13 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
         if time1 == tend:
             ejected_key_track = parti[1].key_tracker
        
-        com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        IMBH_tracker.to_pickle('data/positions_IMBH/IMBH_positions_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        parti_energy_tracker.to_pickle('data/particle_energies/particle_energies_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        LG_tracker.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        coll_tracker.to_pickle('data/collision_events/IMBH_merge_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        eventstab_tracker.to_pickle('data/event_tracker/IMBH_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+       # com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+       # IMBH_tracker.to_pickle('data/positions_IMBH/IMBH_positions_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+       # energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+       # parti_energy_tracker.to_pickle('data/particle_energies/particle_energies_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+       # LG_tracker.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+       # coll_tracker.to_pickle('data/collision_events/IMBH_merge_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+       # eventstab_tracker.to_pickle('data/event_tracker/IMBH_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
         data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, 
                                           chaos_stab_timescale, added_mass, ejected_mass, comp_time)
 

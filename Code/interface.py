@@ -4,8 +4,8 @@ from steady_plotters import *
 from file_logistics import *
 from evol import *
 
-eta  = 1e-4
-tend = 10e6 | units.yr
+eta  = 5e-5
+tend = 30e6 | units.yr
 
 SMBH_code = MW_SMBH()
 gc_code = globular_cluster()
@@ -15,16 +15,16 @@ code_conv = nbody_system.nbody_to_si((gc_code.gc_mass+SMBH_code.mass), gc_code.g
 if prompt == 'y':
     file_reset('data/stable_simulation')
     file_reset('data/chaotic_simulation')
-    file_reset('data/stability_time')"""
+    file_reset('data/stability_time')
+    file_reset('data/simulation_stats')"""
 
-no_sim = 2000
+no_sim = 1000
 
 initial_pop = 3
 remove_files = True
 
 if (remove_files):
     file_reset('data/center_of_mass')
-    #file_reset('data/chaotic_simulation')
     file_reset('data/collision_events')
     file_reset('data/dynamical_time')
     file_reset('data/energy')
@@ -32,13 +32,13 @@ if (remove_files):
     file_reset('data/lagrangians')
     file_reset('data/particle_energies')
     file_reset('data/positions_IMBH')
-    file_reset('data/collision_events')
-    #file_reset('data/simulation_stats')
-    #file_reset('data/stable_simulation')
     file_reset('figures')
 
-for j in [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]:
+for j in [3, 4, 5, 6, 7, 8, 9, 10]:
     initial_pop = j
+
+    if j > 8:
+        eta = 1e-5
     for i in range(no_sim):
         print('=========== Simulation '+str(i+1)+'/'+str(no_sim)+' Running ===========')
         IMBH_code = IMBH_init()

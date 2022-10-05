@@ -91,7 +91,7 @@ class stability_plotters(object):
         """
         
         plot_ini = plotter_setup()
-
+        
         if no_axis == 1:
             dir = 'data/no_addition/chaotic_simulation/*'
         else:
@@ -501,9 +501,8 @@ cst.distdep_plotter(2)
 cst.massdep_plotter(1)
 cst.massdep_plotter(2)
 
-"""
-gc_code = globular_cluster()
-spatial_plotter(1.15*gc_code.gc_dist)
-energy_plotter()
+
+#gc_code = globular_cluster()
+#spatial_plotter(1.15*gc_code.gc_dist)
+#energy_plotter()
 #animator(1.5 | units.parsec)
-"""

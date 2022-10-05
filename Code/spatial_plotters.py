@@ -330,7 +330,7 @@ def spatial_plotter(init_dist):
     plot_ini = plotter_setup()
     gc_code = globular_cluster()
     count = file_counter()
-    ejec_parti, col_len = file_opener('data/chaotic_simulation/*')
+    ejec_parti, col_len = file_opener('data/no_addition/chaotic_simulation/*')
     com_tracker, col_len = file_opener('data/center_of_mass/*')
     IMBH_tracker, col_len = file_opener('data/positions_IMBH/*')
     Lag_tracker, col_len = file_opener('data/lagrangians/*')
