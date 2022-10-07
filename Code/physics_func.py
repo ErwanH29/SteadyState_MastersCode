@@ -23,7 +23,7 @@ def df_timescale(halfmass):
     gc_code = globular_cluster()
     IMBH_code = IMBH_init()
 
-    sigmav = 15 | units.kms #HARDCODED VALUE
+    sigmav = 15 | units.kms #HARDCODED VALUE - CHANGE THIS IF DIFFERENT VEL.DISP
     Lambda = (gc_code.gc_rad/halfmass)
 
     df_val = 19/(np.log(Lambda))*(gc_code.gc_rad/dist_const)**2 * (sigmav / vel_const) \
@@ -82,14 +82,19 @@ def indiv_PE_all(indivp, set, array):
     """
 
     SMBH = MW_SMBH()
+    iter = 0
     for comp_ in set:
+        iter += 1
         if indivp == comp_:
             pass
         else:
             distance = (indivp.position.length()-comp_.position.length())
-            temp_PE  = abs(((constants.G*indivp.mass*comp_.mass)/abs(distance) \
-                            + indivp.mass * SMBH.get_potential_at_point(0, indivp.x, indivp.y, indivp.z)))
-            array.append(temp_PE)
+            if distance == 0 | units.m:
+               pass
+            else:
+                temp_PE  = abs(((constants.G*indivp.mass*comp_.mass)/abs(distance) \
+                         + indivp.mass * SMBH.get_potential_at_point(0, indivp.x, indivp.y, indivp.z)))
+                array.append(temp_PE)
 
     return array
 

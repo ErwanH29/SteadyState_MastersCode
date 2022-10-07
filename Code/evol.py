@@ -10,6 +10,11 @@ import numpy as np
 import pandas as pd
 import time as cpu_time
 
+# FOR ALICE SIMULATIONS:
+#   - REMOVE ALL PRINT STATEMENTS + EXCESS FILE (ONLY KEEP CHAOTIC + STABLE + SIMULATION FILES)
+#   - CHANGE number_of_workers
+#   - ENSURE CORRECT FILE SAVING FORMAT (NAME)
+
 def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass, cluster_rhmass, converter):
     """
     Bulk of the simulation. Uses Hermite integrator to evolve the system while bridging it.
@@ -23,9 +28,9 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
     cluster_radi:     Initialised cluster radius.
     converter:        Variable used to convert between nbody units and SI
     """
-
+    
     set_printing_strategy("custom", preferred_units = [units.MSun, units.pc, units.kyr, units.AU/units.yr, units.J],
-                                    precision = 20, prefix = "", separator = " ", suffix = "")
+                                                       precision = 20, prefix = "", separator = " ", suffix = "")
 
     comp_start = cpu_time.time()
 
@@ -35,7 +40,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
 
     initial_set = parti.copy()
 
-    code = Hermite(converter, number_of_workers = 20)
+    code = Hermite(converter, number_of_workers = 6) #To change when going into ALICE
     code.particles.add_particles(parti)
     code.commit_particles()
     stopping_condition = code.stopping_conditions.collision_detection
@@ -53,7 +58,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
     time = 0 | units.yr
     iter = 0
     Nenc = 0
-    app_time2 = time
+    app_time2 = time #To activate when allowing ejections to occur in a continuous simulation
     cum_merger_mass = 0 | units.MSun
     stab_time_init = 0 | units.s
 
@@ -182,7 +187,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
                                                       'Collision Time': tcoll.in_(units.kyr), 'Injected Event': 0, 'Injected Time': 0 |units.s})
                     eventstab_tracker = eventstab_tracker.append(df_eventstab_tracker, ignore_index = True)
 
-            """df_IMBH = pd.DataFrame()
+            """df_IMBH = pd.DataFrame()     #To activate when continuous simulations are ran
             #if IMBH_adder.decision(time, decision_scale)==True:
             if time % IMBHapp < (eta*tend) and iter > 1:
                 add_iter = iter
@@ -301,15 +306,15 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
         if time1 == tend:
             ejected_key_track = parti[1].key_tracker
        
-       # com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-       # IMBH_tracker.to_pickle('data/positions_IMBH/IMBH_positions_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-       # energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-       # parti_energy_tracker.to_pickle('data/particle_energies/particle_energies_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-       # LG_tracker.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-       # coll_tracker.to_pickle('data/collision_events/IMBH_merge_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-       # eventstab_tracker.to_pickle('data/event_tracker/IMBH_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        com_tracker.to_pickle('data/center_of_mass/IMBH_com_parsecs_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        IMBH_tracker.to_pickle('data/positions_IMBH/IMBH_positions_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        parti_energy_tracker.to_pickle('data/particle_energies/particle_energies_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        LG_tracker.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        coll_tracker.to_pickle('data/collision_events/IMBH_merge_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
+        eventstab_tracker.to_pickle('data/event_tracker/IMBH_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
         data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, 
-                                          chaos_stab_timescale, added_mass, ejected_mass, comp_time)
+                                          chaos_stab_timescale, added_mass, ejected_mass, comp_time)                   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
 
         lines = ['Simulation: ', "Total CPU Time: "+str(comp_end-comp_start)+' seconds', 
                  'Timestep: '+str(eta),
@@ -320,7 +325,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
                  "No. of initial IMBH: "+str(init_IMBH_pop-2), 
                  'Number of new particles: '+str(N_parti-N_parti_init),
                  'Total Number of (Final) IMBH: '+str(len(parti)-2), 
-                # 'IMBH Appearance Rate: '+str(IMBHapp.value_in(units.yr))+' years',
+                # 'IMBH Appearance Rate: '+str(IMBHapp.value_in(units.yr))+' years',    #To add when continuous ejecting simulations occur
                  'Number of mergers: '+str(Nenc), 'End Time: '+str(tend.value_in(units.yr))+' years', 
                  'Integrator: Hermite (NO PN)',
                  'Extra Notes: ', extra_note]

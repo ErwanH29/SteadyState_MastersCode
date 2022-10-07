@@ -39,9 +39,9 @@ class data_initialiser(object):
                                  'Computation Time': str(comp_time),
                                  'Relaxation Time': relax_timescale(gc_code.gc_rad, gc_code.gc_mass, 10**5).in_(units.yr)})
         stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
-        #stab_tracker.to_pickle('data/chaotic_simulation/IMBH_Hermite_Ni'+str(len(init_pop)-2)+'_sim'+str(count)+'_init_dist'
+        #stab_tracker.to_pickle('data/chaotic_simulation/IMBH_Hermite_Ni'+str(len(init_pop)-2)+'_sim'+str(count)+'_init_dist'                                                       #USE THIS FOR ALICE SIMULATIONS
          #                      +str('{:.3f}'.format(gc_code.gc_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(init_pop[2].mass.value_in(units.MSun)))+'.pkl')
-        stab_tracker.to_pickle('data/no_addition/chaotic_simulation/IMBH_Hermite_Ni'+str(len(init_pop)-2)+'_sim'+str(count)+'_init_dist'
+        stab_tracker.to_pickle('data/no_addition/chaotic_simulation/IMBH_Hermite_Ni_Local'+str(len(init_pop)-2)+'_sim'+str(count)+'_init_dist'                                      #USE THIS FOR LOCAL SIMULATIONS
                                +str('{:.3f}'.format(gc_code.gc_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(init_pop[2].mass.value_in(units.MSun)))+'.pkl')
              
     def coll_tracker(self):
@@ -109,14 +109,20 @@ class data_initialiser(object):
         IMBH_array = pd.DataFrame()
         df_IMBH    = pd.DataFrame()
         for i in range(init_pop):
-            parti_KE = 0.5*pset[i].mass*pset[i].velocity.length()**2
-            temp_PE = []
-            temp_PE = indiv_PE_all(pset[i], pset, temp_PE)
-            parti_PE = max(temp_PE)
-            df_IMBH_vals = pd.Series({'key_tracker': pset[i].key_tracker, 
+            if i == 0 :
+                df_IMBH_vals = pd.Series({'key_tracker': pset[i].key_tracker, 
                                       '{}'.format(time): [pset[i].mass, pset[i].position, 
-                                      parti_KE, parti_PE, tdyn_val[i] | units.yr]})
-            df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
+                                      0 | units.J, 0 | units.J, tdyn_val[i] | units.yr]})
+                df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
+            else:
+                parti_KE = 0.5*pset[i].mass*pset[i].velocity.length()**2
+                temp_PE = []
+                temp_PE = indiv_PE_all(pset[i], pset, temp_PE)
+                parti_PE = max(temp_PE)
+                df_IMBH_vals = pd.Series({'key_tracker': pset[i].key_tracker, 
+                                        '{}'.format(time): [pset[i].mass, pset[i].position, 
+                                        parti_KE, parti_PE, tdyn_val[i] | units.yr]})
+                df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
         IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
 
         return IMBH_array

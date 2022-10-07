@@ -38,8 +38,8 @@ class globular_cluster(object):
 
     def __init__(self, no_stars = 1e5,
                  mass = 1.e6 | units.MSun,
-                 cluster_radi = 1e-1 | units.parsec,
-                 cluster_dist = 1.4 | units.parsec,
+                 cluster_radi = 1e-1 | units.parsec,           #To change when changing the cluster radius
+                 cluster_dist = 1.4 | units.parsec,            #To change when changing distance simulated
                  position = [0, 0, 0] | units.parsec,
                  velocity = [0, 0, 0] | (units.AU/units.yr)):
 
@@ -71,7 +71,7 @@ class globular_cluster(object):
 class IMBH_init(object):
     def __init__(self):
         self.N = 0
-        self.mass = 1000 | units.MSun
+        self.mass = 1000 | units.MSun                                    #Change this for different mass simulations
 
     def N_count(self):
         """
@@ -116,7 +116,7 @@ class IMBH_init(object):
         vel:    The velocity range for which to sample the weights from
         """
 
-        sigmaV = 15 # in kms
+        sigmaV = 15 # in kms (if changing, change line 26 of physics_func.py)
 
         return np.sqrt(2/np.pi)*(vel**2/sigmaV**3)*np.exp(-vel**2/(2*sigmaV**2))
 

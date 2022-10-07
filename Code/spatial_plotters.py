@@ -1,4 +1,3 @@
-from sqlite3 import adapt
 from amuse.lab import *
 from parti_initialiser import *
 from file_logistics import *

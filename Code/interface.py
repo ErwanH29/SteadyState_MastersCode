@@ -1,6 +1,6 @@
 from parti_initialiser import *
-from spatial_plotters import *
-from steady_plotters import *
+#from spatial_plotters import *   #Comment out for local simulations in case you wish to plot
+#from steady_plotters import *
 from file_logistics import *
 from evol import *
 
@@ -18,7 +18,7 @@ if prompt == 'y':
     file_reset('data/stability_time')
     file_reset('data/simulation_stats')"""
 
-no_sim = 1000
+no_sim = 200
 
 initial_pop = 3
 remove_files = True
@@ -39,12 +39,13 @@ for j in [3, 4, 5, 6, 7, 8, 9, 10]:
 
     if j > 8:
         eta = 1e-5
+
     for i in range(no_sim):
         print('=========== Simulation '+str(i+1)+'/'+str(no_sim)+' Running ===========')
         IMBH_code = IMBH_init()
         IMBH_parti, rhmass = IMBH_code.IMBH_first(initial_pop)
         failed_simul = evolve_system(IMBH_parti, tend, eta, gc_code.gc_dist, gc_code.gc_rad, 
-                                        gc_code.gc_mass, rhmass, code_conv)
+                                     gc_code.gc_mass, rhmass, code_conv)
         if (failed_simul):
             pass
 
@@ -54,5 +55,5 @@ for j in [3, 4, 5, 6, 7, 8, 9, 10]:
             #energy_plotter()
 
             anim = False
-            if (anim):
-                animator(2*gc_code.gc_dist)
+            #if (anim):
+            #    animator(2*gc_code.gc_dist)
