@@ -5,6 +5,7 @@ from spatial_plotters import *
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
+import scipy.optimize
 from itertools import cycle
 from scipy import stats
 
@@ -294,6 +295,13 @@ class stability_plotters(object):
 
     def massdep_plotter(self, no_axis):
 
+        def exponential_fit(xval, slope, powerval, yint):
+            return slope * np.exp(-powerval * xval) + yint
+
+        def log_fit(xval, slope, yint):
+            vel_const = 15 | units.kms
+            return (slope) * ((gc_code.gc_rad.value_in(units.m)/vel_const.value_in(units.m/units.Myr)) * np.log(xval)**-1)**1.8 + yint
+
         plot_ini = plotter_setup()
 
         if no_axis == 1:
@@ -426,6 +434,26 @@ class stability_plotters(object):
             ax.xaxis.labelpad = 25
             ax.text(2.8, 1.125*max(y_max), r'$r_{SMBH}=$'+str(dist_)+' pc')
 
+            gc_code =globular_cluster()
+            p0 = (2000, .1, 50)
+            pop_size = np.array([float(i) for i in pop_size])
+            N_parti_avg = np.array([ float(i) for i in N_parti_avg])
+
+            #params, cv = scipy.optimize.curve_fit(exponential_fit, pop_size, N_parti_avg, p0)
+            #slope, powerlaw, intercept = params
+            #xtemp = np.linspace(2.5, 13)
+            #ytemp = [exponential_fit(i, slope, powerlaw, intercept) for i in xtemp]
+            #ax.plot(xtemp, ytemp)
+            #print(slope, powerlaw, intercept)
+
+            p0 = (6,  0.50)
+            params, cv = scipy.optimize.curve_fit(log_fit, pop_size, N_parti_avg, p0)
+            slope, intercept = params
+            xtemp = np.linspace(2.5, 13)
+            ytemp = [log_fit(i, slope, intercept) for i in xtemp]
+            ax.plot(xtemp, ytemp)
+            print(slope, intercept)
+            
             if no_axis == 2:
                 slope, intercept, r_value, p_value, std_err = stats.linregress(tot_popS, surv_rate)
                 xtemp = np.linspace(2.6, max(tot_popS)+1)
@@ -501,8 +529,7 @@ cst.distdep_plotter(2)
 cst.massdep_plotter(1)
 cst.massdep_plotter(2)
 
-
-#gc_code = globular_cluster()
-#spatial_plotter(1.15*gc_code.gc_dist)
-#energy_plotter()
+gc_code = globular_cluster()
+spatial_plotter(1.15*gc_code.gc_dist)
+energy_plotter()
 #animator(1.5 | units.parsec)

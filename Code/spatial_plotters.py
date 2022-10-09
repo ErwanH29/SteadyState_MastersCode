@@ -59,10 +59,8 @@ def animator(init_dist):
     count = file_counter()
 
     Lag_tracker, col_len = file_opener('data/lagrangians/*')
-    com_tracker, col_len = file_opener('data/center_of_mass/*')
-    IMBH_tracker, col_len = file_opener('data/positions_IMBH/*')
+    IMBH_tracker, col_len = file_opener('data/particle_trajectory/*')
     energy_tracker, col_len = file_opener('data/energy/*')
-    com_x, com_y, com_z = file_manipulator(col_len, com_tracker)
 
     time = np.empty((col_len, 1))
     dE_array = np.empty((col_len, 1))
@@ -151,13 +149,13 @@ def animator(init_dist):
                               (line_z[i][skip_zeroth]-line_z[0][skip_zeroth]), 
                                c = colours[iter-2], edgecolors = 'black', s = 50)
 
-                ax3D2.scatter((line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_x[max(0,skip_zeroth-20):skip_zeroth+1]),
-                              (line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_y[max(0,skip_zeroth-20):skip_zeroth+1]),
-                              (line_z[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_z[max(0,skip_zeroth-20):skip_zeroth+1]), 
+                ax3D2.scatter((line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_x[1][max(0,skip_zeroth-20):skip_zeroth+1]),
+                              (line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_y[1][max(0,skip_zeroth-20):skip_zeroth+1]),
+                              (line_z[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_z[1][max(0,skip_zeroth-20):skip_zeroth+1]), 
                                s =1, c = colours[iter-2], lw = 2)
-                ax3D2.scatter((line_x[i][skip_zeroth]-com_x[skip_zeroth]), 
-                              (line_y[i][skip_zeroth]-com_y[skip_zeroth]), 
-                              (line_z[i][skip_zeroth]-com_z[skip_zeroth]),
+                ax3D2.scatter((line_x[i][skip_zeroth]-line_x[1][skip_zeroth]), 
+                              (line_y[i][skip_zeroth]-line_y[1][skip_zeroth]), 
+                              (line_z[i][skip_zeroth]-line_z[1][skip_zeroth]),
                                c = colours[iter-2], edgecolors = 'black', s = 40)
 
         for ax_ in [ax3D1, ax3D2]:
@@ -187,10 +185,10 @@ def animator(init_dist):
             plot_ini.tickers(ax_) 
         
         for i in range(len(IMBH_tracker)):
-            ax1.scatter(line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_x[max(0,skip_zeroth-20):skip_zeroth+1],
-                        line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-com_y[max(0,skip_zeroth-20):skip_zeroth+1],
+            ax1.scatter(line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_x[1][max(0,skip_zeroth-20):skip_zeroth+1],
+                        line_y[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_y[1][max(0,skip_zeroth-20):skip_zeroth+1],
                         c = colours[i], lw = 2, alpha = 0.7, s = 1)
-            ax1.scatter(line_x[i][skip_zeroth]-com_x[skip_zeroth], line_y[i][skip_zeroth]-com_y[skip_zeroth],
+            ax1.scatter(line_x[i][skip_zeroth]-line_x[1][skip_zeroth], line_y[i][skip_zeroth]-line_t[1][skip_zeroth],
                         c = colours[i], edgecolors = 'black', s = 40)
 
             ax3.scatter((line_x[i][max(0,skip_zeroth-20):skip_zeroth+1]-line_x[0][max(0,skip_zeroth-20):skip_zeroth+1]), 
@@ -217,10 +215,10 @@ def animator(init_dist):
         ax1.set_title(str("{:.0f}".format(time[skip_zeroth][0])+" Myr"), loc = 'left')   
         ax1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
         ax1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
-        ax1.set_xlim(min(line_x[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_x[max(0,skip_zeroth-80):skip_zeroth+1]),
-                     max(line_x[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_x[max(0,skip_zeroth-80):skip_zeroth+1]))
-        ax1.set_ylim(min(line_y[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_y[max(0,skip_zeroth-80):skip_zeroth+1]),
-                     max(line_y[i][max(0,skip_zeroth-80):skip_zeroth+1]-com_y[max(0,skip_zeroth-80):skip_zeroth+1]))
+        ax1.set_xlim(min(line_x[i][max(0,skip_zeroth-80):skip_zeroth+1]-line_x[1][max(0,skip_zeroth-80):skip_zeroth+1]),
+                     max(line_x[i][max(0,skip_zeroth-80):skip_zeroth+1]-line_x[1][max(0,skip_zeroth-80):skip_zeroth+1]))
+        ax1.set_ylim(min(line_y[i][max(0,skip_zeroth-80):skip_zeroth+1]-line_y[1][max(0,skip_zeroth-80):skip_zeroth+1]),
+                     max(line_y[i][max(0,skip_zeroth-80):skip_zeroth+1]-line_y[1][max(0,skip_zeroth-80):skip_zeroth+1]))
 
         ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
         ax2.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
@@ -330,10 +328,8 @@ def spatial_plotter(init_dist):
     gc_code = globular_cluster()
     count = file_counter()
     ejec_parti, col_len = file_opener('data/no_addition/chaotic_simulation/*')
-    com_tracker, col_len = file_opener('data/center_of_mass/*')
-    IMBH_tracker, col_len = file_opener('data/positions_IMBH/*')
+    IMBH_tracker, col_len = file_opener('data/particle_trajectory/*')
     Lag_tracker, col_len = file_opener('data/lagrangians/*')
-    com_x, com_y, com_z = file_manipulator(col_len, com_tracker)
 
     time = np.empty((1, col_len, 1))
     LG25_array  = np.empty((1, col_len, 1))
@@ -363,7 +359,7 @@ def spatial_plotter(init_dist):
         tIMBH_tracker = tIMBH_tracker.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
         for j in range(col_len):
             coords = tIMBH_tracker.iloc[j+1][1]
-            tdynval = tIMBH_tracker.iloc[j+1][4]
+            tdynval = tIMBH_tracker.iloc[j+1][5]
             if len(coords) == 1:
                 pass
             else:
@@ -372,10 +368,10 @@ def spatial_plotter(init_dist):
                 line_z[i][j][0] = coords[2].value_in(units.pc)
                 tdyn[i][j][0] = tdynval.value_in(units.Myr)
 
-    ejected_x, ejected_y, ejected_z = ejected_extract(IMBH_tracker, ejec_parti, col_len)
+    ejected_x, ejected_y, ejected_z, evx, evy, evz = ejected_extract(IMBH_tracker, ejec_parti, col_len)
     for arr_ in [ejected_x, ejected_y, ejected_z]:
         plot_ini.val_filter(arr_)
-    ejected_dist = np.sqrt((ejected_x-com_x)**2+(ejected_y-com_y)**2+(ejected_z-com_z)**2)
+    ejected_dist = np.sqrt((ejected_x-line_x[1])**2+(ejected_y-line_y[1])**2+(ejected_z-line_z[1])**2)
 
     for arr_ in [line_x, line_y, line_z]:
         plot_ini.val_filter(arr_)
@@ -477,3 +473,92 @@ def spatial_plotter(init_dist):
     plt.close()
 
     return
+
+class vejec_mass(object):
+    """
+    Class to plot the indep_variable vs. ejection velocity plots
+    """
+    def __init__(self):
+        """
+        Extracts the required data
+        """
+        self.ejec_data = bulk_stat_extractor('data/temp_plot/no_addition/chaotic_simulation/*')
+        self.IMBH_tracker = bulk_stat_extractor('data/temp_plot/particle_trajectory/*')
+        self.data_entries = 1
+        
+        self.ejec_vx = np.empty((len(self.ejec_data)))
+        self.ejec_vy = np.empty((len(self.ejec_data)))
+        self.ejec_vz = np.empty((len(self.ejec_data)))
+        self.tot_mass = np.empty((len(self.ejec_data)))
+        self.tot_pop = np.empty((len(self.ejec_data)))
+        self.surv_time = np.empty((len(self.ejec_data)))
+
+        for i in range(len(self.ejec_data)):
+            self.ex, self.ey, self.ez, self.ejec_vx[i], self.ejec_vy[i], self.ejec_vz[i] = ejected_extract(self.IMBH_tracker[i], 
+                                                                                                           self.ejec_data[i], 
+                                                                                                           self.data_entries)
+            
+            self.vals_df = self.ejec_data[i].iloc[0]
+            self.mass_vals = np.sum(self.vals_df[9].value_in(units.MSun))
+            self.tot_pop[i] = self.vals_df[0]
+            self.tot_mass[i] = self.mass_vals
+
+            self.surv_df = self.ejec_data[i].iloc[0]
+            self.surv_time[i] = self.surv_df[4].value_in(units.Myr)
+
+        self.ejec_vel = [np.sqrt(i**2+j**2+k**2) for i,j,k in zip(self.ejec_vx, self.ejec_vy, self.ejec_vz)]
+
+    def plotter_func(self, xdata, ydata, cdata, clabel):
+        """
+        Function to plot the wanted data
+        
+        Inputs:
+        xdata, ydata: The x and y variables wanting to plot
+        cdata:        The data to be used as the colour code
+        clabel:       Label describing the colour plot values
+        """
+
+        plot_ini = plotter_setup()
+        fig, ax = plt.subplots()
+        color_axes = ax.scatter(xdata, ydata, c = cdata)
+        plt.colorbar(color_axes, ax=ax, label = clabel)
+        plot_ini.tickers(ax)
+        return ax
+
+    def vejec_sysmass(self):
+        """
+        Function to plot how the total initial mass of the system influences the ejection velocity
+        """
+
+        in_mass = np.unique(self.tot_mass)
+        avg_vel = np.empty((len(in_mass)))
+        avg_surv = np.empty((len(in_mass)))
+
+        iter = -1
+        for mass_ in in_mass:
+            iter += 1
+            indices = np.where((self.tot_mass == mass_))[0]
+            temp_evel = [self.ejec_vel[i] for i in indices]
+            temp_surv = [self.surv_time[i] for i in indices]
+            avg_vel[iter] = np.mean(temp_evel)
+            avg_surv[iter] = np.mean(temp_surv)
+
+        ax = self.plotter_func(in_mass, avg_vel, avg_surv, r'Ejection Time [Myr]')
+        ax.set_xlabel(r'Total IMBH Mass [$\log(\frac{M}{M_{\odot}})$]')
+        ax.set_ylabel(r'Ejection Velocity [km/s]')
+        ax.set_xscale('log')
+        plt.show()
+
+    def vejec_syspop(self):
+        """
+        Plot to show how the total population of the system influences the ejection velocity
+        """
+        
+        ax = self.plotter_func(self.tot_pop, self.ejec_vel, np.log10(self.tot_mass), r'Total IMBH Mass [$\log(\frac{M}{M_{\odot}})$]')
+        ax.set_xlabel(r'IMBH Population [$N$]')
+        ax.set_ylabel(r'Ejection Velocity [km/s]')
+        plt.show()
+
+vej_plot = vejec_mass()
+vej_plot.vejec_syspop()
+vej_plot.vejec_sysmass()

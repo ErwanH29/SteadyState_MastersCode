@@ -89,7 +89,7 @@ class IMBH_init(object):
         return (2*constants.G*mass)/(constants.c**2)
 
     def coll_radius(self, radius):
-        return 10*radius
+        return 6*radius
 
     def decision(self, time, app_rate):
         """

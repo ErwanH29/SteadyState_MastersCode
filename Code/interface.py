@@ -5,7 +5,7 @@ from file_logistics import *
 from evol import *
 
 eta  = 5e-5
-tend = 30e6 | units.yr
+tend = 3e7 | units.yr
 
 SMBH_code = MW_SMBH()
 gc_code = globular_cluster()
@@ -18,7 +18,7 @@ if prompt == 'y':
     file_reset('data/stability_time')
     file_reset('data/simulation_stats')"""
 
-no_sim = 200
+no_sim = 100
 
 initial_pop = 3
 remove_files = True
@@ -31,14 +31,14 @@ if (remove_files):
     file_reset('data/event_tracker')
     file_reset('data/lagrangians')
     file_reset('data/particle_energies')
-    file_reset('data/positions_IMBH')
+    #file_reset('data/particle_trajectory')
     file_reset('figures')
 
-for j in [3, 4, 5, 6, 7, 8, 9, 10]:
+for j in [10, 9, 3, 4, 5, 6, 7, 8]:
     initial_pop = j
 
-    if j > 8:
-        eta = 1e-5
+    #if j > 8:
+        #tend = 1e7 | units.yr
 
     for i in range(no_sim):
         print('=========== Simulation '+str(i+1)+'/'+str(no_sim)+' Running ===========')

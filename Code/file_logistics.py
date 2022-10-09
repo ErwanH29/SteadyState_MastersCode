@@ -12,13 +12,15 @@ def bulk_stat_extractor(file_string):
     Inputs:
     file_string: The directory wished to extract files from
     """
+
     filename = glob.glob(file_string)
+    filename = sorted(filename, key=lambda t: os.stat(t).st_mtime)
     data = [ ]
-    
+
     for file_ in range(len(filename)):
         with open(filename[file_], 'rb') as input_file:
             data.append(pkl.load(input_file))
-
+    
     return data
 
 def ejected_extract(set, ejected, col_len):
@@ -35,20 +37,30 @@ def ejected_extract(set, ejected, col_len):
     line_y = np.empty((1, col_len, 1))
     line_z = np.empty((1, col_len, 1))
 
+    line_vx = np.empty((1, col_len))
+    line_vy = np.empty((1, col_len))
+    line_vz = np.empty((1, col_len))
+
     for i in range(len(set)):
         if set.iloc[i,0] == ejected.iloc[0][5]:
             temp_comp = set.iloc[i]
-            temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
+            temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):
                 coords = temp_comp.iloc[j+1][1]
+                vel = temp_comp.iloc[-1][2]  #Only the final velocity is important
+                
                 if len(coords) == 1:
                     pass
                 else:
                     line_x[0][j][0] = coords[0].value_in(units.pc)
                     line_y[0][j][0] = coords[1].value_in(units.pc)
                     line_z[0][j][0] = coords[2].value_in(units.pc)
-    
-    return line_x, line_y, line_z
+
+                    line_vx[0][j] = vel[0].value_in(units.kms)
+                    line_vy[0][j] = vel[1].value_in(units.kms)
+                    line_vz[0][j] = vel[2].value_in(units.kms)
+
+    return line_x, line_y, line_z, line_vx, line_vy, line_vz
 
 def file_counter():
     """

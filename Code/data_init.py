@@ -52,22 +52,6 @@ class data_initialiser(object):
         coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True)
         return coll_tracker
 
-    def com_tracker(self, gravity):
-        """
-        Data set which holds information on the cluster c.o.m
-
-        Inputs:
-        gravity: The integrator used in the simulation
-        """
-
-        com_tracker = pd.DataFrame()
-        df_com_tracker = pd.Series({'x': SMBH_filter(gravity.particles).center_of_mass()[0].in_(units.parsec),
-                                    'y': SMBH_filter(gravity.particles).center_of_mass()[1].in_(units.parsec),
-                                    'z': SMBH_filter(gravity.particles).center_of_mass()[2].in_(units.parsec)})
-        com_tracker = com_tracker.append(df_com_tracker, ignore_index=True)
-
-        return com_tracker
-
     def energy_tracker(self, E0, time, app_time):
         """
         Data set to track the energy evolution of the system
@@ -111,16 +95,17 @@ class data_initialiser(object):
         for i in range(init_pop):
             if i == 0 :
                 df_IMBH_vals = pd.Series({'key_tracker': pset[i].key_tracker, 
-                                      '{}'.format(time): [pset[i].mass, pset[i].position, 
-                                      0 | units.J, 0 | units.J, tdyn_val[i] | units.yr]})
+                                          '{}'.format(time): [pset[i].mass, pset[i].position, pset[i].velocity, 
+                                          0 | units.J, 0 | units.J, tdyn_val[i] | units.yr]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
             else:
+                gcframe_vel = pset[i].velocity - pset[1].velocity
                 parti_KE = 0.5*pset[i].mass*pset[i].velocity.length()**2
                 temp_PE = []
                 temp_PE = indiv_PE_all(pset[i], pset, temp_PE)
                 parti_PE = max(temp_PE)
                 df_IMBH_vals = pd.Series({'key_tracker': pset[i].key_tracker, 
-                                        '{}'.format(time): [pset[i].mass, pset[i].position, 
+                                        '{}'.format(time): [pset[i].mass, pset[i].position, gcframe_vel,
                                         parti_KE, parti_PE, tdyn_val[i] | units.yr]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
         IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
