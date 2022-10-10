@@ -6,6 +6,7 @@ from physics_func import *
 from evol_func import *
 from amuse.ext.LagrangianRadii import LagrangianRadii
 from amuse.community.hermite import Hermite
+from amuse.community.hermite_grx.interface import *
 import numpy as np
 import pandas as pd
 import time as cpu_time
@@ -15,7 +16,7 @@ import time as cpu_time
 #   - CHANGE number_of_workers
 #   - ENSURE CORRECT FILE SAVING FORMAT (NAME)
 
-def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass, cluster_rhmass, converter):
+def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, int_string):
     """
     Bulk of the simulation. Uses Hermite integrator to evolve the system while bridging it.
     Keeps track of the particles' position and stores it in a pickle file.
@@ -24,8 +25,6 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
     parti:            The particle set needed to simulate
     tend:             The end time of the simulation
     eta:              The step size
-    cluster_distance: Initialised distance between cluster and SMBH
-    cluster_radi:     Initialised cluster radius.
     converter:        Variable used to convert between nbody units and SI
     """
     
@@ -40,7 +39,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
 
     initial_set = parti.copy()
 
-    code = Hermite(converter, number_of_workers = 6) #To change when going into ALICE
+    code = HermiteGRX(converter, number_of_workers = 6) #To change when going into ALICE
     code.particles.add_particles(parti)
     code.commit_particles()
     stopping_condition = code.stopping_conditions.collision_detection
@@ -65,7 +64,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
     init_IMBH_pop = len(parti)
     add_iter = 0
     N_parti = init_IMBH_pop
-    N_parti_init = N_parti
+    init_pop = N_parti-2
     ejected = False
     extra_note = ''
 
@@ -312,19 +311,20 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
         print("Total Merging Events: ", Nenc)
         print('Total integration time: ', comp_end-comp_start)
         print('...Dumping Files...')
-        count = file_counter()
+        count = file_counter(int_string)
 
         if time1 == tend:
             ejected_key_track = parti[1].key_tracker
        
-        IMBH_tracker.to_pickle('data/particle_trajectory/IMBH_positions_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        energy_tracker.to_pickle('data/energy/IMBH_energy_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        parti_energy_tracker.to_pickle('data/particle_energies/particle_energies_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        LG_tracker.to_pickle('data/lagrangians/IMBH_Lagrangian_'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        coll_tracker.to_pickle('data/collision_events/IMBH_merge_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')
-        eventstab_tracker.to_pickle('data/event_tracker/IMBH_events'+str(N_parti_init)+str(count)+'_equal_mass.pkl')   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
+        IMBH_tracker.to_pickle('data/'+str(int_string)+'/particle_trajectory/IMBH_'+str(int_string)+'_Local_'+str(init_pop)+'_sim'+str(count)+'_init_dist'                                      #USE THIS FOR LOCAL SIMULATIONS
+                               +str('{:.3f}'.format(gc_code.gc_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(parti[2].mass.value_in(units.MSun)))+'.pkl')
+        energy_tracker.to_pickle('data/'+str(int_string)+'/energy/IMBH_'+str(int_string)+'energy_'+str(init_pop)+str(count)+'_equal_mass.pkl')
+        parti_energy_tracker.to_pickle('data/'+str(int_string)+'/particle_energies/particle_energies_'+str(int_string)+str(init_pop)+str(count)+'_equal_mass.pkl')
+        LG_tracker.to_pickle('data/'+str(int_string)+'/lagrangians/IMBH_'+str(int_string)+'Lagrangian_'+str(init_pop)+str(count)+'_equal_mass.pkl')
+        coll_tracker.to_pickle('data/'+str(int_string)+'/collision_events/IMBH_'+str(int_string)+'merge_events'+str(init_pop)+str(count)+'_equal_mass.pkl')
+        eventstab_tracker.to_pickle('data/'+str(int_string)+'/event_tracker/IMBH_'+str(int_string)+'events'+str(init_pop)+str(count)+'_equal_mass.pkl')   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
         data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, 
-                                          chaos_stab_timescale, added_mass, ejected_mass, comp_time)                   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
+                                          chaos_stab_timescale, added_mass, ejected_mass, comp_time, int_string)                   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
 
         lines = ['Simulation: ', "Total CPU Time: "+str(comp_end-comp_start)+' seconds', 
                  'Timestep: '+str(eta),
@@ -333,14 +333,14 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, cluster_mass
                  'Cluster Distance: '+str(cluster_distance.value_in(units.parsec))+' parsecs', 
                  'Masses of IMBH: '+str(parti.mass.value_in(units.MSun))+' MSun',
                  "No. of initial IMBH: "+str(init_IMBH_pop-2), 
-                 'Number of new particles: '+str(N_parti-N_parti_init),
+                 'Number of new particles: '+str(N_parti-init_pop),
                  'Total Number of (Final) IMBH: '+str(len(parti)-2), 
                 # 'IMBH Appearance Rate: '+str(IMBHapp.value_in(units.yr))+' years',    #To add when continuous ejecting simulations occur
                  'Number of mergers: '+str(Nenc), 'End Time: '+str(tend.value_in(units.yr))+' years', 
                  'Integrator: Hermite (NO PN)',
                  'Extra Notes: ', extra_note]
 
-        with open('data/simulation_stats/simulation'+str(count)+'.txt', 'w') as f:
+        with open('data/'+str(int_string)+'/simulation_stats/simulation'+str(count)+'.txt', 'w') as f:
             for line in lines:
                 f.write(line)
                 f.write('\n')        

@@ -62,12 +62,12 @@ def ejected_extract(set, ejected, col_len):
 
     return line_x, line_y, line_z, line_vx, line_vy, line_vz
 
-def file_counter():
+def file_counter(int_string):
     """
     Function which counts the number of files in a directory.
     """
 
-    dir_path = r'data/simulation_stats/'
+    dir_path = r'data/'+str(int_string)+'/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
     count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
     return count
 

@@ -76,7 +76,7 @@ def merge_IMBH(parti, particles_in_encounter, tcoll):
     new_particle.collision_time = tcoll
     new_particle.position = com_pos
     new_particle.velocity = com_vel
-    new_particle.collision_radius = new_particle.radius * 6
+    new_particle.radius = (2*constants.G*new_particle.mass)/(constants.c**2)
     parti.add_particles(new_particle)
     parti.remove_particles(particles_in_encounter)
 

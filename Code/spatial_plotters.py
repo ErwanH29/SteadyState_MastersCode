@@ -45,7 +45,7 @@ def colour_picker():
 
     return colors
 
-def animator(init_dist):
+def animator(init_dist, int_string):
     """
     Function to produce animations. WARNING: SLOW
     
@@ -56,11 +56,11 @@ def animator(init_dist):
     print('!!!!! You have chosen to animate. This will take a while !!!!!')
     
     plot_ini = plotter_setup()
-    count = file_counter()
+    count = file_counter(int_string)
 
-    Lag_tracker, col_len = file_opener('data/lagrangians/*')
-    IMBH_tracker, col_len = file_opener('data/particle_trajectory/*')
-    energy_tracker, col_len = file_opener('data/energy/*')
+    Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/lagrangians/*')
+    IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
+    energy_tracker, col_len = file_opener('data/'+str(int_string)+'/energy/*')
 
     time = np.empty((col_len, 1))
     dE_array = np.empty((col_len, 1))
@@ -237,15 +237,15 @@ def animator(init_dist):
 
     return 
         
-def energy_plotter():
+def energy_plotter(int_string):
     """
     Function to plot the energy evolution of the system
     """
 
     plot_ini = plotter_setup()
-    count = file_counter()
-    energy_tracker, col_len = file_opener('data/energy/*')
-    IMBH_energy_tracker, col_len = file_opener('data/particle_energies/*')
+    count = file_counter(int_string)
+    energy_tracker, col_len = file_opener('data/'+str(int_string)+'/energy/*')
+    IMBH_energy_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_energies/*')
 
     time = np.empty((1, col_len, 1))
     Et_array = np.empty((1, col_len, 1))
@@ -319,17 +319,17 @@ def energy_plotter():
 
     return
 
-def spatial_plotter(init_dist):
+def spatial_plotter(init_dist, int_string):
     """
     Function to plot the evolution of the system
     """
 
     plot_ini = plotter_setup()
     gc_code = globular_cluster()
-    count = file_counter()
-    ejec_parti, col_len = file_opener('data/no_addition/chaotic_simulation/*')
-    IMBH_tracker, col_len = file_opener('data/particle_trajectory/*')
-    Lag_tracker, col_len = file_opener('data/lagrangians/*')
+    count = file_counter(int_string)
+    ejec_parti, col_len = file_opener('data/'+str(int_string)+'/no_addition/chaotic_simulation/*')
+    IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
+    Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/lagrangians/*')
 
     time = np.empty((1, col_len, 1))
     LG25_array  = np.empty((1, col_len, 1))
@@ -478,12 +478,12 @@ class vejec_mass(object):
     """
     Class to plot the indep_variable vs. ejection velocity plots
     """
-    def __init__(self):
+    def __init__(self, int_string = 'Hermite'):
         """
         Extracts the required data
         """
-        self.ejec_data = bulk_stat_extractor('data/temp_plot/no_addition/chaotic_simulation/*')
-        self.IMBH_tracker = bulk_stat_extractor('data/temp_plot/particle_trajectory/*')
+        self.ejec_data = bulk_stat_extractor('data/'+str(int_string)+'/temp_plot/no_addition/chaotic_simulation/*')
+        self.IMBH_tracker = bulk_stat_extractor('data/'+str(int_string)+'/temp_plot/particle_trajectory/*')
         self.data_entries = 1
         
         self.ejec_vx = np.empty((len(self.ejec_data)))
@@ -544,9 +544,10 @@ class vejec_mass(object):
             avg_surv[iter] = np.mean(temp_surv)
 
         ax = self.plotter_func(in_mass, avg_vel, avg_surv, r'Ejection Time [Myr]')
-        ax.set_xlabel(r'Total IMBH Mass [$\log(\frac{M}{M_{\odot}})$]')
+
+        ax.set_xlabel(r'Total IMBH Mass [$\frac{M}{M_{\odot}}$]')
         ax.set_ylabel(r'Ejection Velocity [km/s]')
-        ax.set_xscale('log')
+        #ax.set_ylim(0, 200)
         plt.show()
 
     def vejec_syspop(self):
@@ -554,11 +555,8 @@ class vejec_mass(object):
         Plot to show how the total population of the system influences the ejection velocity
         """
         
-        ax = self.plotter_func(self.tot_pop, self.ejec_vel, np.log10(self.tot_mass), r'Total IMBH Mass [$\log(\frac{M}{M_{\odot}})$]')
+        ax = self.plotter_func(self.tot_pop, self.ejec_vel, (self.tot_mass), r'Total IMBH Mass [$\frac{M}{M_{\odot}}$]')
         ax.set_xlabel(r'IMBH Population [$N$]')
         ax.set_ylabel(r'Ejection Velocity [km/s]')
+        #ax.set_ylim(0, 200)
         plt.show()
-
-vej_plot = vejec_mass()
-vej_plot.vejec_syspop()
-vej_plot.vejec_sysmass()

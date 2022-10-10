@@ -6,7 +6,7 @@ import pandas as pd
 
 class data_initialiser(object):
     def chaotic_sim_tracker(self, pset, init_pop, Nmerge, cum_mergermass, time, ejected_key, 
-                            stab_time, added_mass, ejected_mass, comp_time):
+                            stab_time, added_mass, ejected_mass, comp_time, int_string):
 
         """
         Data set which tracks statistics on the simulations resulting in ejections
@@ -22,9 +22,10 @@ class data_initialiser(object):
         added_mass:     The mass of the most recently added particle
         ejected_mass:   The mass of the ejected particle
         comp_time:      Total time simulation lasted
+        int_string:     String describing integrator used
         """
 
-        count = file_counter()
+        count = file_counter(int_string)
         gc_code = globular_cluster()
         stab_tracker = pd.DataFrame()
         df_stabtime = pd.Series({'Initial Particles': (len(init_pop)-2), 'Final Particles': (len(pset)-2), 
@@ -41,7 +42,7 @@ class data_initialiser(object):
         stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
         #stab_tracker.to_pickle('data/chaotic_simulation/IMBH_Hermite_Ni'+str(len(init_pop)-2)+'_sim'+str(count)+'_init_dist'                                                       #USE THIS FOR ALICE SIMULATIONS
          #                      +str('{:.3f}'.format(gc_code.gc_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(init_pop[2].mass.value_in(units.MSun)))+'.pkl')
-        stab_tracker.to_pickle('data/no_addition/chaotic_simulation/IMBH_Hermite_Ni_Local'+str(len(init_pop)-2)+'_sim'+str(count)+'_init_dist'                                      #USE THIS FOR LOCAL SIMULATIONS
+        stab_tracker.to_pickle('data/'+str(int_string)+'/no_addition/chaotic_simulation/IMBH_'+str(int_string)+'_Local_'+str(len(init_pop)-2)+'_sim'+str(count)+'_init_dist'                                      #USE THIS FOR LOCAL SIMULATIONS
                                +str('{:.3f}'.format(gc_code.gc_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(init_pop[2].mass.value_in(units.MSun)))+'.pkl')
              
     def coll_tracker(self):
@@ -154,7 +155,7 @@ class data_initialiser(object):
 
         return parti_energy_tracker
 
-    def stable_sim_tracker(self, pset, Ninj, Nmerge, merger_mass, time):
+    def stable_sim_tracker(self, pset, Ninj, Nmerge, merger_mass, time, int_string):
 
         """
         Function which tracks information on the simulations which ended in stable state.
@@ -165,10 +166,12 @@ class data_initialiser(object):
         Ninj:        Binary stating if simulation ended due to injection (1 = injection, 0 = none)
         Nmerge:      Binary stating if simulation ended due to merging event (1 = merge, 0 = none)
         merger_mass: The merger event
-        time:        Duration of the stable system"""
+        time:        Duration of the stable system
+        int_string:  String describing integrator used
+        """
 
         gc_code = globular_cluster()
-        count = file_counter()
+        count = file_counter(int_string)
 
         stable_sim_tracker = pd.DataFrame()
         df_stablesim = pd.Series({'Initial Particles': (len(pset)-2), 'Injected Event': Ninj,
@@ -179,7 +182,7 @@ class data_initialiser(object):
                                   'Initial Particle Mass': pset[2:].mass.in_(units.MSun),
                                   'Relaxation Time': relax_timescale(gc_code.gc_rad, gc_code.gc_mass, 10**5).in_(units.yr)})
         stable_sim_tracker = stable_sim_tracker.append(df_stablesim, ignore_index = True)
-        stable_sim_tracker.to_pickle('data/stable_simulation/IMBH_Hermite_Ni'+str(len(pset)-2)+'_sim'+str(count)
+        stable_sim_tracker.to_pickle('data/'+str(int_string)+'/stable_simulation/IMBH_'+str(int_string)+'_Ni'+str(len(pset)-2)+'_sim'+str(count)
                                      +'_init_dist' +str('{:.3f}'.format(gc_code.gc_dist.value_in(units.parsec)))
                                      +'_equal_mass_' +str('{:.3f}'.format(pset[2].mass.value_in(units.MSun)))
                                      +'_inj_'+str(Ninj)+'_merge_'+str(Nmerge)+'.pkl')

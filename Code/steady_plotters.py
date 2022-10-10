@@ -69,7 +69,7 @@ class stability_plotters(object):
         ydata:  The y-values for the plot
         """
 
-        mtick_formatter = [mtick.FormatStrFormatter('%0.3f'), mtick.FormatStrFormatter('%0.0f')]
+        mtick_formatter = [mtick.FormatStrFormatter('%0.1f'), mtick.FormatStrFormatter('%0.0f')]
         ylims = [[0, 1.2*max(ydata)], [0, 105]]
         y_labs = [r'Ejection Time [Myr]', r'Percentage of Survival [%]']
         title = [r'Black Hole Population vs. Average Ejection Time', r'Black Hole Population vs. Survivability Rate']
@@ -83,7 +83,7 @@ class stability_plotters(object):
             axis[i].set_ylim(ylims[i])
             axis[i].set_title(title[i])
 
-    def distdep_plotter(self, no_axis):
+    def distdep_plotter(self, no_axis, int_string):
         """
         Function to plot the steady time with various lines corresponding to different distances.
         
@@ -94,9 +94,9 @@ class stability_plotters(object):
         plot_ini = plotter_setup()
         
         if no_axis == 1:
-            dir = 'data/no_addition/chaotic_simulation/*'
+            dir = 'data/'+str(int_string)+'/no_addition/chaotic_simulation/*'
         else:
-            dir = 'data/chaotic_simulation/*'
+            dir = 'data/'+str(int_string)+'/chaotic_simulation/*'
 
         self.chaos_ini_parti_data, self.chaos_fin_parti_data, self.chaos_number_mergers, self.chaos_cumulative_mm, self.chaos_simulated_end, \
         self.chaos_ejected_parti, self.chaos_stab_time_data, self.chaos_init_dist_data, self.chaos_cluster_radius, self.chaos_init_mass_data, \
@@ -104,7 +104,7 @@ class stability_plotters(object):
 
         if no_axis == 2:
             self.ini_parti_data, self.inj_event_data, self.merge_no_data, self.mergerm_data, self.simulated_end, \
-            self.initial_dist, self.cluster_rad, self.init_parti_m, self.trelax_data = self.stable_extract('data/stable_simulation/*')
+            self.initial_dist, self.cluster_rad, self.init_parti_m, self.trelax_data = self.stable_extract('data/'+str(int_string)+'/stable_simulation/*')
 
         in_mass = np.unique(self.chaos_init_mass_data[:,0], axis = 0)
         in_dist = np.unique(self.chaos_init_dist_data)
@@ -205,20 +205,20 @@ class stability_plotters(object):
                         ax2.scatter(tot_popS, surv_rate, color = colours, edgecolors = 'black')
                     for j, xpos in enumerate(pop_size):
                         if iter == 0:
-                            ax.text(xpos, -0.08*max(N_parti_avg), '# Ejec.\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                            ax.text(xpos, -0.12*max(N_parti_avg), '# Ejec.\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
                         else:
-                            ax.text(xpos, -0.08*max(N_parti_avg)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
+                            ax.text(xpos, -0.12*max(N_parti_avg)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
                     
                     if no_axis == 2:
                         for j, xpos in enumerate(tot_popS):
                             if iter == 0:
-                                ax2.text(xpos, -0.08*max(surv_rate), '# Surv.\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samplesS[j][0])), fontsize = 'xx-small', ha = 'center' )
+                                ax2.text(xpos, -0.12*max(surv_rate), '# Surv.\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samplesS[j][0])), fontsize = 'xx-small', ha = 'center' )
                             else:
-                                ax2.text(xpos, -0.08*max(surv_rate)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samplesS[j][0]), fontsize = 'xx-small', ha = 'center' )
+                                ax2.text(xpos, -0.12*max(surv_rate)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samplesS[j][0]), fontsize = 'xx-small', ha = 'center' )
                 xints = [i for i in range(1+int(max(tot_pop)))]
 
             order = int('{:.0f}'.format(np.log10(mass_)))
-            ax.text(3.2, 1.125*max(y_max), r'$m_{i} \in$ '+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r'$M_\odot$')
+            #ax.text(3.2, 1.125*max(y_max), r'$m_{i} \in$ '+str('{:.0f}'.format(mass_/10**order))+r'$\times 10^{}$'.format(order)+r'$M_\odot$')
             self.mean_plots([ax], tot_pop, xints, y_max)
             plot_ini.tickers(ax)
             ax.xaxis.labelpad = 25
@@ -293,21 +293,21 @@ class stability_plotters(object):
                     if no_axis == 2:
                         plt.savefig('figures/chaotic_stab_time_equal_mass_'+str(mass_)+'_err_dist_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
 
-    def massdep_plotter(self, no_axis):
+    def massdep_plotter(self, no_axis, int_string):
 
         def exponential_fit(xval, slope, powerval, yint):
             return slope * np.exp(-powerval * xval) + yint
 
         def log_fit(xval, slope, yint):
-            vel_const = 15 | units.kms
-            return (slope) * ((gc_code.gc_rad.value_in(units.m)/vel_const.value_in(units.m/units.Myr)) * np.log(xval)**-1)**1.8 + yint
+            vel_const = np.sqrt(3)*15 | units.kms
+            return (slope) /( (xval)*np.log(xval))**1 + yint
 
         plot_ini = plotter_setup()
 
         if no_axis == 1:
-            dir = 'data/no_addition/chaotic_simulation/*'
+            dir = 'data/'+str(int_string)+'/no_addition/chaotic_simulation/*'
         else:
-            dir = 'data/chaotic_simulation/*'
+            dir = 'data/'+str(int_string)+'/chaotic_simulation/*'
 
         self.chaos_ini_parti_data, self.chaos_fin_parti_data, self.chaos_number_mergers, self.chaos_cumulative_mm, self.chaos_simulated_end, \
         self.chaos_ejected_parti, self.chaos_stab_time_data, self.chaos_init_dist_data, self.chaos_cluster_radius, self.chaos_init_mass_data, \
@@ -315,7 +315,7 @@ class stability_plotters(object):
 
         if no_axis == 2:
             self.ini_parti_data, self.inj_event_data, self.merge_no_data, self.mergerm_data, self.simulated_end, \
-            self.initial_dist, self.cluster_rad, self.init_parti_m, self.trelax_data = self.stable_extract('data/stable_simulation/*')
+            self.initial_dist, self.cluster_rad, self.init_parti_m, self.trelax_data = self.stable_extract('data/'+str(int_string)+'/stable_simulation/*')
 
         in_dist = np.unique(self.chaos_init_dist_data)
         in_mass = np.unique(self.chaos_init_mass_data, axis=0)
@@ -412,27 +412,27 @@ class stability_plotters(object):
                         N_parti_avg.append(np.mean(stab_time[N_parti]))
 
                     y_max.append(max(N_parti_avg))
-                    ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black',
+                    ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black', zorder = 3,
                                label = r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
                     for j, xpos in enumerate(pop_size):
                         if iter == 0:
-                            ax.text(xpos, -0.08*max(N_parti_avg), '# Ejec.\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                            ax.text(xpos, -0.12*max(N_parti_avg), '# Ejec.\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
                         else:
-                            ax.text(xpos, -0.08*max(N_parti_avg)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
+                            ax.text(xpos, -0.12*max(N_parti_avg)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
         
                     if no_axis == 2:
                         ax2.scatter(tot_popS, surv_rate, color = colours, edgecolors = 'black', zorder = 2)
                         for j, xpos in enumerate(pop_sizeS):
                             if iter == 0:
-                                ax2.text(xpos, -0.08*max(surv_rate), '# Surv.\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samplesS[j][0])), fontsize = 'xx-small', ha = 'center' )
+                                ax2.text(xpos, -0.12*max(surv_rate), '# Surv.\n'+'Set '+str(iter)+': '+str('{:.0f}'.format(pop_samplesS[j][0])), fontsize = 'xx-small', ha = 'center' )
                             else:
-                                ax2.text(xpos, -0.08*max(surv_rate)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samplesS[j][0]), fontsize = 'xx-small', ha = 'center' )
+                                ax2.text(xpos, -0.12*max(surv_rate)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samplesS[j][0]), fontsize = 'xx-small', ha = 'center' )
                 xints = [i for i in range(1+int(max(tot_pop)))]
 
             plot_ini.tickers(ax)
             self.mean_plots([ax], tot_pop, xints, y_max)
             ax.xaxis.labelpad = 25
-            ax.text(2.8, 1.125*max(y_max), r'$r_{SMBH}=$'+str(dist_)+' pc')
+            #ax.text(2.8, 1., r'$r_{SMBH}=$'+str(dist_)+' pc')
 
             gc_code =globular_cluster()
             p0 = (2000, .1, 50)
@@ -451,14 +451,15 @@ class stability_plotters(object):
             slope, intercept = params
             xtemp = np.linspace(2.5, 13)
             ytemp = [log_fit(i, slope, intercept) for i in xtemp]
-            ax.plot(xtemp, ytemp)
+            ax.plot(xtemp, ytemp, zorder = 1, color = 'black', ls = '-.')
+            ax.text(2.8, 0.5, r'$t_{surv} \approx$ '+str('{:.2f}'.format(slope))+r' Myr $\ln^{-1}(N)$')
             print(slope, intercept)
             
             if no_axis == 2:
                 slope, intercept, r_value, p_value, std_err = stats.linregress(tot_popS, surv_rate)
                 xtemp = np.linspace(2.6, max(tot_popS)+1)
                 ytemp = [slope*xval_ + intercept for xval_ in xtemp]
-                ax2.plot(xtemp, ytemp, color = 'black', zorder = 1)
+                ax2.plot(xtemp, ytemp, color = 'black', zorder = 2)
                 ax2.text(3.2, 10, r'Line of Best Fit: $S = $'+str('{:.2f}'.format(slope))+r'$N$')
                 ax2.xaxis.labelpad = 25
                 self.mean_plots([ax, ax2], tot_pop, xints, y_max)                
@@ -512,7 +513,7 @@ class stability_plotters(object):
                     ax.scatter(pop_size, N_parti_avg, color = 'black')
 
                     for j, xpos in enumerate(pop_size):
-                        ax.text(xpos, -0.08*max(np.add(N_parti_avg, std)), '# Sim:\n'+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )                   
+                        ax.text(xpos, -0.12*max(np.add(N_parti_avg, std)), '# Sim:\n'+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )                   
                     ax.text(2.8, 0.96*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
                     xints = [i for i in range(1+int(max(tot_pop)))]
                     
@@ -523,13 +524,21 @@ class stability_plotters(object):
                     if no_axis == 2:
                         plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
 
+string = 'Hermite'
 cst = stability_plotters()
-cst.distdep_plotter(1)
-cst.distdep_plotter(2)
-cst.massdep_plotter(1)
-cst.massdep_plotter(2)
+cst.distdep_plotter(1, string)
+cst.distdep_plotter(2, string)
+cst.massdep_plotter(1, string)
+cst.massdep_plotter(2, string)
+
+
+
+#vej_plot = vejec_mass()
+#vej_plot.vejec_syspop()
+#vej_plot.vejec_sysmass()
+
 
 gc_code = globular_cluster()
-spatial_plotter(1.15*gc_code.gc_dist)
-energy_plotter()
+spatial_plotter(1.15*gc_code.gc_dist, 'Hermite')
+energy_plotter('Hermite')
 #animator(1.5 | units.parsec)
