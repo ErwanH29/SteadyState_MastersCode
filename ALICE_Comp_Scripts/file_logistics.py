@@ -66,8 +66,8 @@ def file_counter(int_string):
     """
     Function which counts the number of files in a directory.
     """
-
-    dir_path = r'data/'+str(int_string)+'/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
+    
+    dir_path = r'data/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
     count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
     return count
 
@@ -120,7 +120,7 @@ def file_reset(dir):
 def stats_chaos_extractor(dir):
     steadytime_data = bulk_stat_extractor(dir)
     no_Data = len(steadytime_data)
-    
+
     ini_parti_data = np.empty(no_Data)
     fin_parti_data = np.empty(no_Data)
     number_mergers = np.empty(no_Data)
@@ -134,21 +134,22 @@ def stats_chaos_extractor(dir):
     inj_mass_data  = np.empty(no_Data)
     eje_mass_data  = np.empty(no_Data)
     reltime_data   = np.empty(no_Data)
-    
+
     for i in range(no_Data):
         sim_data = steadytime_data[i]
-        ini_parti_data[i] = sim_data.iloc[0][0]
-        fin_parti_data[i] = sim_data.iloc[0][1]
-        number_mergers[i] = sim_data.iloc[0][2]
+        print(sim_data)
+        ini_parti_data[i] = sim_data.iloc[0][9]
+        fin_parti_data[i] = sim_data.iloc[0][6]
+        number_mergers[i] = sim_data.iloc[0][10]
         cum_merge_mass[i] = sim_data.iloc[0][3].value_in(units.MSun)
-        simulated_end[i]  = sim_data.iloc[0][4].value_in(units.Myr)
+        simulated_end[i]  = sim_data.iloc[0][-2].value_in(units.Myr)
         ejected_parti[i]  = sim_data.iloc[0][5]
-        stab_time_data[i] = sim_data.iloc[0][6].value_in(units.Myr)
+        stab_time_data[i] = sim_data.iloc[0][-1].value_in(units.Myr)
         init_dist_data[i] = sim_data.iloc[0][7].value_in(units.parsec)
-        cluster_radius[i] = sim_data.iloc[0][8].value_in(units.parsec)
-        init_mass_data[i] = [int(min(sim_data.iloc[0][9].value_in(units.MSun))), int(max(sim_data.iloc[0][9].value_in(units.MSun)))]
-        inj_mass_data[i]  = sim_data.iloc[0][10].value_in(units.MSun)
-        eje_mass_data[i]  = sim_data.iloc[0][11].value_in(units.MSun)
+        cluster_radius[i] = sim_data.iloc[0][1].value_in(units.parsec)
+        init_mass_data[i] = [int(min(sim_data.iloc[0][8].value_in(units.MSun))), int(max(sim_data.iloc[0][8].value_in(units.MSun)))]
+        inj_mass_data[i]  = sim_data.iloc[0][0].value_in(units.MSun)
+        eje_mass_data[i]  = sim_data.iloc[0][4].value_in(units.MSun)
         #reltime_data[i]   = sim_data.iloc[0][11].value_in(units.yr)
 
     return ini_parti_data, fin_parti_data, number_mergers, cum_merge_mass, simulated_end, ejected_parti, stab_time_data, \

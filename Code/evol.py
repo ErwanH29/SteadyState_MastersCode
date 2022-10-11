@@ -211,31 +211,24 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
                 injbin = 1
                 N_parti += 1
                 Nenc = 0
-
                 app_time = time
                 app_time2 = time
                 temp_E1 = code.kinetic_energy + code.potential_energy
-
                 add_IMBH = IMBH_adder.add_IMBH(parti[1])
                 added_mass = add_IMBH.mass
                 parti.add_particle(add_IMBH)
                 code.particles.add_particles(add_IMBH)
                 temp_E2 = code.kinetic_energy + code.potential_energy
-
                 tinj = time.in_(units.s) - eta*tend
                 df_IMBH_vals = pd.Series({'key_tracker': add_IMBH.key_tracker[0]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
-
                 stab_timescale = time - stab_timescale
                 data_trackers.stable_sim_tracker(parti, injbin, mergebin, merger_mass, stab_timescale)
-
                 E0 += (temp_E2-temp_E1) 
-
                 df_eventstab_tracker = pd.Series({'Initial No. Particles': len(parti)-1, 'Merger Event': 0, 
                                                   'Collision Time': 0 | units.s, 'Injected Event': 1, 
                                                   'Injected Time': tinj.in_(units.kyr)})
                 eventstab_tracker = eventstab_tracker.append(df_eventstab_tracker, ignore_index = True)
-
             IMBH_tracker = IMBH_tracker.append(df_IMBH, ignore_index=True)
             injbin = 0
             """
