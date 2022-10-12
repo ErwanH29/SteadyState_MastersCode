@@ -35,4 +35,3 @@ echo "[$SHELL] ## Used $SLURM_CPUS_ON_NODE processors/CPUS"
 echo "[$SHELL] ## Used $SLURM_CPUS_PER_TASK processors/CPUS per task"
 
 echo "[$SHELL] #### Finished Python test. Have a nice day"
-
