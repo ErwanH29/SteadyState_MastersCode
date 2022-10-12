@@ -8,7 +8,6 @@ import numpy as np
 import scipy.optimize
 from itertools import cycle
 from scipy import stats
-import sys
 
 class stability_plotters(object):
     """
@@ -354,7 +353,7 @@ class stability_plotters(object):
         """
         Function to plot stability time for constant distances
         """
-        sys.stdout = open('output_file', 'w')
+
         def log_fit(xval, slope, yint):
             return (slope) /( (xval)*np.log(xval))**1 + yint
 
@@ -447,9 +446,6 @@ class stability_plotters(object):
 
                 for pop_, samp_ in zip(pop_size_GRX, pop_samples_GRX):
                     N_parti = np.argwhere(fin_parti_GRX == pop_)
-                    print(pop_[0])
-                    for i in stab_time_GRX[N_parti]:
-                        print(i[0])
                     N_parti_avg_GRX.append(np.mean(stab_time_GRX[N_parti]))
 
                 ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black', zorder = 3,
@@ -572,7 +568,7 @@ class stability_plotters(object):
                         plt.savefig('figures/const_pop_chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
                     if no_axis == 2:
                         plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
-
+"""
 string = 'GRX'
 cst = stability_plotters()
 cst.massdep_plotter(1)
@@ -581,4 +577,4 @@ cst.distdep_plotter(1, 'Hermite')
 gc_code = globular_cluster()
 spatial_plotter(1.15*gc_code.gc_dist, 'Hermite')
 energy_plotter('Hermite')
-#animator(1.5 | units.parsec)
+#animator(1.5 | units.parsec)"""

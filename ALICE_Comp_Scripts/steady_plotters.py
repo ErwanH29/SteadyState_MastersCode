@@ -8,7 +8,6 @@ import numpy as np
 import scipy.optimize
 from itertools import cycle
 from scipy import stats
-import sys
 
 class stability_plotters(object):
     """
@@ -354,7 +353,7 @@ class stability_plotters(object):
         """
         Function to plot stability time for constant distances
         """
-        sys.stdout = open('output_file', 'w')
+
         def log_fit(xval, slope, yint):
             return (slope) /( (xval)*np.log(xval))**1 + yint
 
@@ -383,6 +382,29 @@ class stability_plotters(object):
 
         in_dist = np.unique(chaos_init_dist_data)
         in_mass = np.unique(chaos_init_mass_data, axis=0)
+
+        prelim_results_GRX = np.loadtxt('output_file_G')
+        integers_GRX = []
+        vals_GRX = [[], [], [], []]
+        iter = -1
+        for val_ in prelim_results_GRX:
+            if val_ %1 == 0 and val_ != 30:
+                iter += 1
+                integers_GRX.append(val_)
+            else:
+                vals_GRX[iter].append(val_)
+
+        
+        prelim_results_HERMITE = np.loadtxt('output_file_H')
+        integers = []
+        vals = [[], [], [], [], [], [], [], []]
+        iter = -1
+        for val_ in prelim_results_HERMITE:
+            if val_ %1 == 0 and val_ != 30:
+                iter += 1
+                integers.append(val_)
+            else:
+                vals[iter].append(val_)
 
         for dist_ in in_dist:
             init_dist_idx_chaos = np.where((chaos_init_dist_data == dist_))
@@ -442,15 +464,18 @@ class stability_plotters(object):
 
                 for pop_, samp_ in zip(pop_size, pop_samples):
                     N_parti = np.argwhere(fin_parti == pop_)
-                    N_parti_avg.append(np.mean(stab_time[N_parti]))
+                    N_parti_old = np.argwhere(integers == pop_)
+                    comb_data = np.concatenate((stab_time[N_parti].flatten(), vals[N_parti_old[0][0]]), axis = None)
+                    N_parti_avg.append(np.mean(comb_data))
+                    samp_ += len( vals[N_parti_old[0][0]])
                 y_max.append(max(N_parti_avg))
 
                 for pop_, samp_ in zip(pop_size_GRX, pop_samples_GRX):
                     N_parti = np.argwhere(fin_parti_GRX == pop_)
-                    print(pop_[0])
-                    for i in stab_time_GRX[N_parti]:
-                        print(i[0])
-                    N_parti_avg_GRX.append(np.mean(stab_time_GRX[N_parti]))
+                    N_parti_old = np.argwhere(integers_GRX == pop_)
+                    comb_data = np.concatenate((stab_time_GRX[N_parti].flatten(), vals_GRX[N_parti_old[0][0]]), axis = None)
+                    N_parti_avg_GRX.append(np.mean(comb_data))
+                    samp_ += len(vals_GRX[N_parti_old[0][0]])
 
                 ax.scatter(pop_size, N_parti_avg, color = colours, edgecolor = 'black', zorder = 3,
                             label = r'Hermite')                

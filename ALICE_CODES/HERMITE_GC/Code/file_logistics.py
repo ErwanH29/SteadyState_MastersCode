@@ -42,12 +42,12 @@ def ejected_extract(set, ejected, col_len):
     line_vz = np.empty((1, col_len))
 
     for i in range(len(set)):
-        if set.iloc[i,0] == ejected.iloc[0][5]:
+        if set.iloc[i][0] == ejected.iloc[0][5]:
             temp_comp = set.iloc[i]
             temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):
-                coords = temp_comp.iloc[j+1][1]
-                vel = temp_comp.iloc[-1][2]  #Only the final velocity is important
+                coords = temp_comp.iloc[j+1][2]
+                vel = temp_comp.iloc[-1][3]  #Only the final velocity is important
                 
                 if len(coords) == 1:
                     pass
@@ -67,7 +67,7 @@ def file_counter(int_string):
     Function which counts the number of files in a directory.
     """
     
-    dir_path = r'data/Hermite/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
+    dir_path = '/home/s2009269/data1/HERMITE_GC_data/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
     count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
     return count
 
@@ -120,7 +120,7 @@ def file_reset(dir):
 def stats_chaos_extractor(dir):
     steadytime_data = bulk_stat_extractor(dir)
     no_Data = len(steadytime_data)
-
+    
     ini_parti_data = np.empty(no_Data)
     fin_parti_data = np.empty(no_Data)
     number_mergers = np.empty(no_Data)

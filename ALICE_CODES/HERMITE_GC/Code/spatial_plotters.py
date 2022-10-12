@@ -79,7 +79,7 @@ def animator(init_dist, int_string):
         tIMBH_tracker = IMBH_tracker.iloc[i]
         tIMBH_tracker = tIMBH_tracker.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
         for j in range(col_len):
-            coords = tIMBH_tracker.iloc[j+1][1]
+            coords = tIMBH_tracker.iloc[j+1][2]
             if len(coords) == 1:
                 pass
             else:
@@ -327,12 +327,11 @@ def spatial_plotter(init_dist, int_string):
     plot_ini = plotter_setup()
     gc_code = globular_cluster()
     count = file_counter(int_string)
+    ejec_parti, col_len = file_opener('data/'+str(int_string)+'/no_addition/chaotic_simulation/*')
     IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
     print(IMBH_tracker)
-    ejec_parti, col_len = file_opener('data/'+str(int_string)+'/no_addition/chaotic_simulation/*')
     Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/lagrangians/*')
 
-    
     time = np.empty((1, col_len, 1))
     LG25_array  = np.empty((1, col_len, 1))
     LG50_array  = np.empty((1, col_len, 1))
@@ -360,8 +359,8 @@ def spatial_plotter(init_dist, int_string):
         tIMBH_tracker = IMBH_tracker.iloc[i]
         tIMBH_tracker = tIMBH_tracker.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN]")
         for j in range(col_len):
-            coords = tIMBH_tracker.iloc[j+1][1]
-            tdynval = tIMBH_tracker.iloc[j+1][5]
+            coords = tIMBH_tracker.iloc[j+1][2]
+            tdynval = tIMBH_tracker.iloc[j+1][6]
             if len(coords) == 1:
                 pass
             else:

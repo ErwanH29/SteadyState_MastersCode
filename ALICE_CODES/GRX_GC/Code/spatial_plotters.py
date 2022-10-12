@@ -327,12 +327,10 @@ def spatial_plotter(init_dist, int_string):
     plot_ini = plotter_setup()
     gc_code = globular_cluster()
     count = file_counter(int_string)
-    IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
-    print(IMBH_tracker)
     ejec_parti, col_len = file_opener('data/'+str(int_string)+'/no_addition/chaotic_simulation/*')
+    IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
     Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/lagrangians/*')
 
-    
     time = np.empty((1, col_len, 1))
     LG25_array  = np.empty((1, col_len, 1))
     LG50_array  = np.empty((1, col_len, 1))

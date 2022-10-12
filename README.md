@@ -3,4 +3,6 @@ Code using [AMUSE](https://amuse.readthedocs.io/en/latest/) which looks at simul
 
 To run the code, run interface.py while being in the SteadyState_BH/Code directory.
 
-When using ALICE supercomputer, change number\_of\_workers on line 38 in evol.py, uncomment out lines 304 - 310 in evol.py and change file name on line 44 in data_init.py.
+Code under Code/ is for local computer run. Code under ALICE_Codes is those manipulated to fit ALICE requirements and includes both simulations with and without GC.
+
+ALICE\_Comp\_Scripts helps plot ALICE results, whose output is a different configuration than those run under local device.

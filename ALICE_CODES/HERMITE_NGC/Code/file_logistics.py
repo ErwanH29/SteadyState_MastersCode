@@ -42,12 +42,12 @@ def ejected_extract(set, ejected, col_len):
     line_vz = np.empty((1, col_len))
 
     for i in range(len(set)):
-        if set.iloc[i,0] == ejected.iloc[0][5]:
+        if set.iloc[i][0][0] == ejected.iloc[0][5]:
             temp_comp = set.iloc[i]
             temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):
-                coords = temp_comp.iloc[j+1][1]
-                vel = temp_comp.iloc[-1][2]  #Only the final velocity is important
+                coords = temp_comp.iloc[j+1][2]
+                vel = temp_comp.iloc[-1][3]  #Only the final velocity is important
                 
                 if len(coords) == 1:
                     pass
@@ -67,8 +67,9 @@ def file_counter(int_string):
     Function which counts the number of files in a directory.
     """
     
-    dir_path = r'data/Hermite/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
-    count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
+    dir_path = r'data/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
+    #count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
+    count = len(fnmatch.filter(os.listdir('data/Hermite/simulation_stats/'), '*.*'))
     return count
 
 def file_manipulator(col_len, data):
@@ -137,6 +138,7 @@ def stats_chaos_extractor(dir):
 
     for i in range(no_Data):
         sim_data = steadytime_data[i]
+        print(sim_data)
         ini_parti_data[i] = sim_data.iloc[0][9]
         fin_parti_data[i] = sim_data.iloc[0][6]
         number_mergers[i] = sim_data.iloc[0][10]
