@@ -10,7 +10,7 @@ tend = 3e7 | units.yr
 SMBH_code = MW_SMBH()
 gc_code = globular_cluster()
 code_conv = nbody_system.nbody_to_si((gc_code.gc_mass+SMBH_code.mass), gc_code.gc_dist)
-no_sim = 100
+no_sim = 2000
 
 initial_pop = 3
 remove_files = True
@@ -35,26 +35,22 @@ if (remove_files):
         #file_reset('data/'+str(int_string)+'/particle_trajectory')
         file_reset('figures')
 
-for j in [7, 6, 5, 4, 3, 2, 1]:
+for j in [3, 4, 5, 6, 7, 8, 9, 10]:
     initial_pop = j
 
-    #if j > 8:
-        #tend = 1e7 | units.yr
-
     for i in range(no_sim):
-        print('=========== Simulation '+str(i+1)+'/'+str(no_sim)+' Running ===========')
         IMBH_code = IMBH_init()
         IMBH_parti, rhmass = IMBH_code.IMBH_first(initial_pop)
         failed_simul = evolve_system(IMBH_parti, tend, eta, gc_code.gc_dist, gc_code.gc_rad, 
                                      code_conv, int_string)
-        if (failed_simul):
-            pass
 
-        else:
-            #print('...Plotting Figures...')
-            #spatial_plotter(1.25*gc_code.gc_dist)
-            #energy_plotter()
 
-            anim = False
-            #if (anim):
-            #    animator(2*gc_code.gc_dist)
+
+for j in [5, 10, 15, 20, 25]:
+    initial_pop = j
+
+    for i in range(no_sim):
+        IMBH_code = IMBH_init()
+        IMBH_parti, rhmass = IMBH_code.IMBH_first(initial_pop)
+        failed_simul = evolve_system(IMBH_parti, tend, eta, gc_code.gc_dist, gc_code.gc_rad, 
+                                     code_conv, int_string)
