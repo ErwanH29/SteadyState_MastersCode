@@ -6,7 +6,7 @@ from physics_func import *
 from evol_func import *
 from amuse.ext.LagrangianRadii import LagrangianRadii
 from amuse.community.hermite import Hermite
-from amuse.community.hermite_grx.interface import *
+#from amuse.community.hermite_grx.interface import *
 import numpy as np
 import pandas as pd
 import time as cpu_time
@@ -39,7 +39,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
 
     initial_set = parti.copy()
 
-    code = HermiteGRX(converter, number_of_workers = 6) #To change when going into ALICE
+    code = Hermite(converter, number_of_workers = 6) #To change when going into ALICE
     code.particles.add_particles(parti)
     code.commit_particles()
     stopping_condition = code.stopping_conditions.collision_detection
@@ -75,20 +75,21 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
 
     data_trackers = data_initialiser()
     IMBH_tracker = data_trackers.IMBH_tracker(parti, time, init_IMBH_pop)
-    """LG_tracker = data_trackers.LG_tracker(cluster_radi, IMBH_adder.mass, gc_code.gc_pop, parti, time, code)
+    LG_tracker = data_trackers.LG_tracker(cluster_radi, IMBH_adder.mass, gc_code.gc_pop, parti, time, code)
     energy_tracker = data_trackers.energy_tracker(E0p, time, 0 | units.s)
     parti_energy_tracker = data_trackers.parti_energy_tracker(parti_BE, parti_KE, E0p, time)
     coll_tracker = data_trackers.coll_tracker()
-    eventstab_tracker = data_trackers.event_tracker(parti)"""
+    eventstab_tracker = data_trackers.event_tracker(parti)
 
     """
     IMBHapp = df_timescale(cluster_rhmass)
     decision_scale = (eta*tend)/IMBHapp #
     """
     while time < tend:
+        if iter % 100 == 0:
+            print('Iteration', iter)
         iter += 1
         app_time = 0 | units.s
-        
         merger_mass = 0 | units.MSun
         added_mass = 0 | units.MSun
         ejected_mass = 0 | units.MSun
@@ -118,14 +119,16 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
             parti_KE = 0.5*particle.mass*(rel_vel)**2
             temp_PE = [ ]
             temp_PE = indiv_PE_closest(particle, parti, temp_PE)
-            parti_BE = max(temp_PE)
+            parti_BE = np.sum(temp_PE)+abs(particle.mass * gc_code.get_potential_at_point(0, particle.x, particle.y, particle.z))
 
             SMBH_potential = particle.mass*SMBH_code.get_potential_at_point(0, particle.x, particle.y, particle.z)
+
             if parti_BE < abs(SMBH_potential) and dist_core.length() > rtide and curr_traj > 0:
                 ejected = True
                 ejected_key_track = particle.key_tracker
                 ejected_mass = particle.mass
                 extra_note = 'Stopped due to particle bound with SMBH'
+                print(extra_note)
                 break
             
             if parti_KE > parti_BE and dist_core.length() > rtide and curr_traj > 0:
@@ -133,16 +136,19 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
                 ejected_key_track = particle.key_tracker
                 ejected_mass = particle.mass
                 extra_note = 'Stopped due to ejection'
+                print(extra_note)
                 break
 
             else:
                 pass
 
-
         mergebin = 0
         injbin = 0
         if ejected == False:
             if stopping_condition.is_set():
+                print("........Encounter Detected........")
+                print('Collision at step: ', iter)
+                print('Simulation will now stop')
                 energy_before = code.potential_energy + code.kinetic_energy
                 for ci in range(len(stopping_condition.particles(0))):
                     mergebin = 1
@@ -164,7 +170,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
                     energy_after = code.potential_energy + code.kinetic_energy
                     tcoll = time.in_(units.s) - eta*tend
 
-                    """df_eventstab_tracker = pd.Series({'Initial No. Particles': len(parti)-1, 'Merger Event': 1, 
+                    df_eventstab_tracker = pd.Series({'Initial No. Particles': len(parti)-1, 'Merger Event': 1, 
                                                       'Collision Time': tcoll.in_(units.kyr), 'Injected Event': 0, 'Injected Time': 0 |units.s})
                     eventstab_tracker = eventstab_tracker.append(df_eventstab_tracker, ignore_index = True)
 
@@ -173,40 +179,9 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
                                                  'Collided Particles': [enc_particles_set[0].key, enc_particles_set[1].key], 
                                                  'Initial Mass': [enc_particles_set[0].mass, enc_particles_set[1].mass] | units.MSun, 
                                                  'Emergent Particle': ejected_key_track, 'Collision Mass': merger_mass | units.MSun})                    
-                    coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True) """
+                    coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True) 
 
             mergebin = 0
-                    
-
-
-            """df_IMBH = pd.DataFrame()     #To activate when continuous simulations are ran
-            #if IMBH_adder.decision(time, decision_scale)==True:
-            if time % IMBHapp < (eta*tend) and iter > 1:
-                add_iter = iter
-                injbin = 1
-                N_parti += 1
-                Nenc = 0
-                app_time = time
-                app_time2 = time
-                temp_E1 = code.kinetic_energy + code.potential_energy
-                add_IMBH = IMBH_adder.add_IMBH(parti[1])
-                added_mass = add_IMBH.mass
-                parti.add_particle(add_IMBH)
-                code.particles.add_particles(add_IMBH)
-                temp_E2 = code.kinetic_energy + code.potential_energy
-                tinj = time.in_(units.s) - eta*tend
-                df_IMBH_vals = pd.Series({'key_tracker': add_IMBH.key_tracker[0]})
-                df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
-                stab_timescale = time - stab_timescale
-                data_trackers.stable_sim_tracker(parti, injbin, mergebin, merger_mass, stab_timescale)
-                E0 += (temp_E2-temp_E1) 
-                df_eventstab_tracker = pd.Series({'Initial No. Particles': len(parti)-1, 'Merger Event': 0, 
-                                                  'Collision Time': 0 | units.s, 'Injected Event': 1, 
-                                                  'Injected Time': tinj.in_(units.kyr)})
-                eventstab_tracker = eventstab_tracker.append(df_eventstab_tracker, ignore_index = True)
-            IMBH_tracker = IMBH_tracker.append(df_IMBH, ignore_index=True)
-            injbin = 0
-            """
 
         channel_IMBH["from_gravity"].copy()     
         rows = (N_parti)
@@ -215,17 +190,17 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
         df_IMBH = pd.DataFrame()
         for i in range(N_parti):
             for j in range(len(parti)):
-                if IMBH_tracker.iloc[[i][0]][0] == parti[j].key_tracker:
+                if IMBH_tracker.iloc[i][0][0] == parti[j].key_tracker:
                     parti_KE = 0.5*parti[j].mass*parti[j].velocity.length()**2
                     temp_PE = []
                     temp_PE = indiv_PE_all(parti[j], parti, temp_PE)
                     parti_PE = max(temp_PE)
                     gcframe_vel = parti[j].velocity - parti[1].velocity
-                    df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].mass, parti[j].position,
+                    df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].key_tracker, parti[j].mass, parti[j].position,
                                               gcframe_vel, parti_KE, parti_PE, tdyn_val[j]]})
                     break
                 else:
-                    df_IMBH_vals = pd.Series({'{}'.format(time): [np.NaN | units.MSun,
+                    df_IMBH_vals = pd.Series({'{}'.format(time): [np.NaN, np.NaN | units.MSun,
                                                                  [np.NaN | units.parsec, np.NaN | units.parsec, np.NaN | units.parsec],
                                                                  [np.NaN | units.kms, np.NaN | units.kms, np.NaN | units.kms],
                                                                   np.NaN | units.J,
@@ -235,15 +210,16 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
 
         IMBH_tracker = IMBH_tracker.append(df_IMBH, ignore_index=True)
         IMBH_tracker['{}'.format(time)] = IMBH_tracker['{}'.format(time)].shift(-rows)
-        IMBH_tracker = IMBH_tracker[pd.notnull(IMBH_tracker["key_tracker"])]
+        IMBH_tracker = IMBH_tracker.dropna(axis='rows')
 
-        """df_LG_tracker = pd.Series({'Time': time.in_(units.kyr),
+        df_LG_tracker = pd.Series({'Time': time.in_(units.kyr),
                                    'LG25': LagrangianRadii(code.particles[2:])[5].in_(units.parsec),
                                    'LG50': LagrangianRadii(code.particles[2:])[6].in_(units.parsec),
                                    'LG75': LagrangianRadii(code.particles[2:])[7].in_(units.parsec),
                                    'Tidal Radius': rtide.in_(units.parsec),
                                    'Relaxation Time': relax_timescale(cluster_radi, IMBH_adder.mass, gc_code.gc_pop).in_(units.yr)})
         LG_tracker = LG_tracker.append(df_LG_tracker , ignore_index=True)
+        """
 
         parti_KE = code.kinetic_energy
         parti_BE = code.potential_energy

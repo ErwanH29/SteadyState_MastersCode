@@ -575,7 +575,7 @@ class stability_plotters(object):
 
 string = 'GRX'
 cst = stability_plotters()
-cst.massdep_plotter(1)
+#cst.massdep_plotter(1)
 cst.distdep_plotter(1, 'Hermite')
 
 gc_code = globular_cluster()

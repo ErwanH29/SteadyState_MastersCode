@@ -3,6 +3,6 @@ Code using [AMUSE](https://amuse.readthedocs.io/en/latest/) which looks at simul
 
 To run the code, run interface.py while being in the SteadyState_BH/Code directory.
 
-Code under Code/ is for local computer run. Code under ALICE_Codes is those manipulated to fit ALICE requirements and includes both simulations with and without GC.
-
-ALICE\_Comp\_Scripts helps plot ALICE results, whose output is a different configuration than those run under local device.
+- Code under Code/ is for local computer run and testing script. 
+- Code under ALICE_Codes is those manipulated to fit ALICE requirements and includes both simulations with and without GC.
+- ALICE\_Comp\_Scripts helps plot ALICE results, whose output is a different configuration than those run under local device.

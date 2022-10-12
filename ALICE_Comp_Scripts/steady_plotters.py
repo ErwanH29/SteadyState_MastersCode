@@ -603,6 +603,10 @@ cst = stability_plotters()
 cst.massdep_plotter(1)
 cst.distdep_plotter(1, 'Hermite')
 
+vej_plot = vejec_mass()
+vej_plot.vejec_sysmass()
+vej_plot.vejec_syspop()
+
 gc_code = globular_cluster()
 spatial_plotter(1.15*gc_code.gc_dist, 'Hermite')
 energy_plotter('Hermite')

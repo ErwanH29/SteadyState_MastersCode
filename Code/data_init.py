@@ -95,8 +95,8 @@ class data_initialiser(object):
         df_IMBH    = pd.DataFrame()
         for i in range(init_pop):
             if i == 0 :
-                df_IMBH_vals = pd.Series({'key_tracker': pset[i].key_tracker, 
-                                          '{}'.format(time): [pset[i].mass, pset[i].position, pset[i].velocity, 
+                df_IMBH_vals = pd.Series({#'key_tracker': pset[i].key_tracker, 
+                                          '{}'.format(time): [pset[i].key_tracker, pset[i].mass, pset[i].position, pset[i].velocity, 
                                           0 | units.J, 0 | units.J, tdyn_val[i] | units.yr]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
             else:
@@ -105,8 +105,7 @@ class data_initialiser(object):
                 temp_PE = []
                 temp_PE = indiv_PE_all(pset[i], pset, temp_PE)
                 parti_PE = max(temp_PE)
-                df_IMBH_vals = pd.Series({'key_tracker': pset[i].key_tracker, 
-                                        '{}'.format(time): [pset[i].mass, pset[i].position, gcframe_vel,
+                df_IMBH_vals = pd.Series({'{}'.format(time): [pset[i].key_tracker, pset[i].mass, pset[i].position, gcframe_vel,
                                         parti_KE, parti_PE, tdyn_val[i] | units.yr]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
         IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)

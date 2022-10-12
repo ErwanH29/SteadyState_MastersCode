@@ -14,7 +14,7 @@ no_sim = 2000
 
 initial_pop = 3
 remove_files = True
-int_string = 'GRX'
+int_string = 'Hermite'
 
 """prompt = input(('WARNING: About to delete all files. Are you sure (y|n)?'))
 if prompt == 'y':
@@ -38,8 +38,6 @@ if (remove_files):
 for j in [3, 4, 5, 6, 7, 8, 9, 10]:
     initial_pop = j
 
-<<<<<<< HEAD
-=======
     for i in range(no_sim):
         print('=========== Simulation '+str(i+1)+'/'+str(no_sim)+' Running ===========')
         IMBH_code = IMBH_init()
@@ -48,35 +46,3 @@ for j in [3, 4, 5, 6, 7, 8, 9, 10]:
                                      code_conv, int_string)
         if (failed_simul):
             pass
-
-        else:
-            #print('...Plotting Figures...')
-            #spatial_plotter(1.25*gc_code.gc_dist)
-            #energy_plotter()
-
-            anim = False
-            #if (anim):
-            #    animator(2*gc_code.gc_dist)
-
-
-
-for j in [5, 10, 15, 20, 25]:
-    initial_pop = j
-
->>>>>>> 5e63cf24778c45ae8356dffcab987b50b519e175
-    for i in range(no_sim):
-        IMBH_code = IMBH_init()
-        IMBH_parti, rhmass = IMBH_code.IMBH_first(initial_pop)
-        failed_simul = evolve_system(IMBH_parti, tend, eta, gc_code.gc_dist, gc_code.gc_rad, 
-                                     code_conv, int_string)
-
-
-
-for j in [5, 10, 15, 20, 25]:
-    initial_pop = j
-
-    for i in range(no_sim):
-        IMBH_code = IMBH_init()
-        IMBH_parti, rhmass = IMBH_code.IMBH_first(initial_pop)
-        failed_simul = evolve_system(IMBH_parti, tend, eta, gc_code.gc_dist, gc_code.gc_rad, 
-                                     code_conv, int_string)

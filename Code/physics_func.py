@@ -67,8 +67,8 @@ def indiv_max_PE(indivp, set):
         else:
             distance = (indivp.position.length()-set[j].position.length())
             temp_PE  = ((constants.G*indivp.mass*set[j].mass)/abs(distance) \
-                        + indivp.mass * SMBH.get_potential_at_point(0, indivp.x, indivp.y, indivp.z)
-                        + indivp.mass * GC.get_potential_at_point(0, indivp.x, indivp.y, indivp.z))
+                        + abs(indivp.mass * SMBH.get_potential_at_point(0, indivp.x, indivp.y, indivp.z)
+                        + indivp.mass * GC.get_potential_at_point(0, indivp.x, indivp.y, indivp.z)))
             temp_PE_array.append(temp_PE)
 
     return max(temp_PE_array)
@@ -92,8 +92,8 @@ def indiv_PE_all(indivp, set, array):
             if distance == 0 | units.m:
                pass
             else:
-                temp_PE  = abs(((constants.G*indivp.mass*comp_.mass)/abs(distance) \
-                         + indivp.mass * SMBH.get_potential_at_point(0, indivp.x, indivp.y, indivp.z)))
+                temp_PE = ((constants.G*indivp.mass*comp_.mass)/abs(distance) \
+                        + abs(indivp.mass * SMBH.get_potential_at_point(0, indivp.x, indivp.y, indivp.z)))
                 array.append(temp_PE)
 
     return array
@@ -113,8 +113,7 @@ def indiv_PE_closest(indivp, set, array):
             pass
         else:
             distance = (indivp.position.length()-comp_.position.length())
-            temp_PE  = abs((constants.G*indivp.mass*comp_.mass)/abs(distance) \
-                     + indivp.mass*(GC.get_potential_at_point(0, indivp.x, indivp.y, indivp.z)))
+            temp_PE  = (constants.G*indivp.mass*comp_.mass)/abs(distance)
             array.append(temp_PE)
 
     return array

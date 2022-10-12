@@ -552,6 +552,7 @@ class vejec_mass(object):
         ax.set_ylabel(r'Ejection Velocity [km/s]')
         #ax.set_ylim(0, 200)
         plt.show()
+        plt.clf()
 
     def vejec_syspop(self):
         """
@@ -563,3 +564,5 @@ class vejec_mass(object):
         ax.set_ylabel(r'Ejection Velocity [km/s]')
         #ax.set_ylim(0, 200)
         plt.show()
+        plt.clf()
+

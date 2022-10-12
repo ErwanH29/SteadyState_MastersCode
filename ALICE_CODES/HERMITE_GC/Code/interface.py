@@ -42,7 +42,7 @@ for j in [7, 8, 9, 10, 15, 20, 25, 30]:
         #tend = 1e7 | units.yr
 
     for i in range(no_sim):
-        #print('=========== Simulation '+str(i+1)+'/'+str(no_sim)+' Running ===========')
+        print('=========== Simulation '+str(i+1)+'/'+str(no_sim)+' Running ===========')
         IMBH_code = IMBH_init()
         IMBH_parti, rhmass = IMBH_code.IMBH_first(initial_pop)
         failed_simul = evolve_system(IMBH_parti, tend, eta, gc_code.gc_dist, gc_code.gc_rad, 
