@@ -319,7 +319,7 @@ def energy_plotter(int_string):
 
     return
 
-def spatial_plotter(init_dist, int_string):
+def spatial_plotter(int_string):
     """
     Function to plot the evolution of the system
     """
@@ -327,9 +327,10 @@ def spatial_plotter(init_dist, int_string):
     plot_ini = plotter_setup()
     gc_code = globular_cluster()
     count = file_counter(int_string)
-    IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
 
-    """Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/lagrangians/*')
+    IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/vej_data/particle_trajectory/*')
+    ejec_parti, col_len = file_opener('data/'+str(int_string)+'/vej_data/no_addition/chaotic_simulation/*')
+    Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/vej_data/lagrangians/*')
 
     time = np.empty((1, col_len, 1))
     LG25_array  = np.empty((1, col_len, 1))
@@ -340,12 +341,12 @@ def spatial_plotter(init_dist, int_string):
 
     for i in range(col_len):
         vals = Lag_tracker.iloc[i]
-        time[0][i][0] = vals[0].value_in(units.Myr)
-        LG25_array[0][i][0]  = vals[1].value_in(units.pc)
-        LG50_array[0][i][0]  = vals[2].value_in(units.pc)
-        LG75_array[0][i][0]  = vals[3].value_in(units.pc)
+        time[0][i][0] = vals[5].value_in(units.Myr)
+        LG25_array[0][i][0]  = vals[0].value_in(units.pc)
+        LG50_array[0][i][0]  = vals[1].value_in(units.pc)
+        LG75_array[0][i][0]  = vals[2].value_in(units.pc)
         rtide_array[0][i][0] = vals[4].value_in(units.pc)
-        relax_time[0][i][0]  = vals[5].value_in(units.Myr)"""
+        relax_time[0][i][0]  = vals[3].value_in(units.Myr)
 
     col_len = np.shape(IMBH_tracker)[1]-1
 
@@ -370,10 +371,10 @@ def spatial_plotter(init_dist, int_string):
                 line_z[i][j][0] = coords[2].value_in(units.pc)
                 tdyn[i][j][0] = tdynval.value_in(units.Myr)
 
-    """ejected_x, ejected_y, ejected_z, evx, evy, evz = ejected_extract(IMBH_tracker, ejec_parti, col_len)
+    ejected_x, ejected_y, ejected_z, evx, evy, evz = ejected_extract(IMBH_tracker, ejec_parti, col_len)
     for arr_ in [ejected_x, ejected_y, ejected_z]:
         plot_ini.val_filter(arr_)
-    ejected_dist = np.sqrt((ejected_x-line_x[1])**2+(ejected_y-line_y[1])**2+(ejected_z-line_z[1])**2)"""
+    ejected_dist = np.sqrt((ejected_x-line_x[1])**2+(ejected_y-line_y[1])**2+(ejected_z-line_z[1])**2)
 
     for arr_ in [line_x, line_y, line_z]:
         plot_ini.val_filter(arr_)
@@ -386,24 +387,13 @@ def spatial_plotter(init_dist, int_string):
     ax2 = fig.add_subplot(322)
     ax3 = fig.add_subplot(323)
     ax4 = fig.add_subplot(324)
-    ax5 = fig.add_subplot(325)
-    ax6 = fig.add_subplot(326)
     
     ax1.set_title('Cluster Center of Mass')
     ax3.set_title('Ejected IMBH Focus')
     ax4.set_title('Complete System')
-    ax5.set_title('Distance Evolution of IMBH Particles')
-    ax6.set_title('Cluster Relaxation Timescale TO FIX')
 
     for ax_ in [ax1, ax2, ax3, ax4]:
         plot_ini.xy_pc(ax_)
-
-    ax5.set_xlabel(r'Time [Myr]')
-    ax5.set_ylabel(r'Distance [pc]')
-    ax6.set_xlabel(r'Time [Myr]')
-    ax6.set_ylabel(r'Relaxation Time [Myr]')
-
-    for ax_ in [ax1, ax2, ax3, ax4]:
         plot_ini.tickers(ax_)      
         
     iter = -1
@@ -416,9 +406,8 @@ def spatial_plotter(init_dist, int_string):
             ax4.scatter((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = adapt_c, zorder = 1, s = 21)
             ax4.scatter((line_x[i][-1]-line_x[0][-1]), (line_y[i][-1]-line_y[0][-1]), c = adapt_c, s = 250, zorder = 3)
             ax4.scatter((line_x[i][0]-line_x[0][0]), (line_y[i][0]-line_y[0][0]), alpha = 0.7, c = adapt_c, s = 250, zorder = 2)
-        #if i == 1:
-         #   ax4.plot((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = adapt_c, ls = '--', zorder = 1)
-        
+        elif i == 1:
+            ax4.plot((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = adapt_c, ls = '--', zorder = 1)
         else:
             xval = (line_x[i][1:]-line_x[1][1:])
             yval = (line_y[i][1:]-line_y[1][1:])
@@ -426,22 +415,22 @@ def spatial_plotter(init_dist, int_string):
             for ax_ in [ax1, ax2]:
                 ax_.scatter(xval, yval, c = colours[iter-2], zorder = 1, s = 5)
                 ax_.scatter(line_x[i][-1]-line_x[1][-1], line_y[i][-1]-line_y[1][-1], 
-                            c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 3)
+                            c = colours[iter-2], edgecolors = 'black', s = 100, zorder = 3)
             ax1.scatter(line_x[i][1]-line_x[1][1], line_y[i][1]-line_y[1][1], 
                         alpha = 0.7, c = colours[iter-2], edgecolors = 'black', s = 30, zorder = 2)
 
-            """ax3.scatter(line_x[i][:-1]-ejected_x[0][:-1], line_y[i][:-1]-ejected_y[0][:-1], 
+            ax3.scatter(line_x[i][:-1]-ejected_x[0][:-1], line_y[i][:-1]-ejected_y[0][:-1], 
                         c = colours[iter-2], s = 5, zorder = 1)
             ax3.scatter(line_x[i][1]-ejected_x[0][1], line_y[i][1]-ejected_y[0][1], 
                         alpha = 0.7,c = colours[iter-2], edgecolors = 'black', s = 30, zorder=2)
             ax3.scatter(line_x[i][-2]-ejected_x[0][-2], line_y[i][-2]-ejected_y[0][-2], 
-                        c = colours[iter-2], edgecolors = 'black', s = 50, zorder=3)"""
+                        c = colours[iter-2], edgecolors = 'black', s = 100, zorder=3)
 
-            ax4.scatter((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = colours[iter-2], zorder = 1, s = 1)
+            ax4.scatter((line_x[i]-line_x[0]), (line_y[i]-line_y[0]), c = colours[iter-2], zorder = 1, s = 1)
             ax4.scatter((line_x[i][-1]-line_x[0][-1]), (line_y[i][-1]-line_y[0][-1]), c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 3)
             ax4.scatter((line_x[i][1]-line_x[0][1]), (line_y[i][1]-line_y[0][1]), alpha = 0.7, c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 2)
 
-    """cluster_rad1 = plt.Circle((0,0), gc_code.gc_rad.value_in(units.pc), edgecolor = 'black', fill=False, ls = ':', label = 'Cluster Radius')
+    cluster_rad1 = plt.Circle((0,0), gc_code.gc_rad.value_in(units.pc), edgecolor = 'black', fill=False, ls = ':', label = 'Cluster Radius')
     cluster_rad2 = plt.Circle((0,0), gc_code.gc_rad.value_in(units.pc), edgecolor = 'black', fill=False, ls = ':', label = 'Cluster Radius')
     tidal_rad   = plt.Circle((0,0), rtide_array[0][1], edgecolor = 'black', fill=False, ls = '-.', label = 'Tidal Radius')
     ax1.add_patch(cluster_rad1)
@@ -449,31 +438,39 @@ def spatial_plotter(init_dist, int_string):
     ax2.add_patch(cluster_rad2)
     ax1.legend(loc = 1)
     ax2.legend(loc = 1)
-
-    ax5.plot(time[0][3:], rtide_array[0][3:], color = 'black',  label = r'$r_{tidal}$')
-    ax5.plot(time[0][3:], LG25_array[0][3:],  color = 'red',   label = r'$r_{25,L}$')
-    ax5.plot(time[0][3:], LG75_array[0][3:],  color = 'blue',  label = r'$r_{75,L}$')
-    ax5.plot(time[0][3:], ejected_dist[0][3:], color = 'orange', label = 'Ejected Particle')
-    ax5.legend()
-
-    ax6.plot(time[0][3:], relax_time[0][3:], color = 'black',  label = r'$r_{tidal}$', linestyle = ":")
-    ax6.legend()"""
-
     ax1.set_xlim(-1.25*gc_code.gc_rad.value_in(units.pc), 1.25*gc_code.gc_rad.value_in(units.pc))
     ax1.set_ylim(-1.25*gc_code.gc_rad.value_in(units.pc), 1.25*gc_code.gc_rad.value_in(units.pc)) 
-    """for ax_ in [ax2, ax3]:
+    
+    for ax_ in [ax2, ax3]:
         ax_.set_xlim(-1.3*rtide_array[0][0], 1.3*rtide_array[0][0])
         ax_.set_ylim(-1.3*rtide_array[0][0], 1.3*rtide_array[0][0])
-    ax4.set_xlim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc))
-    ax4.set_ylim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc)) 
-
-    ax5.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
-    ax5.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-    ax5.set_xlim(time[0][3], time[0][-1])
-    ax5.set_ylim(0, 2*max(rtide_array[0]))"""
+    ax4.set_xlim(-1.1*gc_code.gc_dist.value_in(units.pc), 1.1*gc_code.gc_dist.value_in(units.pc))
+    ax4.set_ylim(-1.1*gc_code.gc_dist.value_in(units.pc), 1.1*gc_code.gc_dist.value_in(units.pc)) 
     plt.savefig('figures/spatial_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
-    plt.close()
+    plt.close()    
+
+    fig, ax = plt.subplots()
+    ax.set_title('Distance Evolution of IMBH Particles')
+    #ax6.set_title('Cluster Relaxation Timescale TO FIX')
+    ax.set_xlabel(r'Time [Myr]')
+    ax.set_ylabel(r'Distance [pc]')
+    #ax6.set_xlabel(r'Time [Myr]')
+    #ax6.set_ylabel(r'Relaxation Time [Myr]')
+    ax.plot(time[0][3:], rtide_array[0][3:], color = 'black',  label = r'$r_{tidal}$')
+    ax.plot(time[0][3:], LG25_array[0][3:],  color = 'red',   label = r'$r_{25,L}$')
+    ax.plot(time[0][3:], LG75_array[0][3:],  color = 'blue',  label = r'$r_{75,L}$')
+    ax.plot(time[0][4:], ejected_dist[0][3:], color = 'purple', label = 'Ejected Particle')
+    ax.legend()
+    #ax6.plot(time[0][3:], relax_time[0][3:], color = 'black',  label = r'$r_{tidal}$', linestyle = ":")
+    #ax6.legend()
+    ax.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
+    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+    ax.set_xlim(time[0][3], time[0][-1])
+    ax.set_ylim(0, 2*max(rtide_array[0]))
+    plt.savefig('figures/core_evol'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+    plt.clf()
+    plt.close()     
 
     return
 
@@ -485,10 +482,10 @@ class vejec_mass(object):
         """
         Extracts the required data
         """
-        self.ejec_data = bulk_stat_extractor('data/'+str(int_string)+'/temp_plot/no_addition/chaotic_simulation/*')
-        self.IMBH_tracker = bulk_stat_extractor('data/'+str(int_string)+'/temp_plot/particle_trajectory/*')
+        self.ejec_data = bulk_stat_extractor('data/'+str(int_string)+'/vej_data/no_addition/chaotic_simulation/*')
+        self.IMBH_tracker = bulk_stat_extractor('data/'+str(int_string)+'/vej_data/particle_trajectory/*')
         self.data_entries = 1
-        
+
         self.ejec_vx = np.empty((len(self.ejec_data)))
         self.ejec_vy = np.empty((len(self.ejec_data)))
         self.ejec_vz = np.empty((len(self.ejec_data)))
@@ -497,17 +494,15 @@ class vejec_mass(object):
         self.surv_time = np.empty((len(self.ejec_data)))
 
         for i in range(len(self.ejec_data)):
+
             self.ex, self.ey, self.ez, self.ejec_vx[i], self.ejec_vy[i], self.ejec_vz[i] = ejected_extract(self.IMBH_tracker[i], 
                                                                                                            self.ejec_data[i], 
                                                                                                            self.data_entries)
-            
             self.vals_df = self.ejec_data[i].iloc[0]
-            self.mass_vals = np.sum(self.vals_df[9].value_in(units.MSun))
-            self.tot_pop[i] = self.vals_df[0]
-            self.tot_mass[i] = self.mass_vals
 
-            self.surv_df = self.ejec_data[i].iloc[0]
-            self.surv_time[i] = self.surv_df[4].value_in(units.Myr)
+            self.tot_mass[i] = np.sum(self.vals_df[8].value_in(units.MSun))
+            self.tot_pop[i] = self.vals_df[6]
+            self.surv_time[i] = self.vals_df[-2].value_in(units.Myr)
 
         self.ejec_vel = [np.sqrt(i**2+j**2+k**2) for i,j,k in zip(self.ejec_vx, self.ejec_vy, self.ejec_vz)]
 
@@ -545,24 +540,28 @@ class vejec_mass(object):
             temp_surv = [self.surv_time[i] for i in indices]
             avg_vel[iter] = np.mean(temp_evel)
             avg_surv[iter] = np.mean(temp_surv)
-
+        in_mass = [val * 10**-3 for val in in_mass]
         ax = self.plotter_func(in_mass, avg_vel, avg_surv, r'Ejection Time [Myr]')
-
-        ax.set_xlabel(r'Total IMBH Mass [$\frac{M}{M_{\odot}}$]')
+        ax.set_xlabel(r'Total IMBH Mass [$\frac{M}{10^3 M_{\odot}}$]')
         ax.set_ylabel(r'Ejection Velocity [km/s]')
-        #ax.set_ylim(0, 200)
-        plt.show()
-        plt.clf()
+        ax.set_ylim(0, 400)
+        plt.savefig('figures/mean_vej.pdf', dpi=300, bbox_inches='tight')
 
     def vejec_syspop(self):
         """
         Plot to show how the total population of the system influences the ejection velocity
         """
-        
-        ax = self.plotter_func(self.tot_pop, self.ejec_vel, (self.tot_mass), r'Total IMBH Mass [$\frac{M}{M_{\odot}}$]')
+        mass = [ i * 10**-3 for i in self.tot_mass]
+        ax = self.plotter_func(self.tot_pop, self.ejec_vel, (mass), r'Total IMBH Mass [$\frac{M}{10^3 M_{\odot}}$]')
         ax.set_xlabel(r'IMBH Population [$N$]')
         ax.set_ylabel(r'Ejection Velocity [km/s]')
-        #ax.set_ylim(0, 200)
-        plt.show()
-        plt.clf()
+        ax.set_ylim(0, 1500)
+        plt.savefig('figures/scatter_vej.pdf', dpi=300, bbox_inches='tight')
+
+class event_tracker(object):
+    """
+    Class to take stats of ejection vs. mergers
+    """
+    def __init__(self, int_string = 'Hermite'):
+        self.merge_events = bulk_stat_extractor('data/'+str(int_string)+'/collision_events/*')
 

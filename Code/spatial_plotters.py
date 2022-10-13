@@ -328,8 +328,8 @@ def spatial_plotter(init_dist, int_string):
     gc_code = globular_cluster()
     count = file_counter(int_string)
     IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
-
-    """Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/lagrangians/*')
+    ejec_parti, col_len = file_opener('data/'+str(int_string)+'/no_addition/chaotic_simulation/*')
+    Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/lagrangians/*')
 
     time = np.empty((1, col_len, 1))
     LG25_array  = np.empty((1, col_len, 1))
@@ -345,7 +345,7 @@ def spatial_plotter(init_dist, int_string):
         LG50_array[0][i][0]  = vals[2].value_in(units.pc)
         LG75_array[0][i][0]  = vals[3].value_in(units.pc)
         rtide_array[0][i][0] = vals[4].value_in(units.pc)
-        relax_time[0][i][0]  = vals[5].value_in(units.Myr)"""
+        relax_time[0][i][0]  = vals[5].value_in(units.Myr)
 
     col_len = np.shape(IMBH_tracker)[1]-1
 
@@ -370,10 +370,10 @@ def spatial_plotter(init_dist, int_string):
                 line_z[i][j][0] = coords[2].value_in(units.pc)
                 tdyn[i][j][0] = tdynval.value_in(units.Myr)
 
-    """ejected_x, ejected_y, ejected_z, evx, evy, evz = ejected_extract(IMBH_tracker, ejec_parti, col_len)
+    ejected_x, ejected_y, ejected_z, evx, evy, evz = ejected_extract(IMBH_tracker, ejec_parti, col_len)
     for arr_ in [ejected_x, ejected_y, ejected_z]:
         plot_ini.val_filter(arr_)
-    ejected_dist = np.sqrt((ejected_x-line_x[1])**2+(ejected_y-line_y[1])**2+(ejected_z-line_z[1])**2)"""
+    ejected_dist = np.sqrt((ejected_x-line_x[1])**2+(ejected_y-line_y[1])**2+(ejected_z-line_z[1])**2)
 
     for arr_ in [line_x, line_y, line_z]:
         plot_ini.val_filter(arr_)
@@ -430,18 +430,18 @@ def spatial_plotter(init_dist, int_string):
             ax1.scatter(line_x[i][1]-line_x[1][1], line_y[i][1]-line_y[1][1], 
                         alpha = 0.7, c = colours[iter-2], edgecolors = 'black', s = 30, zorder = 2)
 
-            """ax3.scatter(line_x[i][:-1]-ejected_x[0][:-1], line_y[i][:-1]-ejected_y[0][:-1], 
+            ax3.scatter(line_x[i][:-1]-ejected_x[0][:-1], line_y[i][:-1]-ejected_y[0][:-1], 
                         c = colours[iter-2], s = 5, zorder = 1)
             ax3.scatter(line_x[i][1]-ejected_x[0][1], line_y[i][1]-ejected_y[0][1], 
                         alpha = 0.7,c = colours[iter-2], edgecolors = 'black', s = 30, zorder=2)
             ax3.scatter(line_x[i][-2]-ejected_x[0][-2], line_y[i][-2]-ejected_y[0][-2], 
-                        c = colours[iter-2], edgecolors = 'black', s = 50, zorder=3)"""
+                        c = colours[iter-2], edgecolors = 'black', s = 50, zorder=3)
 
             ax4.scatter((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = colours[iter-2], zorder = 1, s = 1)
             ax4.scatter((line_x[i][-1]-line_x[0][-1]), (line_y[i][-1]-line_y[0][-1]), c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 3)
             ax4.scatter((line_x[i][1]-line_x[0][1]), (line_y[i][1]-line_y[0][1]), alpha = 0.7, c = colours[iter-2], edgecolors = 'black', s = 50, zorder = 2)
 
-    """cluster_rad1 = plt.Circle((0,0), gc_code.gc_rad.value_in(units.pc), edgecolor = 'black', fill=False, ls = ':', label = 'Cluster Radius')
+    cluster_rad1 = plt.Circle((0,0), gc_code.gc_rad.value_in(units.pc), edgecolor = 'black', fill=False, ls = ':', label = 'Cluster Radius')
     cluster_rad2 = plt.Circle((0,0), gc_code.gc_rad.value_in(units.pc), edgecolor = 'black', fill=False, ls = ':', label = 'Cluster Radius')
     tidal_rad   = plt.Circle((0,0), rtide_array[0][1], edgecolor = 'black', fill=False, ls = '-.', label = 'Tidal Radius')
     ax1.add_patch(cluster_rad1)
@@ -457,11 +457,12 @@ def spatial_plotter(init_dist, int_string):
     ax5.legend()
 
     ax6.plot(time[0][3:], relax_time[0][3:], color = 'black',  label = r'$r_{tidal}$', linestyle = ":")
-    ax6.legend()"""
+    ax6.legend()
 
     ax1.set_xlim(-1.25*gc_code.gc_rad.value_in(units.pc), 1.25*gc_code.gc_rad.value_in(units.pc))
     ax1.set_ylim(-1.25*gc_code.gc_rad.value_in(units.pc), 1.25*gc_code.gc_rad.value_in(units.pc)) 
-    """for ax_ in [ax2, ax3]:
+
+    for ax_ in [ax2, ax3]:
         ax_.set_xlim(-1.3*rtide_array[0][0], 1.3*rtide_array[0][0])
         ax_.set_ylim(-1.3*rtide_array[0][0], 1.3*rtide_array[0][0])
     ax4.set_xlim(-1.05*init_dist.value_in(units.pc), 1.05*init_dist.value_in(units.pc))
@@ -470,7 +471,7 @@ def spatial_plotter(init_dist, int_string):
     ax5.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
     ax5.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
     ax5.set_xlim(time[0][3], time[0][-1])
-    ax5.set_ylim(0, 2*max(rtide_array[0]))"""
+    ax5.set_ylim(0, 2*max(rtide_array[0]))
     plt.savefig('figures/spatial_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()

@@ -20,7 +20,7 @@ def bulk_stat_extractor(file_string):
     for file_ in range(len(filename)):
         with open(filename[file_], 'rb') as input_file:
             data.append(pkl.load(input_file))
-    
+
     return data
 
 def ejected_extract(set, ejected, col_len):
@@ -42,25 +42,29 @@ def ejected_extract(set, ejected, col_len):
     line_vz = np.empty((1, col_len))
 
     for i in range(len(set)):
-        if set.iloc[i,0] == ejected.iloc[0][5]:
+        esc_vel = [ ]
+        if set.iloc[i][0][0] == ejected.iloc[0][5]:    
             temp_comp = set.iloc[i]
             temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):
-                coords = temp_comp.iloc[j+1][1]
-                vel = temp_comp.iloc[-1][2]  #Only the final velocity is important
-                
-                if len(coords) == 1:
-                    pass
-                else:
-                    line_x[0][j][0] = coords[0].value_in(units.pc)
-                    line_y[0][j][0] = coords[1].value_in(units.pc)
-                    line_z[0][j][0] = coords[2].value_in(units.pc)
+                coords = temp_comp.iloc[j+1][2]
+                line_x[0][j][0] = coords[0].value_in(units.pc)
+                line_y[0][j][0] = coords[1].value_in(units.pc)
+                line_z[0][j][0] = coords[2].value_in(units.pc)
 
-                    line_vx[0][j] = vel[0].value_in(units.kms)
-                    line_vy[0][j] = vel[1].value_in(units.kms)
-                    line_vz[0][j] = vel[2].value_in(units.kms)
+            for vel_ in [temp_comp.iloc[-3][3].value_in(units.kms), 
+                         temp_comp.iloc[-2][3].value_in(units.kms), 
+                         temp_comp.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
+                esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
+            idx = np.argwhere(esc_vel == max(esc_vel))
+            idx = np.asarray([i-3 for i in idx])[0]
 
-    return line_x, line_y, line_z, line_vx, line_vy, line_vz
+            line_vx[0][j] = temp_comp.iloc[idx][0][3][0].value_in(units.kms)
+            line_vy[0][j] = temp_comp.iloc[idx][0][3][1].value_in(units.kms)
+            line_vz[0][j] = temp_comp.iloc[idx][0][3][2].value_in(units.kms)
+
+            return line_x, line_y, line_z, line_vx, line_vy, line_vz
+    return print('Nope')
 
 def file_counter(int_string):
     """
