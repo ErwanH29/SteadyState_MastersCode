@@ -58,9 +58,9 @@ def animator(init_dist, int_string):
     plot_ini = plotter_setup()
     count = file_counter(int_string)
 
-    Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/lagrangians/*')
-    IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
-    energy_tracker, col_len = file_opener('data/'+str(int_string)+'/energy/*')
+    Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/GC/lagrangians/*')
+    IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/GC/particle_trajectory/*')
+    energy_tracker, col_len = file_opener('data/'+str(int_string)+'/GC/energy/*')
 
     time = np.empty((col_len, 1))
     dE_array = np.empty((col_len, 1))
@@ -244,8 +244,8 @@ def energy_plotter(int_string):
 
     plot_ini = plotter_setup()
     count = file_counter(int_string)
-    energy_tracker, col_len = file_opener('data/'+str(int_string)+'/energy/*')
-    IMBH_energy_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_energies/*')
+    energy_tracker, col_len = file_opener('data/'+str(int_string)+'/GC/energy/*')
+    IMBH_energy_tracker, col_len = file_opener('data/'+str(int_string)+'/GC/particle_energies/*')
 
     time = np.empty((1, col_len, 1))
     Et_array = np.empty((1, col_len, 1))
@@ -328,9 +328,9 @@ def spatial_plotter(int_string):
     gc_code = globular_cluster()
     count = file_counter(int_string)
 
-    IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/vej_data/particle_trajectory/*')
-    ejec_parti, col_len = file_opener('data/'+str(int_string)+'/vej_data/no_addition/chaotic_simulation/*')
-    Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/vej_data/lagrangians/*')
+    IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/GC/spatial_data/particle_trajectory/*')
+    ejec_parti, col_len = file_opener('data/'+str(int_string)+'/GC/spatial_data/chaotic_simulation/*')
+    Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/GC/spatial_data/lagrangians/*')
 
     time = np.empty((1, col_len, 1))
     LG25_array  = np.empty((1, col_len, 1))
@@ -460,7 +460,7 @@ def spatial_plotter(int_string):
     ax.plot(time[0][3:], rtide_array[0][3:], color = 'black',  label = r'$r_{tidal}$')
     ax.plot(time[0][3:], LG25_array[0][3:],  color = 'red',   label = r'$r_{25,L}$')
     ax.plot(time[0][3:], LG75_array[0][3:],  color = 'blue',  label = r'$r_{75,L}$')
-    ax.plot(time[0][4:], ejected_dist[0][3:], color = 'purple', label = 'Ejected Particle')
+    ax.plot(time[0][4:], ejected_dist[0][3:], color = 'purple', linewidth = .7, label = 'Ejected Particle')
     ax.legend()
     #ax6.plot(time[0][3:], relax_time[0][3:], color = 'black',  label = r'$r_{tidal}$', linestyle = ":")
     #ax6.legend()
@@ -482,8 +482,8 @@ class vejec_mass(object):
         """
         Extracts the required data
         """
-        self.ejec_data = bulk_stat_extractor('data/'+str(int_string)+'/vej_data/no_addition/chaotic_simulation/*')
-        self.IMBH_tracker = bulk_stat_extractor('data/'+str(int_string)+'/vej_data/particle_trajectory/*')
+        self.ejec_data = bulk_stat_extractor('data/'+str(int_string)+'/GC/vej_data/no_addition/chaotic_simulation/*')
+        self.IMBH_tracker = bulk_stat_extractor('data/'+str(int_string)+'/GC/vej_data/particle_trajectory/*')
         self.data_entries = 1
 
         self.ejec_vx = np.empty((len(self.ejec_data)))
@@ -494,11 +494,11 @@ class vejec_mass(object):
         self.surv_time = np.empty((len(self.ejec_data)))
 
         for i in range(len(self.ejec_data)):
-
+            print(i)
             self.ex, self.ey, self.ez, self.ejec_vx[i], self.ejec_vy[i], self.ejec_vz[i] = ejected_extract(self.IMBH_tracker[i], 
                                                                                                            self.ejec_data[i], 
                                                                                                            self.data_entries)
-            self.vals_df = self.ejec_data[i].iloc[0]
+            self.vals_df = self.ejec_data[i].iloc[0]          
 
             self.tot_mass[i] = np.sum(self.vals_df[8].value_in(units.MSun))
             self.tot_pop[i] = self.vals_df[6]
@@ -518,9 +518,11 @@ class vejec_mass(object):
 
         plot_ini = plotter_setup()
         fig, ax = plt.subplots()
-        color_axes = ax.scatter(xdata, ydata, c = cdata)
+        color_axes = ax.scatter(xdata, ydata, c = cdata, zorder = 3)
         plt.colorbar(color_axes, ax=ax, label = clabel)
         plot_ini.tickers(ax)
+        ax.set_xlabel(r'Total IMBH Mass [$\frac{M}{10^3 M_{\odot}}$]')
+        ax.set_ylabel(r'Ejection Velocity [km/s]')
         return ax
 
     def vejec_sysmass(self):
@@ -528,40 +530,68 @@ class vejec_mass(object):
         Function to plot how the total initial mass of the system influences the ejection velocity
         """
 
-        in_mass = np.unique(self.tot_mass)
+        in_mass = np.unique(self.tot_mass[self.tot_mass < 11*10**3])
         avg_vel = np.empty((len(in_mass)))
         avg_surv = np.empty((len(in_mass)))
 
         iter = -1
+        popul = [ ]
         for mass_ in in_mass:
             iter += 1
             indices = np.where((self.tot_mass == mass_))[0]
             temp_evel = [self.ejec_vel[i] for i in indices]
             temp_surv = [self.surv_time[i] for i in indices]
+            temp_pop  = [self.tot_pop[i] for i in indices]
+            popul.append(np.unique(temp_pop))
             avg_vel[iter] = np.mean(temp_evel)
             avg_surv[iter] = np.mean(temp_surv)
-        in_mass = [val * 10**-3 for val in in_mass]
-        ax = self.plotter_func(in_mass, avg_vel, avg_surv, r'Ejection Time [Myr]')
-        ax.set_xlabel(r'Total IMBH Mass [$\frac{M}{10^3 M_{\odot}}$]')
-        ax.set_ylabel(r'Ejection Velocity [km/s]')
-        ax.set_ylim(0, 400)
+
+        ax = self.plotter_func(popul, avg_vel, avg_surv, r'Average Ejection Time [Myr]')
+        ax.set_ylim(0, 600)
+        ax.set_xlim(2, 11)
         plt.savefig('figures/mean_vej.pdf', dpi=300, bbox_inches='tight')
+
+        ax = self.plotter_func(popul, avg_vel, avg_surv, r'Average Ejection Time [Myr]')
+        ax.set_ylim(0, 600)
+        ax.set_xlim(10.5, 35.5)
+        plt.savefig('figures/mean_vej_highm.pdf', dpi=300, bbox_inches='tight')
 
     def vejec_syspop(self):
         """
         Plot to show how the total population of the system influences the ejection velocity
         """
-        mass = [ i * 10**-3 for i in self.tot_mass]
-        ax = self.plotter_func(self.tot_pop, self.ejec_vel, (mass), r'Total IMBH Mass [$\frac{M}{10^3 M_{\odot}}$]')
-        ax.set_xlabel(r'IMBH Population [$N$]')
-        ax.set_ylabel(r'Ejection Velocity [km/s]')
+
+        idx = np.where(self.tot_mass < 11 * 10**3)[0]
+        ejec_vel = np.asarray(self.ejec_vel)[idx]
+        mass = self.tot_mass[idx]
+        
+        ax = self.plotter_func(self.tot_pop[idx], 
+                               ejec_vel, 
+                               (mass), r'Total IMBH Mass [$\frac{M}{10^3 M_{\odot}}$]')
+        plt.axhline(y=675, linestyle = '-.', color = 'black', zorder = 1)
+        ax.text(2.1, 695, r'$v_{esc, MW}$')
         ax.set_ylim(0, 1500)
+        ax.set_xlim(2, 11)
         plt.savefig('figures/scatter_vej.pdf', dpi=300, bbox_inches='tight')
+
+        plt.axhline(y=675, linestyle = '-.', color = 'black', zorder = 1)
+        ax.text(2.6, 695, r'$v_{esc, MW}$')
+        ax.set_ylim(0, 1500)
+        ax.set_xlim(10.5, 35.5)
+        plt.savefig('figures/scatter_vej_highmass.pdf', dpi=300, bbox_inches='tight')
 
 class event_tracker(object):
     """
     Class to take stats of ejection vs. mergers
     """
     def __init__(self, int_string = 'Hermite'):
-        self.merge_events = bulk_stat_extractor('data/'+str(int_string)+'/collision_events/*')
+        self.merge_events = bulk_stat_extractor('data/'+str(int_string)+'/GC/collision_events/*')
 
+        merge_events = np.asarray(self.merge_events)
+        no_merge = 0 
+        for i in range(len(merge_events)):
+            if merge_events[i][0][2].number != 0:
+                no_merge += 1
+        print(no_merge)
+
+swag = event_tracker()

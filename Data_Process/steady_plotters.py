@@ -195,11 +195,11 @@ class stability_plotters(object):
         plot_ini = plotter_setup()
         
         if no_axis == 1:
-            dirH = 'data/Hermite/no_addition/chaotic_simulation/*'
-            dirG = 'data/GRX/no_addition/chaotic_simulation/*'
+            dirH = 'data/Hermite/GC/no_addition/chaotic_simulation/*'
+            dirG = 'data/GRX/GC/no_addition/chaotic_simulation/*'
         else:
-            dirH = 'data/Hermite/chaotic_simulation/*'
-            dirG = 'data/GRX/chaotic_simulation/*'
+            dirH = 'data/Hermite/GC/chaotic_simulation/*'
+            dirG = 'data/GRX/GC/chaotic_simulation/*'
 
         chaos_ini_parti_data, chaos_fin_parti_data, chaos_number_mergers, chaos_cumulative_mm, chaos_simulated_end, \
         chaos_ejected_parti, chaos_stab_time_data, chaos_init_dist_data, chaos_cluster_radius, chaos_init_mass_data, \
@@ -211,10 +211,10 @@ class stability_plotters(object):
 
         if no_axis == 2:
             ini_parti_data, inj_event_data, merge_no_data, mergerm_data, simulated_end, \
-            initial_dist, cluster_rad, init_parti_m, trelax_data = self.stable_extract('data/Hermite/stable_simulation/*')
+            initial_dist, cluster_rad, init_parti_m, trelax_data = self.stable_extract('data/Hermite/GC/stable_simulation/*')
 
             ini_parti_data_GRX, inj_event_data_GRX, merge_no_data_GRX, mergerm_data_GRX, simulated_end_GRX, \
-            initial_dist_GRX, cluster_rad_GRX, init_parti_m_GRX, trelax_data_GRX = self.stable_extract('data/GRX/stable_simulation/*')
+            initial_dist_GRX, cluster_rad_GRX, init_parti_m_GRX, trelax_data_GRX = self.stable_extract('data/GRX/GC/stable_simulation/*')
 
         in_dist = np.unique(chaos_init_dist_data)
         in_mass = np.unique(chaos_init_mass_data, axis=0)
@@ -426,11 +426,11 @@ class stability_plotters(object):
 
         plot_ini = plotter_setup()
         if no_axis == 1:
-            dirH = 'data/Hermite/no_addition/chaotic_simulation/*'
-            dirG = 'data/GRX/no_addition/chaotic_simulation/*'
+            dirH = 'data/Hermite/GC/no_addition/chaotic_simulation/*'
+            dirG = 'data/GRX/GC/no_addition/chaotic_simulation/*'
         else:
-            dirH = 'data/Hermite/chaotic_simulation/*'
-            dirG = 'data/GRX/chaotic_simulation/*'
+            dirH = 'data/Hermite/GC/chaotic_simulation/*'
+            dirG = 'data/GRX/GC/chaotic_simulation/*'
 
         chaos_ini_parti_data, chaos_fin_parti_data, chaos_number_mergers, chaos_cumulative_mm, chaos_simulated_end, \
         chaos_ejected_parti, chaos_stab_time_data, chaos_init_dist_data, chaos_cluster_radius, chaos_init_mass_data, \
@@ -442,10 +442,10 @@ class stability_plotters(object):
 
         if no_axis == 2:
             ini_parti_data, inj_event_data, merge_no_data, mergerm_data, simulated_end, \
-            initial_dist, cluster_rad, init_parti_m, trelax_data = self.stable_extract('data/Hermite/stable_simulation/*')
+            initial_dist, cluster_rad, init_parti_m, trelax_data = self.stable_extract('data/Hermite/GC/stable_simulation/*')
 
             ini_parti_data_GRX, inj_event_data_GRX, merge_no_data_GRX, mergerm_data_GRX, simulated_end_GRX, \
-            initial_dist_GRX, cluster_rad_GRX, init_parti_m_GRX, trelax_data_GRX = self.stable_extract('data/GRX/stable_simulation/*')
+            initial_dist_GRX, cluster_rad_GRX, init_parti_m_GRX, trelax_data_GRX = self.stable_extract('data/GRX/GC/stable_simulation/*')
 
         in_dist = np.unique(chaos_init_dist_data)
         in_mass = np.unique(chaos_init_mass_data, axis=0)
@@ -631,14 +631,14 @@ class stability_plotters(object):
                     if no_axis == 2:
                         plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
 
+
+
+vej_plot = vejec_mass()
+vej_plot.vejec_syspop()
+vej_plot.vejec_sysmass()
+
 spatial_plotter('Hermite')
 
-"""string = 'GRX'
 cst = stability_plotters()
 cst.massdep_plotter(1)
 cst.distdep_plotter(1, 'Hermite')
-
-vej_plot = vejec_mass()
-vej_plot.vejec_sysmass()
-vej_plot.vejec_syspop()
-"""

@@ -45,6 +45,7 @@ def ejected_extract(set, ejected, col_len):
         esc_vel = [ ]
         if set.iloc[i][0][0] == ejected.iloc[0][5]:    
             temp_comp = set.iloc[i]
+            
             temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):
                 coords = temp_comp.iloc[j+1][2]
@@ -64,6 +65,7 @@ def ejected_extract(set, ejected, col_len):
             line_vz[0][j] = temp_comp.iloc[idx][0][3][2].value_in(units.kms)
 
             return line_x, line_y, line_z, line_vx, line_vy, line_vz
+    
     return print('Nope')
 
 def file_counter(int_string):
@@ -71,7 +73,7 @@ def file_counter(int_string):
     Function which counts the number of files in a directory.
     """
     
-    dir_path = r'data/Hermite/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
+    dir_path = r'data/Hermite/GC/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
     count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
     return count
 
