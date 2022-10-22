@@ -298,9 +298,9 @@ class stability_plotters(object):
         def exponential_fit(xval, slope, powerval, yint):
             return slope * np.exp(-powerval * xval) + yint
 
-        def log_fit(xval, slope, yint):
+        def log_fit(xval, slope, yint, rand):
             vel_const = np.sqrt(3)*15 | units.kms
-            return (slope) /( (xval)*np.log(xval))**1 + yint
+            return (slope) /( (xval)*np.log(xval/rand))**1 + yint
 
         plot_ini = plotter_setup()
 
@@ -446,11 +446,12 @@ class stability_plotters(object):
             #ax.plot(xtemp, ytemp)
             #print(slope, powerlaw, intercept)
 
-            p0 = (6,  0.50)
+            p0 = (6,  0.50, 10)
             params, cv = scipy.optimize.curve_fit(log_fit, pop_size, N_parti_avg, p0)
-            slope, intercept = params
+            slope, intercept, rand = params
+            print(slope, rand)
             xtemp = np.linspace(2.5, 13)
-            ytemp = [log_fit(i, slope, intercept) for i in xtemp]
+            ytemp = [log_fit(i, slope, intercept, rand) for i in xtemp]
             ax.plot(xtemp, ytemp, zorder = 1, color = 'black', ls = '-.')
             ax.text(2.8, 0.5, r'$t_{surv} \approx$ '+str('{:.2f}'.format(slope))+r' Myr $\ln^{-1}(N)$')
             print(slope, intercept)
@@ -524,16 +525,18 @@ class stability_plotters(object):
                     if no_axis == 2:
                         plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
 
-gc_code = globular_cluster()
-spatial_plotter(1.15*gc_code.gc_dist, 'Hermite')
-energy_plotter('Hermite')
-
 string = 'Hermite'
 cst = stability_plotters()
 cst.distdep_plotter(1, string)
 cst.distdep_plotter(2, string)
 cst.massdep_plotter(1, string)
 cst.massdep_plotter(2, string)
+
+gc_code = globular_cluster()
+spatial_plotter(1.15*gc_code.gc_dist, 'Hermite')
+energy_plotter('Hermite')
+
+
 
 
 

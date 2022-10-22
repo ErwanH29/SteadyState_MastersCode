@@ -10,7 +10,7 @@ tend = 3e7 | units.yr
 SMBH_code = MW_SMBH()
 gc_code = globular_cluster()
 code_conv = nbody_system.nbody_to_si((gc_code.gc_mass+SMBH_code.mass), gc_code.gc_dist)
-no_sim = 2000
+no_sim = 300
 
 initial_pop = 3
 remove_files = True
@@ -35,7 +35,7 @@ if (remove_files):
         #file_reset('data/'+str(int_string)+'/particle_trajectory')
         file_reset('figures')
 
-for j in [3, 4, 5, 6, 7, 8, 9, 10]:
+for j in [10]:
     initial_pop = j
 
     for i in range(no_sim):

@@ -113,6 +113,7 @@ class stability_plotters(object):
         indices:           The indices corresponding to the fashion you wish to separate the plots
         vals:              The variable which will compose different coloured lines in the plot
         """
+
         mass_array = init_mass[indices]
         final_part = final_parti_data[indices]
         stab_time = stab_time_data[indices]
@@ -359,7 +360,7 @@ class stability_plotters(object):
                 plt.savefig('figures/chaotic_stab_time_equal_mass_'+str(mass_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
             else:
                 ax11.set_xlim(2.5,9.5)
-                ax12.set_xlim(9.5,20.5)
+                ax12.set_xlim(9.5,35.5)
                 plt.savefig('figures/const_population_stab_time_equal_mass_'+str(mass_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
 
         for mass_ in in_mass:      #For every initial mass and distance we will plot a separate graph. This time it includes std spread
@@ -439,7 +440,7 @@ class stability_plotters(object):
         chaos_ini_parti_data_GRX, chaos_fin_parti_data_GRX, chaos_number_mergers_GRX, chaos_cumulative_mm_GRX, chaos_simulated_end_GRX, \
         chaos_ejected_parti_GRX, chaos_stab_time_data_GRX, chaos_init_dist_data_GRX, chaos_cluster_radius_GRX, chaos_init_mass_data_GRX, \
         chaos_inj_mass_data_GRX, chaos_eje_mass_data_GRX, chaos_reltime_data_GRX = self.chaos_extract(dirG)
-
+        #print(chaos_fin_parti_data, chaos_stab_time_data, chaos_init_dist_data, chaos_init_mass_data)
         if no_axis == 2:
             ini_parti_data, inj_event_data, merge_no_data, mergerm_data, simulated_end, \
             initial_dist, cluster_rad, init_parti_m, trelax_data = self.stable_extract('data/Hermite/GC/stable_simulation/*')
@@ -451,9 +452,8 @@ class stability_plotters(object):
         in_mass = np.unique(chaos_init_mass_data, axis=0)
 
         for dist_ in in_dist:
-            init_dist_idx_chaos = np.where((chaos_init_dist_data == dist_))
-            init_dist_idx_chaos_GRX = np.where((chaos_init_dist_data_GRX == dist_))
-
+            init_dist_idx_chaos = np.where((np.asarray(chaos_init_dist_data) == dist_))
+            init_dist_idx_chaos_GRX = np.where((np.asarray(chaos_init_dist_data_GRX) == dist_))
             if no_axis == 1:
                 fig = plt.figure(figsize=(12.5, 8))
                 ax11 = fig.add_subplot(221)
@@ -484,7 +484,6 @@ class stability_plotters(object):
                     pop_samplesS_GRX, pop_sizeS_GRX, tot_popS_GRX, surv_rate_GRX = self.axis2_filter(init_parti_m_GRX, ini_parti_data_GRX, inj_event_data_GRX, 
                                                                                                      merge_no_data_GRX, pop_size_GRX, pop_samples_GRX, mass_, 
                                                                                                      init_dist_idx_stab_GRX)
-
                 N_parti_avg = [ ]
                 pop_id = np.argwhere(pop_size > 2)
                 pop_size = pop_size[pop_id]
@@ -575,7 +574,7 @@ class stability_plotters(object):
                 plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
             else:
                 ax11.set_xlim(2.5,9.5)
-                ax12.set_xlim(9.5,20.5)
+                ax12.set_xlim(9.5,35.5)
                 plt.savefig('figures/const_population_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
 
         for dist_ in in_dist:
@@ -632,13 +631,14 @@ class stability_plotters(object):
                         plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
 
 
+cst = stability_plotters()
+cst.massdep_plotter(1)
+cst.distdep_plotter(1, 'Hermite')
+
+spatial_plotter('Hermite')
 
 vej_plot = vejec_mass()
 vej_plot.vejec_syspop()
 vej_plot.vejec_sysmass()
 
-spatial_plotter('Hermite')
 
-cst = stability_plotters()
-cst.massdep_plotter(1)
-cst.distdep_plotter(1, 'Hermite')

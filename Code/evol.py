@@ -69,6 +69,7 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
     extra_note = ''
 
     parti_KE = code.kinetic_energy
+    print(SMBH_filter(parti).kinetic_energy())
     parti_BE = code.potential_energy
     E0p = parti_KE + parti_BE 
     E0 = E0p

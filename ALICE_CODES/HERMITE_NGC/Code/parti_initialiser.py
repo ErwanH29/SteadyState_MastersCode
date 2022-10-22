@@ -208,7 +208,6 @@ class IMBH_init(object):
         SMBH_particle[0].mass = SMBH_parti.mass
         SMBH_particle[1:].x += gc_code.gc_dist
 
-
         return SMBH_particle, rhmass
 
     def add_IMBH(self, globular):

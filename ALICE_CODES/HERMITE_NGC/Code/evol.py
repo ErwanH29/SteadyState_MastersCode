@@ -73,18 +73,14 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
     parti_BE = code.potential_energy
     E0p = parti_KE + parti_BE 
     E0 = E0p
+
     data_trackers = data_initialiser()
     IMBH_tracker = data_trackers.IMBH_tracker(parti, time, init_IMBH_pop)
-    """LG_tracker = data_trackers.LG_tracker(cluster_radi, IMBH_adder.mass, gc_code.gc_pop, parti, time, code)
-    energy_tracker = data_trackers.energy_tracker(E0p, time, 0 | units.s)
-    parti_energy_tracker = data_trackers.parti_energy_tracker(parti_BE, parti_KE, E0p, time)
+    LG_tracker = data_trackers.LG_tracker(cluster_radi, IMBH_adder.mass, gc_code.gc_pop, parti, time, code)
+    #energy_tracker = data_trackers.energy_tracker(E0p, time, 0 | units.s)
+    #parti_energy_tracker = data_trackers.parti_energy_tracker(parti_BE, parti_KE, E0p, time)
     coll_tracker = data_trackers.coll_tracker()
-    eventstab_tracker = data_trackers.event_tracker(parti)"""
-
-    """
-    IMBHapp = df_timescale(cluster_rhmass)
-    decision_scale = (eta*tend)/IMBHapp #
-    """
+    eventstab_tracker = data_trackers.event_tracker(parti)
 
     while time < tend:
         iter += 1
@@ -119,13 +115,13 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
             temp_PE = [ ]
             temp_PE = indiv_PE_closest(particle, parti, temp_PE)
             parti_BE = np.sum(temp_PE)
-
             SMBH_potential = particle.mass*SMBH_code.get_potential_at_point(0, particle.x, particle.y, particle.z)
             tot_PE = abs(SMBH_potential) + abs(parti_BE)
+
             dist_cluster_core = particle.position - SMBH_filter(parti).center_of_mass()
 
             if parti_KE > tot_PE and dist_cluster_core.length() > 4*gc_code.gc_rad:
-                print('High enough energy and far enough, but towards SMBH', curr_traj)
+                print('High enough energy and far enough, but towards cluster', curr_traj)
             if dist_cluster_core.length() > 4*gc_code.gc_rad and curr_traj > 0:
                 print('not enough E', parti_KE, tot_PE)
             if parti_KE > tot_PE and curr_traj > 0:
@@ -207,13 +203,13 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
         IMBH_tracker['{}'.format(time)] = IMBH_tracker['{}'.format(time)].shift(-rows)
         IMBH_tracker = IMBH_tracker.dropna(axis='rows')
 
-        """df_LG_tracker = pd.Series({'Time': time.in_(units.kyr),
+        df_LG_tracker = pd.Series({'Time': time.in_(units.kyr),
                                    'LG25': LagrangianRadii(code.particles[2:])[5].in_(units.parsec),
                                    'LG50': LagrangianRadii(code.particles[2:])[6].in_(units.parsec),
                                    'LG75': LagrangianRadii(code.particles[2:])[7].in_(units.parsec),
-                                   'Tidal Radius': rtide.in_(units.parsec),
+                                   'Tidal Radius': 4*gc_code.gc_rad.in_(units.parsec),
                                    'Relaxation Time': relax_timescale(cluster_radi, IMBH_adder.mass, gc_code.gc_pop).in_(units.yr)})
-        LG_tracker = LG_tracker.append(df_LG_tracker , ignore_index=True)"""
+        LG_tracker = LG_tracker.append(df_LG_tracker , ignore_index=True)
 
         """parti_KE = code.kinetic_energy
         parti_BE = code.potential_energy
@@ -237,8 +233,6 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
         time1 = time
         if (ejected) or Nenc > 0:
             time = tend
-        if iter > 500:
-            time =tend
             
     code.stop()
     comp_end = cpu_time.time()
@@ -253,15 +247,15 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
         if time1 == tend:
             ejected_key_track = parti[1].key_tracker
        
-        """path = '/home/s2009269/data1/HERMITE_NGC_data/'
+        path = '/home/s2009269/data1/HERMITE_NGC_data/'
         IMBH_tracker.to_pickle(os.path.join(path+str('particle_trajectory'), 'IMBH_'+str(int_string)+'_Local_'+str(init_pop)+'_sim'+str(count)+'_init_dist'+str('{:.3f}'.format(gc_code.gc_dist.value_in(units.parsec)))
-                               +'_equal_mass_'+str('{:.3f}'.format(parti[2].mass.value_in(units.MSun)))+'.pkl'))"""
-        """energy_tracker.to_pickle('data/'+str(int_string)+'/energy/IMBH_'+str(int_string)+'energy_'+str(init_pop)+str(count)+'_equal_mass.pkl')
-        parti_energy_tracker.to_pickle('data/'+str(int_string)+'/particle_energies/particle_energies_'+str(int_string)+str(init_pop)+str(count)+'_equal_mass.pkl')
-        LG_tracker.to_pickle('data/'+str(int_string)+'/lagrangians/IMBH_'+str(int_string)+'Lagrangian_'+str(init_pop)+str(count)+'_equal_mass.pkl')
-        coll_tracker.to_pickle('data/'+str(int_string)+'/collision_events/IMBH_'+str(int_string)+'merge_events'+str(init_pop)+str(count)+'_equal_mass.pkl')
-        eventstab_tracker.to_pickle('data/'+str(int_string)+'/event_tracker/IMBH_'+str(int_string)+'events'+str(init_pop)+str(count)+'_equal_mass.pkl')   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name"""
-        """data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, 
+                               +'_equal_mass_'+str('{:.3f}'.format(parti[2].mass.value_in(units.MSun)))+'.pkl'))
+       # energy_tracker.to_pickle('data/'+str(int_string)+'/energy/IMBH_'+str(int_string)+'energy_'+str(init_pop)+str(count)+'_equal_mass.pkl')
+       # parti_energy_tracker.to_pickle('data/'+str(int_string)+'/particle_energies/particle_energies_'+str(int_string)+str(init_pop)+str(count)+'_equal_mass.pkl')
+        LG_tracker.to_pickle(os.path.join(path+str('lagrangians'), 'IMBH_'+str(int_string)+'Lagrangian_'+str(init_pop)+str(count)+'_equal_mass.pkl'))
+        coll_tracker.to_pickle(os.path.join(path+str('collision_events'), 'IMBH_'+str(int_string)+'merge_events'+str(init_pop)+str(count)+'_equal_mass.pkl'))
+        eventstab_tracker.to_pickle(os.path.join(path+str('event_tracker'), 'IMBH_'+str(int_string)+'events'+str(init_pop)+str(count)+'_equal_mass.pkl'))   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name"""
+        data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, 
                                           chaos_stab_timescale, added_mass, ejected_mass, comp_time, int_string)                   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
 
         lines = ['Simulation: ', "Total CPU Time: "+str(comp_end-comp_start)+' seconds', 
@@ -281,39 +275,11 @@ def evolve_system(parti, tend, eta, cluster_distance, cluster_radi, converter, i
         with open(os.path.join(path+str('simulation_stats'), 'simulation'+str(count)+'.txt'), 'w') as f:
             for line in lines:
                 f.write(line)
-                f.write('\n') """       
-
-        IMBH_tracker.to_pickle('data/'+str(int_string)+'/particle_trajectory/IMBH_'+str(int_string)+'_Local_'+str(init_pop)+'_sim'+str(count)+'_init_dist'                                      #USE THIS FOR LOCAL SIMULATIONS
-                               +str('{:.3f}'.format(gc_code.gc_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(parti[2].mass.value_in(units.MSun)))+'.pkl')
-        """energy_tracker.to_pickle('data/'+str(int_string)+'/energy/IMBH_'+str(int_string)+'energy_'+str(init_pop)+str(count)+'_equal_mass.pkl')
-        parti_energy_tracker.to_pickle('data/'+str(int_string)+'/particle_energies/particle_energies_'+str(int_string)+str(init_pop)+str(count)+'_equal_mass.pkl')
-        LG_tracker.to_pickle('data/'+str(int_string)+'/lagrangians/IMBH_'+str(int_string)+'Lagrangian_'+str(init_pop)+str(count)+'_equal_mass.pkl')"""
-        """coll_tracker.to_pickle('data/'+str(int_string)+'/collision_events/IMBH_'+str(int_string)+'merge_events'+str(init_pop)+str(count)+'_equal_mass.pkl')
-        eventstab_tracker.to_pickle('data/'+str(int_string)+'/event_tracker/IMBH_'+str(int_string)+'events'+str(init_pop)+str(count)+'_equal_mass.pkl')   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name"""
-        data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, parti[1].key_tracker, 
-                                          chaos_stab_timescale, added_mass, ejected_mass, comp_time, int_string)                   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
-
-        lines = ['Simulation: ', "Total CPU Time: "+str(comp_end-comp_start)+' seconds', 
-                 'Timestep: '+str(eta),
-                 'Simulated until: '+str(time1.value_in(units.yr))+str(' years'), 
-                 'Cluster Radius: '+str(gc_code.gc_rad.value_in(units.parsec))+' parsecs', 
-                 'Cluster Distance: '+str(cluster_distance.value_in(units.parsec))+' parsecs', 
-                 'Masses of IMBH: '+str(parti.mass.value_in(units.MSun))+' MSun',
-                 "No. of initial IMBH: "+str(init_IMBH_pop-2), 
-                 'Number of new particles: '+str(N_parti-init_pop),
-                 'Total Number of (Final) IMBH: '+str(len(parti)-2), 
-                # 'IMBH Appearance Rate: '+str(IMBHapp.value_in(units.yr))+' years',    #To add when continuous ejecting simulations occur
-                 'Number of mergers: '+str(Nenc), 'End Time: '+str(tend.value_in(units.yr))+' years', 
-                 'Integrator: Hermite (NO PN)',
-                 'Extra Notes: ', extra_note]
-
-        with open('data/'+str(int_string)+'/simulation_stats/simulation'+str(count)+'.txt', 'w') as f:
-            for line in lines:
-                f.write(line)
                 f.write('\n')        
     
     else:
         no_plot = True
         print('...No stability timescale - simulation ended too quick...')
+
 
     return no_plot

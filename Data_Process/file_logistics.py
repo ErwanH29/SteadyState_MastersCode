@@ -5,21 +5,30 @@ import glob
 import fnmatch
 import os
 
-def bulk_stat_extractor(file_string):
+def bulk_stat_extractor(file_string, rewrite):
     """
     Function which extracts all files in a given dir.
     
     Inputs:
     file_string: The directory wished to extract files from
+    rewrite:     (Y|N) string to dictate whether to compress the file based on needed data
     """
 
     filename = glob.glob(file_string)
     filename = sorted(filename, key=lambda t: os.stat(t).st_mtime)
     data = [ ]
 
-    for file_ in range(len(filename)):
-        with open(filename[file_], 'rb') as input_file:
-            data.append(pkl.load(input_file))
+    if rewrite == 'N':
+        for file_ in range(len(filename)):
+            with open(filename[file_], 'rb') as input_file:
+                data.append(pkl.load(input_file))
+    else:
+        for file_ in range(len(filename)):
+            with open(filename[file_], 'rb') as input_file:
+                rewrite_file = pkl.load(input_file)
+            data_pts = round((np.shape(rewrite_file)[1])/15)
+            rewrite_file = rewrite_file.drop(rewrite_file.iloc[:, :-1*data_pts], axis = 1) 
+            data.append(rewrite_file)
 
     return data
 
@@ -44,21 +53,26 @@ def ejected_extract(set, ejected, col_len):
     for i in range(len(set)):
         esc_vel = [ ]
         if set.iloc[i][0][0] == ejected.iloc[0][5]:    
-            temp_comp = set.iloc[i]
-            
+            temp_comp = set.iloc[i]   
             temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):
-                coords = temp_comp.iloc[j+1][2]
+                coords = temp_comp.iloc[j][2]
                 line_x[0][j][0] = coords[0].value_in(units.pc)
                 line_y[0][j][0] = coords[1].value_in(units.pc)
                 line_z[0][j][0] = coords[2].value_in(units.pc)
-
-            for vel_ in [temp_comp.iloc[-3][3].value_in(units.kms), 
-                         temp_comp.iloc[-2][3].value_in(units.kms), 
-                         temp_comp.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
-                esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
-            idx = np.argwhere(esc_vel == max(esc_vel))
-            idx = np.asarray([i-3 for i in idx])[0]
+            if len(temp_comp) > 3:
+                print(temp_comp.iloc[-3][3].value_in(units.kms))
+                print(temp_comp.iloc[-2][3].value_in(units.kms))
+                for vel_ in [temp_comp.iloc[-3][3].value_in(units.kms), 
+                            temp_comp.iloc[-2][3].value_in(units.kms), 
+                            temp_comp.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
+                    esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
+                idx = np.argwhere(esc_vel == max(esc_vel))
+                idx = np.asarray([i-3 for i in idx])[0]
+            else:
+                for vel_ in [temp_comp.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
+                    esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
+                idx = np.asarray(np.argwhere(esc_vel == max(esc_vel)))[0]
 
             line_vx[0][j] = temp_comp.iloc[idx][0][3][0].value_in(units.kms)
             line_vy[0][j] = temp_comp.iloc[idx][0][3][1].value_in(units.kms)
@@ -124,7 +138,7 @@ def file_reset(dir):
         os.remove(f)
 
 def stats_chaos_extractor(dir):
-    steadytime_data = bulk_stat_extractor(dir)
+    steadytime_data = bulk_stat_extractor(dir, 'N')
     no_Data = len(steadytime_data)
 
     ini_parti_data = np.empty(no_Data)
@@ -141,27 +155,32 @@ def stats_chaos_extractor(dir):
     eje_mass_data  = np.empty(no_Data)
     reltime_data   = np.empty(no_Data)
 
+    faults = 0
     for i in range(no_Data):
         sim_data = steadytime_data[i]
-        ini_parti_data[i] = sim_data.iloc[0][9]
-        fin_parti_data[i] = sim_data.iloc[0][6]
-        number_mergers[i] = sim_data.iloc[0][10]
-        cum_merge_mass[i] = sim_data.iloc[0][3].value_in(units.MSun)
-        simulated_end[i]  = sim_data.iloc[0][-2].value_in(units.Myr)
-        ejected_parti[i]  = sim_data.iloc[0][5]
-        stab_time_data[i] = sim_data.iloc[0][-1].value_in(units.Myr)
-        init_dist_data[i] = sim_data.iloc[0][7].value_in(units.parsec)
-        cluster_radius[i] = sim_data.iloc[0][1].value_in(units.parsec)
-        init_mass_data[i] = [int(min(sim_data.iloc[0][8].value_in(units.MSun))), int(max(sim_data.iloc[0][8].value_in(units.MSun)))]
-        inj_mass_data[i]  = sim_data.iloc[0][0].value_in(units.MSun)
-        eje_mass_data[i]  = sim_data.iloc[0][4].value_in(units.MSun)
-        #reltime_data[i]   = sim_data.iloc[0][11].value_in(units.yr)
-
+        if isinstance(sim_data.iloc[0][9], float):
+            ini_parti_data[i] = sim_data.iloc[0][9]
+            fin_parti_data[i] = sim_data.iloc[0][6]
+            number_mergers[i] = sim_data.iloc[0][10]
+            cum_merge_mass[i] = sim_data.iloc[0][3].value_in(units.MSun)
+            simulated_end[i]  = sim_data.iloc[0][-2].value_in(units.Myr)
+            ejected_parti[i]  = sim_data.iloc[0][5]
+            stab_time_data[i] = sim_data.iloc[0][-1].value_in(units.Myr)
+            init_dist_data[i] = sim_data.iloc[0][7].value_in(units.parsec)
+            cluster_radius[i] = sim_data.iloc[0][1].value_in(units.parsec)
+            init_mass_data[i] = [int(min(sim_data.iloc[0][8].value_in(units.MSun))), int(max(sim_data.iloc[0][8].value_in(units.MSun)))]
+            inj_mass_data[i]  = sim_data.iloc[0][0].value_in(units.MSun)
+            eje_mass_data[i]  = sim_data.iloc[0][4].value_in(units.MSun)
+            #reltime_data[i]   = sim_data.iloc[0][11].value_in(units.yr)
+        else:
+            faults += 1
+            pass
+            
     return ini_parti_data, fin_parti_data, number_mergers, cum_merge_mass, simulated_end, ejected_parti, stab_time_data, \
            init_dist_data, cluster_radius, init_mass_data, inj_mass_data, eje_mass_data, reltime_data
 
 def stats_stable_extractor(dir):
-    steadytime_data = bulk_stat_extractor(dir)
+    steadytime_data = bulk_stat_extractor(dir, 'N')
     no_Data = len(steadytime_data)
     
     ini_parti_data = np.empty(no_Data)

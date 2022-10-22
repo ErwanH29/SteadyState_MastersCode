@@ -175,8 +175,8 @@ class stability_plotters(object):
             if no_axis == 2:
                 init_mass_idx_stab = np.where((self.init_parti_m == mass_).all(1))[0]
                 fig = plt.figure(figsize=(9, 14))
-                ax = fig.add_subplot(211)
-                ax2 = fig.add_subplot(212)
+                ax = fig.add_subplot(121)
+                ax2 = fig.add_subplot(122)
                 tot_popS = [ ]
 
             tot_pop  = [ ]

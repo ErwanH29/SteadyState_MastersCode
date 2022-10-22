@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import matplotlib.animation as animation
 import numpy as np
+import matplotlib.patheffects as pe
 
 class plotter_setup():
     def val_filter(self, arr):
@@ -324,6 +325,13 @@ def spatial_plotter(int_string):
     Function to plot the evolution of the system
     """
 
+    def moving_average(array, smoothing):
+        value = np.cumsum(array, dtype=float)
+        n = round(2*10**-2*len(smoothing))
+        print(len(smoothing))
+        value[n:] = value[n:] - value[:-n]
+        return value[n-1:]/n
+
     plot_ini = plotter_setup()
     gc_code = globular_cluster()
     count = file_counter(int_string)
@@ -458,9 +466,12 @@ def spatial_plotter(int_string):
     #ax6.set_xlabel(r'Time [Myr]')
     #ax6.set_ylabel(r'Relaxation Time [Myr]')
     ax.plot(time[0][3:], rtide_array[0][3:], color = 'black',  label = r'$r_{tidal}$')
-    ax.plot(time[0][3:], LG25_array[0][3:],  color = 'red',   label = r'$r_{25,L}$')
-    ax.plot(time[0][3:], LG75_array[0][3:],  color = 'blue',  label = r'$r_{75,L}$')
-    ax.plot(time[0][4:], ejected_dist[0][3:], color = 'purple', linewidth = .7, label = 'Ejected Particle')
+    ax.plot(time[0][3:], LG25_array[0][3:],  color = 'red', linewidth = 0.7, alpha = 0.7, linestyle = ':', zorder = 1)
+    ax.plot(moving_average(time[0][3:], time[0]), moving_average(LG25_array[0][3:], time[0]),  path_effects =[pe.Stroke(linewidth=1.8, foreground='black'), pe.Normal()], color = 'red', linewidth=1.1, label = r'$r_{25,L}$', zorder = 4)
+    ax.plot(time[0][3:], LG75_array[0][3:],  color = 'blue', linewidth = 0.7, alpha = 0.7, linestyle = ':', zorder = 2)
+    ax.plot(moving_average(time[0][3:], time[0]), moving_average(LG75_array[0][3:], time[0]),  path_effects =[pe.Stroke(linewidth=1.8, foreground='black'), pe.Normal()], color = 'blue',  linewidth=1.1, label = r'$r_{75,L}$', zorder = 5)
+    ax.plot(time[0][4:], ejected_dist[0][3:], color = 'purple', linewidth=0.7, alpha = 0.7, linestyle = ':', zorder = 3)
+    ax.plot(moving_average(time[0][4:], time[0][4:]), moving_average(ejected_dist[0][3:], time[0][4:]), path_effects =[pe.Stroke(linewidth=1.8, foreground='black'), pe.Normal()], color = 'purple', linewidth=1.1, label = 'Ejected Particle', zorder = 6)
     ax.legend()
     #ax6.plot(time[0][3:], relax_time[0][3:], color = 'black',  label = r'$r_{tidal}$', linestyle = ":")
     #ax6.legend()
@@ -482,8 +493,10 @@ class vejec_mass(object):
         """
         Extracts the required data
         """
-        self.ejec_data = bulk_stat_extractor('data/'+str(int_string)+'/GC/vej_data/no_addition/chaotic_simulation/*')
-        self.IMBH_tracker = bulk_stat_extractor('data/'+str(int_string)+'/GC/vej_data/particle_trajectory/*')
+
+        self.IMBH_tracker = bulk_stat_extractor('data/'+str(int_string)+'/GC/vej_data/particle_trajectory/*', 'Y')
+        self.ejec_data = bulk_stat_extractor('data/'+str(int_string)+'/GC/vej_data/no_addition/chaotic_simulation/*', 'N')
+        print(len(self.ejec_data), len(self.IMBH_tracker))
         self.data_entries = 1
 
         self.ejec_vx = np.empty((len(self.ejec_data)))
@@ -494,7 +507,6 @@ class vejec_mass(object):
         self.surv_time = np.empty((len(self.ejec_data)))
 
         for i in range(len(self.ejec_data)):
-            print(i)
             self.ex, self.ey, self.ez, self.ejec_vx[i], self.ejec_vy[i], self.ejec_vz[i] = ejected_extract(self.IMBH_tracker[i], 
                                                                                                            self.ejec_data[i], 
                                                                                                            self.data_entries)
@@ -565,17 +577,20 @@ class vejec_mass(object):
         ejec_vel = np.asarray(self.ejec_vel)[idx]
         mass = self.tot_mass[idx]
         
+        pop_eject = np.where(ejec_vel > 690)[0]
+        print('Simulations where v > vej MW:', len(pop_eject), '/', len(ejec_vel))
+
         ax = self.plotter_func(self.tot_pop[idx], 
                                ejec_vel, 
                                (mass), r'Total IMBH Mass [$\frac{M}{10^3 M_{\odot}}$]')
-        plt.axhline(y=675, linestyle = '-.', color = 'black', zorder = 1)
-        ax.text(2.1, 695, r'$v_{esc, MW}$')
+        plt.axhline(y=690, linestyle = '-.', color = 'black', zorder = 1)
+        ax.text(2.1, 705, r'$v_{esc, MW}$')
         ax.set_ylim(0, 1500)
         ax.set_xlim(2, 11)
         plt.savefig('figures/scatter_vej.pdf', dpi=300, bbox_inches='tight')
 
-        plt.axhline(y=675, linestyle = '-.', color = 'black', zorder = 1)
-        ax.text(2.6, 695, r'$v_{esc, MW}$')
+        plt.axhline(y=690, linestyle = '-.', color = 'black', zorder = 1)
+        ax.text(10.6, 705, r'$v_{esc, MW}$')
         ax.set_ylim(0, 1500)
         ax.set_xlim(10.5, 35.5)
         plt.savefig('figures/scatter_vej_highmass.pdf', dpi=300, bbox_inches='tight')
@@ -592,6 +607,6 @@ class event_tracker(object):
         for i in range(len(merge_events)):
             if merge_events[i][0][2].number != 0:
                 no_merge += 1
-        print(no_merge)
-
-swag = event_tracker()
+        print('Total Simulations: ', len(merge_events),
+              '\nNumber of mergers: ', no_merge)
+spatial_plotter('Hermite')

@@ -203,7 +203,7 @@ class IMBH_init(object):
         gc_particles[0].velocity = [0, 0, 0] | units.AU/units.yr
 
         gc_particles[1].mass = gc_code.gc_mass
-        gc_particles[1].radius = 0 | units.m
+        gc_particles[1].radius = gc_code.gc_rad
         gc_particles[1].collision_radius = 0 | units.m
 
         gc_particles[1:].x += gc_code.gc_dist
