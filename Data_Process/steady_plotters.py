@@ -91,14 +91,13 @@ class stability_plotters(object):
         Navg:    Array with the average ejected times depending on population
         std:     The standard deviation for each simulation
         """
-        ax.xaxis.labelpad = 20
+
         ax.set_xlabel(r'Number of IMBH [$N$]')
         ax.set_xticks(xints)
         ax.set_xlim(2.5,max(tot_pop)+1)
         ax.set_ylim(0, 1.1*max(np.add(Navg, std)))
         ax.set_ylabel(r'Ejection Time [Myr]')
         ax.set_title(r'Chaotic Black Hole Population vs. Stability Time')
-        ax.xaxis.labelpad = 25
         
         return ax
 
@@ -618,27 +617,29 @@ class stability_plotters(object):
                     ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
                     ax.scatter(pop_size, N_parti_avg, color = 'black')
 
-                    for j, xpos in enumerate(pop_size):
-                        ax.text(xpos, -0.12*max(np.add(N_parti_avg, std)), '# Sim:\n'+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )                   
-                    ax.text(2.8, 0.96*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} \in$ ['+str(mass_[0])+', '+str(mass_[1])+r'] $M_\odot$')
+                    #for j, xpos in enumerate(pop_size):
+                    #    ax.text(xpos, -0.12*max(np.add(N_parti_avg, std)), '# Sim:\n'+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )                   
+                    ax.text(9, 0.96*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
                     xints = [i for i in range(1+int(max(tot_pop)))]
                     
                     self.error_plots(ax, xints, tot_pop, N_parti_avg, std)
                     plot_ini.tickers(ax)
+                    ax.set_xlim(2.5,10.5)
                     if no_axis == 1:
                         plt.savefig('figures/const_pop_chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
                     if no_axis == 2:
                         plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
 
 
-cst = stability_plotters()
-cst.massdep_plotter(1)
-cst.distdep_plotter(1, 'Hermite')
+string = 'GRX'
 
-spatial_plotter('Hermite')
+#cst = stability_plotters()
+#cst.massdep_plotter(1)
+#cst.distdep_plotter(1, 'Hermite')
+#spatial_plotter('Hermite')
 
-vej_plot = vejec_mass()
-vej_plot.vejec_syspop()
-vej_plot.vejec_sysmass()
+#vej_plot = vejec_mass()
+#vej_plot.vejec_syspop()
+#vej_plot.vejec_sysmass()
 
 

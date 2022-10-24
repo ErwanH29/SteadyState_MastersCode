@@ -573,12 +573,14 @@ class stability_plotters(object):
                     if no_axis == 2:
                         plt.savefig('figures/chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
 
+
+spatial_plotter(1.15*gc_code.gc_dist, 'Hermite')
+STOP
 string = 'GRX'
 cst = stability_plotters()
 #cst.massdep_plotter(1)
 cst.distdep_plotter(1, 'Hermite')
 
 gc_code = globular_cluster()
-spatial_plotter(1.15*gc_code.gc_dist, 'Hermite')
 energy_plotter('Hermite')
 #animator(1.5 | units.parsec)

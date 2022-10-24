@@ -32,7 +32,7 @@ def bulk_stat_extractor(file_string, rewrite):
 
     return data
 
-def ejected_extract(set, ejected, col_len):
+def ejected_extract_traj(set, ejected, col_len):
     """
     Extracts positional info on the ejected particle into an array
     
@@ -51,34 +51,73 @@ def ejected_extract(set, ejected, col_len):
     line_vz = np.empty((1, col_len))
 
     for i in range(len(set)):
-        esc_vel = [ ]
-        if set.iloc[i][0][0] == ejected.iloc[0][5]:    
-            temp_comp = set.iloc[i]   
-            temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
+        if set.iloc[i][0][0] == ejected.iloc[0][5]: 
+            ejec_data = set.iloc[i]
+            ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):
-                coords = temp_comp.iloc[j][2]
+                coords = ejec_data.iloc[j+1][2]
+                vel = ejec_data.iloc[-1][3]  #Only the final velocity is important
+
                 line_x[0][j][0] = coords[0].value_in(units.pc)
                 line_y[0][j][0] = coords[1].value_in(units.pc)
                 line_z[0][j][0] = coords[2].value_in(units.pc)
-            if len(temp_comp) > 3:
-                print(temp_comp.iloc[-3][3].value_in(units.kms))
-                print(temp_comp.iloc[-2][3].value_in(units.kms))
-                for vel_ in [temp_comp.iloc[-3][3].value_in(units.kms), 
-                            temp_comp.iloc[-2][3].value_in(units.kms), 
-                            temp_comp.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
+
+                line_vx[0][j] = vel[0].value_in(units.kms)
+                line_vy[0][j] = vel[1].value_in(units.kms)
+                line_vz[0][j] = vel[2].value_in(units.kms)
+
+    return line_x, line_y, line_z, line_vx, line_vy, line_vz
+
+def ejected_extract_final(set, ejected):
+    """
+    Extracts positional info on the ejected particle into an array
+    
+    Inputs:
+    set:     The complete particle set plotting
+    ejected: The ejected particle
+    col_len: The number of time-steps simulated
+    """
+
+    Nclose = 0
+    for i in range(len(set)):
+        esc_vel = [ ]
+        if set.iloc[i][0][0] == ejected.iloc[0][5]: 
+            ejec_data = set.iloc[i]   #Make data set of only ejected particle
+            ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
+            if len(ejec_data) > 3:
+                for vel_ in [ejec_data.iloc[-3][3].value_in(units.kms), 
+                             ejec_data.iloc[-2][3].value_in(units.kms), 
+                             ejec_data.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
                     esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
                 idx = np.argwhere(esc_vel == max(esc_vel))
                 idx = np.asarray([i-3 for i in idx])[0]
+
             else:
-                for vel_ in [temp_comp.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
+                for vel_ in [ejec_data.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
                     esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
-                idx = np.asarray(np.argwhere(esc_vel == max(esc_vel)))[0]
+                idx = [-1]
 
-            line_vx[0][j] = temp_comp.iloc[idx][0][3][0].value_in(units.kms)
-            line_vy[0][j] = temp_comp.iloc[idx][0][3][1].value_in(units.kms)
-            line_vz[0][j] = temp_comp.iloc[idx][0][3][2].value_in(units.kms)
+            xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
+            ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
+            zpos = (ejec_data.iloc[idx][0][2][2]-set.iloc[0][idx][0][2][2]).value_in(units.pc)
+            distance = np.sqrt(xpos**2+ypos**2+zpos**2)
+            
+            vx = ejec_data.iloc[idx][0][3][0].value_in(units.kms)
+            vy = ejec_data.iloc[idx][0][3][1].value_in(units.kms)
+            vz = ejec_data.iloc[idx][0][3][2].value_in(units.kms)
 
-            return line_x, line_y, line_z, line_vx, line_vy, line_vz
+            incl = np.degrees(np.arcsin(zpos/distance))
+            KE = ejec_data.iloc[idx][0][4].value_in(units.J)
+            PE = ejec_data.iloc[idx][0][5].value_in(units.J)
+            for j in range(len(ejec_data)):
+                if j == 0:
+                    pass
+                else:
+                    deltaKE = ejec_data.iloc[j][4]/ejec_data.iloc[j-1][4]
+                    if abs(deltaKE) > 10:
+                        Nclose += 1
+
+            return xpos, ypos, zpos, vx, vy, vz, KE, PE, incl, Nclose
     
     return print('Nope')
 
