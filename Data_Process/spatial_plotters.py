@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.patheffects as pe
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from numpy.polynomial.polynomial import polyfit
 
 class plotter_setup():
     def val_filter(self, arr):
@@ -569,15 +570,23 @@ class vejec_mass(object):
             avg_vel[iter] = np.mean(temp_evel)
             avg_surv[iter] = np.mean(temp_surv)
 
-        ax = self.plotter_func(popul, avg_vel, avg_surv, r'Average Ejection Time [Myr]')
-        ax.set_ylim(0, 600)
-        ax.set_xlim(2, 11)
-        plt.savefig('figures/mean_vej.pdf', dpi=300, bbox_inches='tight')
+        popul = np.asarray(popul).flatten()
+        avg_vel = np.asarray(avg_vel)
+        yint, slope = polyfit(popul, avg_vel, 1)
+        xlist = np.linspace(2.5,10.5)
+        ylist = [yint+slope*i for i in xlist]
 
         ax = self.plotter_func(popul, avg_vel, avg_surv, r'Average Ejection Time [Myr]')
+        ax.plot(xlist, ylist, linestyle = '--', zorder = 1)
+        ax.text(3, 50, r'$v_{ejec} = '+str('{:.2f}'.format(slope))+r'$N +'+str('{:.2f}'.format(yint)))
+        ax.set_ylim(0, 600)
+        ax.set_xlim(2.5, 10.5)
+        plt.savefig('figures/mean_vej.pdf', dpi=300, bbox_inches='tight')
+
+        """ax = self.plotter_func(popul, avg_vel, avg_surv, r'Average Ejection Time [Myr]')
         ax.set_ylim(0, 600)
         ax.set_xlim(10.5, 35.5)
-        plt.savefig('figures/mean_vej_highm.pdf', dpi=300, bbox_inches='tight')
+        plt.savefig('figures/mean_vej_highm.pdf', dpi=300, bbox_inches='tight')"""
 
     def vejec_syspop(self):
         """
@@ -600,11 +609,11 @@ class vejec_mass(object):
         ax.set_xlim(2, 11)
         plt.savefig('figures/scatter_vej.pdf', dpi=300, bbox_inches='tight')
 
-        plt.axhline(y=690, linestyle = '-.', color = 'black', zorder = 1)
+        """plt.axhline(y=690, linestyle = '-.', color = 'black', zorder = 1)
         ax.text(10.6, 705, r'$v_{esc, MW}$')
         ax.set_ylim(0, 1500)
         ax.set_xlim(10.5, 35.5)
-        plt.savefig('figures/scatter_vej_highmass.pdf', dpi=300, bbox_inches='tight')
+        plt.savefig('figures/scatter_vej_highmass.pdf', dpi=300, bbox_inches='tight')"""
 
     def finalpos_energy_data_extract(self, filter):
         """
@@ -615,21 +624,22 @@ class vejec_mass(object):
         """
         
         if filter == 'B':
-            idx = np.where(self.ejec_KE < 3e44)
-            ejected_KE = [i/max(self.ejec_KE[idx]) for i in self.ejec_KE[idx]]
-            ejected_PE = [-i/max(self.ejec_KE[idx]) for i in self.ejec_PE[idx]]
+            idx = np.where(self.ejec_KE < 1e45)
+            ejected_KE1 = np.asarray([i for i in self.ejec_KE[idx]])
+            ejected_PE1 = np.asarray([-i for i in self.ejec_PE[idx]])
             final_pos = np.asarray([(i**2+j**2+z**2)**0.5 for i, j, z in zip(self.ex, self.ey, self.ez)])[idx]
-            idx = np.where(abs(self.ejec_PE) < 3e44)
-            ejected_KE = [i/max(self.ejec_KE[idx]) for i in self.ejec_KE[idx]]
-            ejected_PE = [-i/max(self.ejec_KE[idx]) for i in self.ejec_PE[idx]]
-            final_pos = np.asarray([(i**2+j**2+z**2)**0.5 for i, j, z in zip(self.ex, self.ey, self.ez)])[idx]
+
+            idx = np.where(abs(ejected_PE1) < 1e45)
+            ejected_KE = np.asarray([i/max(ejected_KE1[idx]) for i in ejected_KE1[idx]])
+            ejected_PE = np.asarray([i/max(ejected_KE1[idx]) for i in ejected_PE1[idx]])
+            final_pos = np.asarray(final_pos[idx])
 
         else:
             idx = np.where(self.ejec_KE > -0.01)
             ejected_KE = [i/max(self.ejec_KE[idx]) for i in self.ejec_KE[idx]]
             ejected_PE = [-i/max(self.ejec_KE[idx]) for i in self.ejec_PE[idx]]
             final_pos = np.asarray([(i**2+j**2+z**2)**0.5 for i, j, z in zip(self.ex, self.ey, self.ez)])[idx]
-            
+
         linex = np.linspace(-0.01*np.min(ejected_KE), 10)
         liney = -1*linex
 
@@ -662,24 +672,21 @@ class vejec_mass(object):
                 plot_ini.tickers(ax_)
                 
             if hist == 'Y':
-                bin2d_sim, xedges_s, yedges_s, image = ax2.hist2d(KE, PE, bins=(300,300), range=([0,1.1],[min(PE),0]))
+                bin2d_sim, xedges_s, yedges_s, image = ax2.hist2d(KE, PE, bins=(200, 200), range=([0,1.1],[1.1*min(PE),0]))
                 bin2d_sim /= np.max(bin2d_sim)
-                extent = [0,1.1,0,min(PE)]
+                extent = [0, 1.1, 1.1*min(PE), 0]
 
-                print('=========================', min(PE))
-
-                contours = ax2.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+                contours = ax2.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
                 #ax2.scatter(KE, PE, s = 15, color = 'red', edgecolors = 'black')
-                ax2.set_ylim(min(PE),0)
+                #ax2.set_ylim(m(PE),0)
                 ax2.set_xlim(0,max(KE))
-
-                bin2d_sim, xedges_s, yedges_s, image = ax1.hist2d(KE, PE, bins=(200,200), range=([0,0.3],[-0.3,0]))
+                bin2d_sim, xedges_s, yedges_s, image = ax1.hist2d(KE, PE, bins=(80, 80), range=([0,0.35],[-0.35,0]))
                 bin2d_sim /= np.max(bin2d_sim)
-                extent = [0,0.3,0,-0.3]
-                contours = ax1.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+                extent = [0, 0.3, -0.3,0]
+                contours = ax1.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
                 #ax1.scatter(KE, PE, s = 15, color = 'red', edgecolors = 'black')
                 cbar = plt.colorbar(contours, ax=ax2)
-                cbar.set_label(label = r'$N/N_{tot}$',rotation=270,labelpad=15)
+                cbar.set_label(label = r'$\log_{10}(N/N_{max})$',rotation=270,labelpad=15)
 
                 ax1.set_xlim(0,0.3)
                 ax1.set_ylim(-0.3,0)
@@ -700,13 +707,14 @@ class vejec_mass(object):
             if hist == 'N':
                 fig, ax = plt.subplots()
                 ax.set_title('Ejected Particles \nKinetic Energy vs. Potential Energy')
+                ax.plot(linex, liney, color = 'black', linestyle = '-.')
                 colour_axes = ax.scatter(KE, PE, c = cdata, s= 2)
                 plt.colorbar(colour_axes, ax = ax, label = r'Final Distance to Core [pc]')
                 plt.plot(linex, liney, color = 'black', linestyle = '-.')
                 plt.xlim(1e-5,1.05)
-                plt.ylim(-10**-1, -10**-3)
-                plt.yscale('symlog')
-                plt.xscale('log')
+                plt.ylim(-1, -10**-15)
+                #plt.yscale('symlog')
+                #plt.xscale('log')
                 plt.xlabel(r'$E_K/E_{{K, {}}}$'.format(str('max')))
                 plt.ylabel(r'$E_P/E_{{K, {}}}$'.format(str('max')))
                 plot_ini.tickers(ax)
@@ -715,27 +723,29 @@ class vejec_mass(object):
             else: 
                 fig, ax = plt.subplots()
 
-                bin2d_sim, xedges_s, yedges_s, image = ax.hist2d(KE, PE, bins=(400,400), range=([0,1.1],[min(PE),0]))
+                bin2d_sim, xedges_s, yedges_s, image = ax.hist2d(KE, PE, bins=(100,300), range=([np.min(KE), 2],[1.1*min(PE),0.1]))
                 bin2d_sim /= np.max(bin2d_sim)
-                extent = [0, 1.1, max(PE)/10, min(PE)]
+                extent = [0, 1.1, 1.1*min(PE),0]
 
                 ax.set_title('Ejected Particles \nKinetic Energy vs. Potential Energy')
-                ax.set_xlim(0, 1.1)
-                ax.set_ylim(min(PE), 0)
+                ax.set_xlim(1e-6, 1.1)
+                ax.plot(linex, liney, color = 'black', linestyle = '-.')
+                ax.set_ylim(-1, -10**-6)
                 ax.set_xlabel(r'$E_K/E_{{K, {}}}$'.format(str('max')))
                 ax.set_ylabel(r'$E_P/E_{{K, {}}}$'.format(str('max')))
-                contours = ax.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+                #ax.set_yscale('symlog')
+                #ax.set_xscale('log')
+                contours = ax.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
                 ax.plot(linex, liney, color = 'black', linestyle = '-.')
                 #ax.scatter(KE, PE, s=15, color = 'red', edgecolors ='black')
                 cbar = plt.colorbar(contours, ax=ax)
-                cbar.set_label(r"$N/N_{tot}$", rotation=270,labelpad=15)
+                cbar.set_label(r"$\log_{10}(N/N_{max})$", rotation=270,labelpad=15)
                 
                 ax.set_yscale('symlog')
                 plot_ini.tickers(ax)
                 plt.savefig('figures/energy_diagram_'+str(save_file)+'.pdf', dpi=300, bbox_inches='tight')
                 plt.clf()
             return
-
 
     def finalpos_energy(self):
             """
@@ -783,15 +793,15 @@ class vejec_mass(object):
                     plt.clf()
 
                 if i == 1:
-                    bin2d_sim, xedges_s, yedges_s, image = ax.hist2d(dist, self.incl, bins = (300,300), range = ([0,1.1*max(dist)],[-90,90]))
+                    bin2d_sim, xedges_s, yedges_s, image = ax.hist2d(dist, self.incl, bins = (60,60), range = ([0.9*min(dist),4],[-90,90]))
                     plot_ini.tickers(ax)
-                    ax.set_xscale('log')
+                    #ax.set_xscale('log')
                     bin2d_sim /= np.max(bin2d_sim)
-                    extent = [1e-5, 1.1*np.max(dist), -90, 90]
-                    contours = ax.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+                    extent = [0.9*min(dist), 5, -90, 90]
+                    contours = ax.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
                     #ax.scatter(dist, self.incl, s = 15, color = 'red', edgecolors = 'black')
                     plt.title('Ejected Particles \nFinal Distance vs. Orbital Inclination')
-                    plt.colorbar(contours, ax=ax, label = r'$N/N_{tot}$')
+                    plt.colorbar(contours, ax=ax, label = r'$\log_{10}(N/N_{max})$')
                     plt.savefig('figures/inclination_histogram.pdf', dpi=300, bbox_inches='tight')
                     plt.clf()
 
@@ -816,9 +826,8 @@ class event_tracker(object):
 cst = vejec_mass()
 cst.finalpos_incl_plotter()
 cst.finalpos_energy_hist()
-cst.finalpos_incl_plotter()
 cst.finalpos_energy()
 cst.vejec_sysmass()
 cst.vejec_syspop()
-#STOP
+STOP
 #spatial_plotter('Hermite')
