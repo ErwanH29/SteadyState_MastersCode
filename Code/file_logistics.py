@@ -42,7 +42,9 @@ def ejected_extract(set, ejected, col_len):
     line_vz = np.empty((1, col_len))
 
     for i in range(len(set)):
-        if set.iloc[i,0] == ejected.iloc[0][5]:
+        print(set.iloc[i][0][0])
+        print(ejected.iloc[0])
+        if set.iloc[i,0] == ejected.iloc[0][6]:
             temp_comp = set.iloc[i]
             temp_comp = temp_comp.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
             for j in range(col_len):

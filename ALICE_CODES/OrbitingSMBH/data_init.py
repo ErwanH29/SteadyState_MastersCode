@@ -7,7 +7,7 @@ import os
 
 class data_initialiser(object):
     def chaotic_sim_tracker(self, pset, init_pop, Nmerge, cum_mergermass, time, ejected_key, 
-                            stab_time, added_mass, ejected_mass, comp_time, ejected, int_string):
+                            stab_time, added_mass, ejected_mass, comp_time, ejected, int_string, pert):
 
         """
         Data set which tracks statistics on the simulations resulting in ejections
@@ -25,13 +25,14 @@ class data_initialiser(object):
         comp_time:      Total time simulation lasted
         ejected:        0 for not ejected (sim. ended with merger) or 1 for ejection away from SMBH
         int_string:     String describing integrator used
+        pert:           The PN term simulated
         """
 
         SMBH_code = MW_SMBH()
         count = file_counter(int_string)
-        path = '/home/s2009269/data1/HERMITE_Orbit_data/'
+        path = '/home/s2009269/data1/HERMITE_Orbit_Data'
         stab_tracker = pd.DataFrame()
-        df_stabtime = pd.Series({'Initial Particles': (len(init_pop)-1), 'Final Particles': (len(pset)-1), 
+        df_stabtime = pd.Series({'Initial Particles': (len(pset)-1), 'Final Particles': (len(pset)-1), 
                                  'Number of Mergers': Nmerge, 'Cumulative Merger Mass': cum_mergermass.in_(units.MSun),
                                  'Ejection': ejected, 'Simulated Till': time.in_(units.yr),
                                  'Ejected Particle': ejected_key, 'Stability Time': stab_time, 
@@ -39,11 +40,38 @@ class data_initialiser(object):
                                  'Initial Particle Mass': init_pop[2:].mass.in_(units.MSun),
                                  'Added Particle Mass': added_mass.in_(units.MSun),
                                  'Ejected Mass': ejected_mass.in_(units.MSun),
-                                 'Computation Time': str(comp_time)})
+                                 'Computation Time': str(comp_time),
+                                 'PN Term': str(pert)})
         stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
-        stab_tracker.to_pickle(os.path.join(path+str('/no_addition/chaotic_simulation'), 'IMBH_'+str(int_string)+'_Local_'+str(init_pop)
+        stab_tracker.to_pickle(os.path.join(path+str('/no_addition/chaotic_simulation'), 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(len(pset)-1)
                                             +'_sim'+str(count)+'_init_dist'+str('{:.3f}'.format(SMBH_code.distance.value_in(units.parsec)))
                                             +'_equal_mass_'+str('{:.3f}'.format(pset[2].mass.value_in(units.MSun)))+'.pkl'))
+
+    def coll_tracker(self, int_string, init_IMBH, count, init_dist, pset, coll_time, enc_particles, ejected_key, merger_mass, pert):
+        """
+        In case merging event occurs, saves the data:
+        
+        Inputs:
+        int_string:    Hermite or Hermite GRX to separate the data
+        count:         The simulation #
+        init_dist:     Initial distance of particles to SMBH
+        pset:          The complete particle set
+        coll_time:     The time the collision occured at
+        enc_particles: The two merging particles
+        ejected_key:   The final particle key
+        merger_mass:   The merger mass
+        pert:          The PN term simulated
+        """
+
+        path = '/home/s2009269/data1/HERMITE_Orbit_Data/'
+        file_names = 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(init_IMBH)+'_sim'+str(count)+'_init_dist'+str('{:.3f}'.format(init_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(pset[2].mass.value_in(units.MSun)))+'.pkl'
+        coll_tracker = pd.DataFrame()
+        df_coll_tracker = pd.Series({'Collision Time': coll_time.in_(units.kyr),
+                                     'Collided Particles': [enc_particles[0].key, enc_particles[1].key],
+                                     'Initial Mass': [enc_particles[0].mass, enc_particles[1].mass] | units.MSun,
+                                     'Emergent Particle': ejected_key, 'Final Mass': merger_mass | units.MSun})
+        coll_tracker = coll_tracker.append(df_coll_tracker, ignore_index = True)
+        coll_tracker.to_pickle(os.path.join(path+str('collision_events'), file_names))
 
     def energy_tracker(self, E0, Ek, Ep, time, app_time):
         """
@@ -84,12 +112,13 @@ class data_initialiser(object):
             arg_peri  = []
             asc_node  = []
             true_anom = []
+            neigh_key = []
 
             if i == 0 :
                 df_IMBH_vals = pd.Series({#'key_tracker': pset[i].key_tracker, 
                                           '{}'.format(time): [pset[i].key_tracker, pset[i].mass, pset[i].position, pset[i].velocity, 
-                                                              0 | units.J, 0 | units.J, [0,0], [0,0], [0,0], [0,0], 
-                                                             [0,0], [0,0]]})
+                                                              0 | units.J, 0 | units.J, [0,0,0], [0,0,0], [0,0,0], [0,0,0],
+                                                             [0,0,0], [0,0,0], [0,0,0]]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
 
             else:
@@ -103,8 +132,10 @@ class data_initialiser(object):
                 arg_peri.append(kepler_elements[5])
                 asc_node.append(kepler_elements[6])
                 true_anom.append(kepler_elements[7])
+                neigh_key.append(pset[0].key_tracker)
                 
-                neighbour_dist, nearest_parti = nearest_neighbour(pset[i], pset)
+                neighbour_dist, nearest_parti, second_nearest = nearest_neighbour(pset[i], pset)
+                neigh_key.append(nearest_parti.key_tracker)
                 bin_sys = Particles()
                 bin_sys.add_particle(pset[i])
                 bin_sys.add_particle(nearest_parti)
@@ -115,12 +146,27 @@ class data_initialiser(object):
                 arg_peri.append(kepler_elements[5])
                 asc_node.append(kepler_elements[6])
                 true_anom.append(kepler_elements[7])
+                neigh_key.append(nearest_parti.key_tracker)
+
+                hier_sys = Particles(1)
+                hier_sys[0].mass = bin_sys.mass.sum()
+                hier_sys[0].position = bin_sys.center_of_mass()
+                hier_sys[0].velocity = bin_sys.center_of_mass_velocity()
+                hier_sys.add_particle(second_nearest)
+                kepler_elements = orbital_elements_from_binary(hier_sys, G=constants.G)
+                semimajor.append(kepler_elements[2].value_in(units.parsec))
+                eccentric.append(kepler_elements[3])
+                inclinate.append(kepler_elements[4])
+                arg_peri.append(kepler_elements[5])
+                asc_node.append(kepler_elements[6])
+                true_anom.append(kepler_elements[7])
+                neigh_key.append(second_nearest.key_tracker)
 
                 parti_KE = 0.5*pset[i].mass*pset[i].velocity.length()**2
                 temp_PE = indiv_PE_all(pset[i], pset)
                 parti_PE = np.sum(temp_PE)
-                df_IMBH_vals = pd.Series({'{}'.format(time): [pset[i].key_tracker, pset[i].mass, pset[i].position, 
-                                                              pset[i].velocity, parti_KE, parti_PE, semimajor * 1 | units.parsec, 
+                df_IMBH_vals = pd.Series({'{}'.format(time): [pset[i].key_tracker, pset[i].mass, pset[i].position, pset[i].velocity, 
+                                                              parti_KE, parti_PE, neigh_key, semimajor * 1 | units.parsec, 
                                                               eccentric, inclinate, arg_peri, asc_node, true_anom, neighbour_dist]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
         IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
@@ -151,7 +197,7 @@ class data_initialiser(object):
 
         return LG_array
 
-    def stable_sim_tracker(self, pset, Ninj, Nmerge, merger_mass, time, int_string, deltaE):
+    def stable_sim_tracker(self, pset, Ninj, Nmerge, merger_mass, time, int_string, deltaE, pert):
 
         """
         Function which tracks information on the simulations which ended in stable state.
@@ -169,6 +215,7 @@ class data_initialiser(object):
 
         count = file_counter(int_string)
         SMBH_code = MW_SMBH()
+        path = '/home/s2009269/data1/HERMITE_Orbit_Data'
 
         stable_sim_tracker = pd.DataFrame()
         df_stablesim = pd.Series({'Initial Particles': (len(pset)-1), 'Injected Event': Ninj,
@@ -178,7 +225,4 @@ class data_initialiser(object):
                                   'Initial Particle Mass': pset[2:].mass.in_(units.MSun),
                                   'Change in Energy': deltaE})
         stable_sim_tracker = stable_sim_tracker.append(df_stablesim, ignore_index = True)
-        stable_sim_tracker.to_pickle('data/'+str(int_string)+'/stable_simulation/IMBH_'+str(int_string)+'_Ni'+str(len(pset)-1)+'_sim'+str(count)
-                                     +'_init_dist' +str('{:.3f}'.format(SMBH_code.distance.value_in(units.parsec)))
-                                     +'_equal_mass_' +str('{:.3f}'.format(pset[2].mass.value_in(units.MSun)))
-                                     +'_inj_'+str(Ninj)+'_merge_'+str(Nmerge)+'.pkl')
+        stable_sim_tracker.to_pickle(os.path.join(path+str('/stable_simulation'), 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(len(pset)-1)+'_sim'+str(count)+'_init_dist'+str('{:.3f}'.format(SMBH_code.distance.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(pset[2].mass.value_in(units.MSun)))+'.pkl'))

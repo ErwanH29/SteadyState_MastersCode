@@ -67,8 +67,7 @@ def file_counter(int_string):
     Function which counts the number of files in a directory.
     """
     
-    dir_path = '/home/erwanh/Desktop/Code_GRX_NGC_Close/data/Hermite/simulation_stats' #Hard-coded change for HErmtieGRX -> GRX
-    #count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
+    dir_path = '/home/s2009269/data1/HERMITE_Orbit_Data/simulation_stats/'
     count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
     return count
 

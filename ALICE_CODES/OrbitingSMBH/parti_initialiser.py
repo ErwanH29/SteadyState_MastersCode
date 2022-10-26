@@ -138,19 +138,19 @@ class IMBH_init(object):
         SMBH_parti = MW_SMBH()
         self.N += init_parti+1
         sys_mass = SMBH_parti.mass + self.N * self.mass
-        self.code_conv = nbody_system.nbody_to_si(sys_mass, SMBH_parti.distance)
+        self.code_conv = nbody_system.nbody_to_si(self.N * self.mass, SMBH_parti.distance)
+        crazy_ecc = True
 
         particles, rhmass = self.plummer_distr(init_parti)
         particles.velocity = self.velocityList() * (1 | units.AU/units.yr)
         particles.ejection = 0
         particles.coll_events = 0
-
+        particles.z *= 0.1
         particles.key_tracker = particles.key
         particles[1:].mass = self.mass
-        particles[0].mass = SMBH_parti.mass
+        #particles[0].mass = SMBH_parti.mass
         particles.radius = self.IMBH_radius(particles.mass)
         particles.collision_radius = self.coll_radius(particles.radius)
-        particles.scale_to_standard(convert_nbody=self.code_conv)
 
         min_dist = 0.17 | units.parsec
         max_dist = 0.23 | units.parsec
@@ -162,8 +162,17 @@ class IMBH_init(object):
                 parti_.position *= min_dist/parti_.position.length()
             if parti_.position.length() > max_dist:
                 parti_.position *= max_dist/parti_.position.length()
-        for parti_ in particles[1:]:
-            parti_.velocity += (constants.G*SMBH_parti.mass/parti_.position.length()).sqrt() * (parti_.position/parti_.position.length())
+
+        particles.scale_to_standard(convert_nbody=self.code_conv)
+
+        if (crazy_ecc):
+            for parti_ in particles[1:]:
+                parti_.vx += (constants.G*SMBH_parti.mass * (abs(parti_.y)/parti_.position.length()**2)).sqrt()
+                parti_.vy += (constants.G*SMBH_parti.mass * (abs(parti_.x)/parti_.position.length()**2)).sqrt()
+        else:
+            for parti_ in particles[1:]:
+                parti_.vx = (constants.G*SMBH_parti.mass * (abs(parti_.y)/parti_.position.length()**2)).sqrt()
+                parti_.vy = (constants.G*SMBH_parti.mass * (abs(parti_.x)/parti_.position.length()**2)).sqrt()
 
         particles[1:].mass = self.mass
         particles[0].mass = SMBH_parti.mass

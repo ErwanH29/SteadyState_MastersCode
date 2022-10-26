@@ -245,7 +245,7 @@ def energy_plotter(int_string):
     plot_ini = plotter_setup()
     count = file_counter(int_string)
     energy_tracker, col_len = file_opener('data/'+str(int_string)+'/energy/*')
-    IMBH_energy_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_energies/*')
+    #IMBH_energy_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_energies/*')
 
     time = np.empty((1, col_len, 1))
     Et_array = np.empty((1, col_len, 1))
@@ -255,9 +255,9 @@ def energy_plotter(int_string):
     collisions = np.empty((1, col_len, 1)) 
     merger_mass = np.empty((1, col_len, 1)) 
 
-    BE_array = np.empty((1, col_len, 1))
+    """BE_array = np.empty((1, col_len, 1))
     KE_array = np.empty((1, col_len, 1))
-    TotE_array = np.empty((1, col_len, 1))
+    TotE_array = np.empty((1, col_len, 1))"""
 
     for i in range(col_len):
         vals = energy_tracker.iloc[i]
@@ -269,10 +269,10 @@ def energy_plotter(int_string):
         collisions[0][i][0] = vals[5].value_in(units.Myr)
         merger_mass[0][i][0] = vals[6].value_in(units.MSun)
 
-        vals = IMBH_energy_tracker.iloc[i]
+        """vals = IMBH_energy_tracker.iloc[i]
         BE_array[0][i][0] = vals[1].value_in(units.J)
         KE_array[0][i][0] = vals[2].value_in(units.J)
-        TotE_array[0][i][0] = vals[3].value_in(units.J)    
+        TotE_array[0][i][0] = vals[3].value_in(units.J)"""    
 
     coll_id = np.argwhere(collisions > time[0][1])
     coll_id[:,0] = [i-1 for i in coll_id[:,0]]
@@ -292,7 +292,7 @@ def energy_plotter(int_string):
     ax1.set_xlim(time[0][5], time[0][-1])
     ax1.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
     ax2.set_ylabel(r'Energy [J]')
-    ax2.set_ylim(0.1*min(abs(BE_array[0][:])), 5*max(KE_array[0][:]))
+    #ax2.set_ylim(0.1*min(abs(BE_array[0][:])), 5*max(KE_array[0][:]))
 
     ax1.plot(time[0][:], dE_array[0][:], color = 'black', zorder = 1)
     if len(coll_id) > 0:
@@ -301,15 +301,15 @@ def energy_plotter(int_string):
         merger_mass = merger_mass[0][coll_id[:,1]]
         color_axes = ax1.scatter(collisions, dE_coll, c = merger_mass, zorder=3)
         plt.colorbar(color_axes, ax=ax1, label = r'Merger Mass [$M_{\odot}$]')
-    ax2.plot(time[0][5:], abs(BE_array[0][5:]), color = 'blue', label = 'Potential Energy (abs)', zorder = 1)
+    """ax2.plot(time[0][5:], abs(BE_array[0][5:]), color = 'blue', label = 'Potential Energy (abs)', zorder = 1)
     ax2.plot(time[0][5:], KE_array[0][5:], color = 'red', label = 'Kinetic Energy', zorder = 2)
-    ax2.plot(time[0][5:], abs(TotE_array[0][5:]), color = 'black', label = 'Total Energy (abs)', linestyle = '--', zorder = 3)
+    ax2.plot(time[0][5:], abs(TotE_array[0][5:]), color = 'black', label = 'Total Energy (abs)', linestyle = '--', zorder = 3)"""
     ax2.legend()
 
     if len(app_id) > 0:
         dE_app = dE_array[0][app_id[:,0]+1]
         IMBH_app = IMBH_birth[0][app_id[:,0]+1]
-        totE_app = abs(TotE_array[0][app_id[:,0]+1])
+        #totE_app = abs(TotE_array[0][app_id[:,0]+1])
 
         ax1.scatter(IMBH_app, dE_app, marker = 'x', color = 'red', zorder = 2)
         ax2.scatter(IMBH_app, totE_app, marker = 'x', color = 'red', zorder = 4)
@@ -329,10 +329,10 @@ def spatial_plotter(init_dist, int_string):
     count = file_counter(int_string)
     IMBH_tracker, col_len = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
     ejec_parti, col_len = file_opener('data/'+str(int_string)+'/no_addition/chaotic_simulation/*')
-    Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/lagrangians/*')
+    #Lag_tracker, col_len = file_opener('data/'+str(int_string)+'/lagrangians/*')
 
     time = np.empty((1, col_len, 1))
-    LG25_array  = np.empty((1, col_len, 1))
+    """LG25_array  = np.empty((1, col_len, 1))
     LG50_array  = np.empty((1, col_len, 1))
     LG75_array  = np.empty((1, col_len, 1))
     rtide_array = np.empty((1, col_len, 1))
@@ -345,7 +345,7 @@ def spatial_plotter(init_dist, int_string):
         LG50_array[0][i][0]  = vals[2].value_in(units.pc)
         LG75_array[0][i][0]  = vals[3].value_in(units.pc)
         rtide_array[0][i][0] = vals[4].value_in(units.pc)
-        relax_time[0][i][0]  = vals[5].value_in(units.Myr)
+        relax_time[0][i][0]  = vals[5].value_in(units.Myr)"""
 
     col_len = np.shape(IMBH_tracker)[1]-1
 
@@ -368,7 +368,7 @@ def spatial_plotter(init_dist, int_string):
                 line_x[i][j][0] = coords[0].value_in(units.pc)
                 line_y[i][j][0] = coords[1].value_in(units.pc)
                 line_z[i][j][0] = coords[2].value_in(units.pc)
-                tdyn[i][j][0] = tdynval.value_in(units.Myr)
+                #tdyn[i][j][0] = tdynval.value_in(units.Myr)
 
     ejected_x, ejected_y, ejected_z, evx, evy, evz = ejected_extract(IMBH_tracker, ejec_parti, col_len)
     for arr_ in [ejected_x, ejected_y, ejected_z]:
@@ -443,14 +443,14 @@ def spatial_plotter(init_dist, int_string):
 
     cluster_rad1 = plt.Circle((0,0), gc_code.gc_rad.value_in(units.pc), edgecolor = 'black', fill=False, ls = ':', label = 'Cluster Radius')
     cluster_rad2 = plt.Circle((0,0), gc_code.gc_rad.value_in(units.pc), edgecolor = 'black', fill=False, ls = ':', label = 'Cluster Radius')
-    tidal_rad   = plt.Circle((0,0), rtide_array[0][1], edgecolor = 'black', fill=False, ls = '-.', label = 'Tidal Radius')
+    #tidal_rad   = plt.Circle((0,0), rtide_array[0][1], edgecolor = 'black', fill=False, ls = '-.', label = 'Tidal Radius')
     ax1.add_patch(cluster_rad1)
-    ax2.add_patch(tidal_rad)
+    #ax2.add_patch(tidal_rad)
     ax2.add_patch(cluster_rad2)
     ax1.legend(loc = 1)
     ax2.legend(loc = 1)
 
-    ax5.plot(time[0][3:], rtide_array[0][3:], color = 'black',  label = r'$r_{tidal}$')
+    """ax5.plot(time[0][3:], rtide_array[0][3:], color = 'black',  label = r'$r_{tidal}$')
     ax5.plot(time[0][3:], LG25_array[0][3:],  color = 'red',   label = r'$r_{25,L}$')
     ax5.plot(time[0][3:], LG75_array[0][3:],  color = 'blue',  label = r'$r_{75,L}$')
     ax5.plot(time[0][4:], ejected_dist[0][3:], color = 'orange', label = 'Ejected Particle')
@@ -471,7 +471,7 @@ def spatial_plotter(init_dist, int_string):
     ax5.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.3f'))
     ax5.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
     ax5.set_xlim(time[0][3], time[0][-1])
-    ax5.set_ylim(0, 2*max(rtide_array[0]))
+    ax5.set_ylim(0, 2*max(rtide_array[0]))"""
     plt.savefig('figures/spatial_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()

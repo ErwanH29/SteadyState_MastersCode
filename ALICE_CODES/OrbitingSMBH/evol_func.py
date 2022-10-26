@@ -101,9 +101,12 @@ def nearest_neighbour(indivp, pset):
             vec_y = indivp.y - pset[i].y
             vec_z = indivp.z - pset[i].z
             dist = (vec_x**2+vec_y**2+vec_z**2).sqrt()
-            min_dist.append(dist)
+            min_dist.append(dist.value_in(units.parsec))
+    temp = np.sort(min_dist)
     index = np.where(min(min_dist))[0]
-    return min(min_dist), pset[index]
+    index2 = np.where(min_dist == temp[1])[0]
+
+    return min(min_dist), pset[index], pset[index2]
 
 def SMBH_filter(pset):
     return pset[pset.mass < 5*10**4 | units.MSun]
