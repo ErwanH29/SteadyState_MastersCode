@@ -42,31 +42,36 @@ def ejected_extract_traj(set, ejected, col_len):
     col_len: The number of time-steps simulated
     """
 
-    line_x = np.empty((1, col_len, 1))
-    line_y = np.empty((1, col_len, 1))
-    line_z = np.empty((1, col_len, 1))
+    merger = False
+    eject = False
 
-    line_vx = np.empty((1, col_len))
-    line_vy = np.empty((1, col_len))
-    line_vz = np.empty((1, col_len))
+    line_x = np.empty((col_len))
+    line_y = np.empty((col_len))
+    line_z = np.empty((col_len))
 
-    for i in range(len(set)):
-        if set.iloc[i][0][0] == ejected.iloc[0][5]: 
-            ejec_data = set.iloc[i]
-            ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
-            for j in range(col_len):
-                coords = ejec_data.iloc[j+1][2]
-                vel = ejec_data.iloc[-1][3]  #Only the final velocity is important
+    line_vx = np.empty((col_len))
+    line_vy = np.empty((col_len))
+    line_vz = np.empty((col_len))
+    
+    for i in range(len(set)): #Loop for particle that is merged
+        if isinstance(set.iloc[i][-1][0], float):
+            print('Simulation ended in merger')
+            merger = True
+            ejec_idx = i
 
-                line_x[0][j][0] = coords[0].value_in(units.pc)
-                line_y[0][j][0] = coords[1].value_in(units.pc)
-                line_z[0][j][0] = coords[2].value_in(units.pc)
+    for i in range(len(set)):      
+        if not (merger): #Loop for particle ejected but NOT bound
+            if set.iloc[i][-1][0] == ejected.iloc[0][4]: 
+                print('Simulation ended with ejection')
+                eject = True
+                ejec_idx = i
+    
+    if not (eject) and not (merger):
+        print('Simulation ended over the time limit')
+        for i in range(len(set)):
+            ejec_idx = 5       #Replace this with the most sustaining binary
 
-                line_vx[0][j] = vel[0].value_in(units.kms)
-                line_vy[0][j] = vel[1].value_in(units.kms)
-                line_vz[0][j] = vel[2].value_in(units.kms)
-
-    return line_x, line_y, line_z, line_vx, line_vy, line_vz
+    return ejec_idx
 
 def ejected_extract_final(set, ejected):
     """
@@ -126,7 +131,7 @@ def file_counter(int_string):
     Function which counts the number of files in a directory.
     """
     
-    dir_path = r'data/Hermite/GC/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
+    dir_path = r'data/Hermite/simulation_stats/' #Hard-coded change for HErmtieGRX -> GRX
     count = len(fnmatch.filter(os.listdir(dir_path), '*.*'))
     return count
 
@@ -163,9 +168,8 @@ def file_opener(file_string):
     filename = glob.glob(file_string)
     with open(os.path.join(max(filename, key=os.path.getctime)), 'rb') as input_file:
         temp_data = pkl.load(input_file)
-    temp_length = len(temp_data)
 
-    return temp_data, temp_length
+    return temp_data
 
 def file_reset(dir):
     """
