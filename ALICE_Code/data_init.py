@@ -121,7 +121,7 @@ class data_initialiser(object):
                                                              [0,0,0], [0,0,0], [0,0,0]]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
 
-            else:
+            if i != 0:
                 bin_sys = Particles()
                 bin_sys.add_particle(pset[i])
                 bin_sys.add_particle(pset[0])
@@ -170,7 +170,7 @@ class data_initialiser(object):
                                                               eccentric, inclinate, arg_peri, asc_node, true_anom, neighbour_dist]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
         IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
-
+       
         return IMBH_array
 
     def LG_tracker(self, clust_rad, clust_mass, no_stars, pset, time, gravity):

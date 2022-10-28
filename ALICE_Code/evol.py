@@ -43,6 +43,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
     if int_string == 'Hermite':
         code = Hermite(converter, number_of_workers = 6)
         pert = 'Newtonian'
+        code.particles.add_particles(parti)
 
     """else:
         perturbations = ["1PN_Pairwise", "1PN_EIH", "2.5PN_EIH"]
@@ -50,12 +51,13 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
         code = HermiteGRX(converter, number_of_workers = 18)
         code.parameters.perturbation = pert
         code.parameters.integrator = 'SymmetrizedRegularizedHermite'
+        code.large_particles.add_particles(parti[0])
+        code.small_particles.add_particles(parti[1:])
         print('Simulating with: ', pert)
         code.parameters.light_speed = constants.c"""
 
-    code.parameters.dt_param = 1e-3
+    code.parameters.dt_param = 1e-2
 
-    code.particles.add_particles(parti)
     code.commit_particles()
     stopping_condition = code.stopping_conditions.collision_detection
     stopping_condition.enable()
@@ -81,20 +83,18 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
     init_IMBH = N_parti-1
     extra_note = ''
 
-
-    parti_KE = code.particles.kinetic_energy()
-    parti_BE = code.particles.potential_energy()
-    if pert == 'Newtonian':
+    if pert == 'Newtonian':    
+        parti_KE = code.particles.kinetic_energy()
+        parti_BE = code.particles.potential_energy()
         E0p = parti_KE + parti_BE 
         E0 = E0p
     else: 
         E0 = code.get_total_energy_with(pert)[0]
 
-
     data_trackers = data_initialiser()
     energy_tracker = data_trackers.energy_tracker(E0p, parti_KE, parti_BE, time, 0 | units.s)
     IMBH_tracker = data_trackers.IMBH_tracker(parti, time, N_parti)
-    ejected_key_track = 000    
+    ejected_key_track = 000   
 
     while time < tend:
         eject  = 0
@@ -109,6 +109,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
         if iter % 1000 == 0:
             print('Iteration', iter)
             print('DeltaE: ', de)
+
         time += eta*tend
         channel_IMBH["to_gravity"].copy()
         code.evolve_model(time)
@@ -130,6 +131,8 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                 ejected_key_track = particle.key_tracker
                 ejected_mass = particle.mass
                 extra_note = 'Stopped due to particle ejection'
+                print("........Ejection Detected........")
+                print('Simulation will now stop')
                 break
 
         injbin = 0
@@ -146,22 +149,22 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                     enc_particles_set = Particles(particles=[stopping_condition.particles(0)[ci],
                                                          stopping_condition.particles(1)[ci]])
                     enc_particles = enc_particles_set.get_intersecting_subset_in(parti)
-                    merged_parti = merge_IMBH(parti, enc_particles, code.model_time)
+                    merged_parti = merge_IMBH(parti, enc_particles, code.model_time, int_string, code)
                     merger_mass = merged_parti.mass.sum()
                     cum_merger_mass += merger_mass
-                    parti.synchronize_to(code.particles)
+                    if int_string == 'Hermite':
+                        parti.synchronize_to(code.particles)
 
                     tcoll = time.in_(units.s) - eta*tend
                     energy_after = code.potential_energy + code.kinetic_energy
                     deltaE = abs(energy_after-energy_before)/abs(energy_before)
                     data_trackers.stable_sim_tracker(parti, injbin, merge, merger_mass, stab_timescale, int_string, deltaE, pert) 
-
+                    
                     ejected_key_track = parti[-1].key_tracker
                     extra_note = 'Stopped due to merger'
 
         channel_IMBH["from_gravity"].copy()     
-        rows = (len(parti))
-
+        rows = (len(parti)+Nenc)
         df_IMBH = pd.DataFrame()
         for i in range(len(parti)):
             for j in range(len(parti)):
@@ -176,7 +179,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                     true_anom = []
                     neigh_key = []
 
-                    if j == 0:
+                    if i == 0:
                         semimajor = [0, 0, 0]
                         eccentric = [0, 0, 0]
                         inclinate = [0, 0, 0]
@@ -240,11 +243,10 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                                                                   np.NaN | units.J, np.NaN | units.J, np.NaN | units.m, np.NaN,
                                                                   np.NaN, np.NaN, np.NaN , np.NaN, np.NaN]})
             df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
-
         IMBH_tracker = IMBH_tracker.append(df_IMBH, ignore_index=True)
         IMBH_tracker['{}'.format(time)] = IMBH_tracker['{}'.format(time)].shift(-rows)
         IMBH_tracker = IMBH_tracker.dropna(axis='rows')
-
+        
         parti_KE = code.particles.kinetic_energy()
         parti_BE = code.particles.potential_energy()
         if pert == 'Newtonian':
@@ -253,7 +255,9 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
         else: 
             Et = code.get_total_energy_with(pert)[0]
         de = abs(Et-E0)/abs(E0)
- 
+        print(de)
+        if iter > 20:
+            STOP
         if 20 < iter:
             dEs = abs(Et-energy_tracker.iloc[19][3])/abs(energy_tracker.iloc[19][3])
             df_energy_tracker = pd.Series({'Time': time.in_(units.kyr), 'Et': Et, 'dE': de, 'dEs': dEs, 

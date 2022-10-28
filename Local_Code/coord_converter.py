@@ -30,9 +30,10 @@ with open('GC_datafile.txt', 'r') as inp_:
         c = SkyCoord(line[1], line[2], unit=(u.hourangle, u.deg))
         ra_dec.append(c)
         helio_r.append(float(line[3])) #in kpc
+
 distances = []
-for i in range(len(ra_dec)):
-    distances.append(conv_coord(ra_dec[i].ra.radian, ra_dec[i].dec.radian, helio_r[i]))
+for ra_dec_, helio_dist_ in zip(ra_dec, helio_r):
+    distances.append(conv_coord(ra_dec.ra.radian, ra_dec_.dec.radian, helio_dist_))
 
 print(distances)
 print('Minimum distances to core of MW', min(distances))

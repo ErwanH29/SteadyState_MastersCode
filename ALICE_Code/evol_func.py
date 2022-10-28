@@ -52,34 +52,44 @@ def find_nearest(array, value):
     index = (np.abs(array - value)).argmin()
     return index
 
-def merge_IMBH(parti, particles_in_encounter, tcoll):
+def merge_IMBH(parti, parti_in_enc, tcoll, int_string, code):
     """
     Function which merges two particles if the collision stopping condition has been met
     
     Inputs:
-    parti:                    The complete particle set being simulated
-    particles_in_encounter:   The particles in the collision
-    tcoll:                    The time-stamp for which the particles collide at
-    outputs:                  Removal of two colliding particles, while addition of the merging product
+    parti:          The complete particle set being simulated
+    parti_in_enc:   The particles in the collision
+    tcoll:          The time-stamp for which the particles collide at
+    int_string:     String telling whether simulating Hermite or GRX (for the PN cross-terms)
+    code:           The integrator used
     """
 
-    com_pos = particles_in_encounter.center_of_mass()
-    com_vel = particles_in_encounter.center_of_mass_velocity()
+    com_pos = parti_in_enc.center_of_mass()
+    com_vel = parti_in_enc.center_of_mass_velocity()
 
     new_particle  = Particles(1)
-    if calc_momentum(particles_in_encounter[0]) > calc_momentum(particles_in_encounter[1]):
-        new_particle.key_tracker = particles_in_encounter[0].key
+    if calc_momentum(parti_in_enc[0]) > calc_momentum(parti_in_enc[1]):
+        new_particle.key_tracker = parti_in_enc[0].key
     else: 
-        new_particle.key_tracker = particles_in_encounter[1].key
+        new_particle.key_tracker = parti_in_enc[1].key
     
-    new_particle.mass = particles_in_encounter.total_mass()
+    new_particle.mass = parti_in_enc.total_mass()
     new_particle.collision_time = tcoll
     new_particle.position = com_pos
     new_particle.velocity = com_vel
     new_particle.radius = (2*constants.G*new_particle.mass)/(constants.c**2)
     new_particle.collision_radius = 3 * new_particle.radius
     parti.add_particles(new_particle)
-    parti.remove_particles(particles_in_encounter)
+    parti.remove_particles(parti_in_enc)
+
+    if int_string != 'Hermite':
+        code.small_particles.remove_particle(parti_in_enc[1])
+        if new_particle.mass > 1e6 | units.MSun:
+            code.large_particles.remove_particles(parti_in_enc[0])
+            code.large_particles.add_particles(new_particle)
+        else:
+            code.small_particles.remove_particles(parti_in_enc[0])
+            code.small_particles.add_particles(new_particle)
 
     return new_particle
 
@@ -97,13 +107,10 @@ def nearest_neighbour(indivp, pset):
         if indivp == pset[i]:
             pass
         else:
-            vec_x = indivp.x - pset[i].x
-            vec_y = indivp.y - pset[i].y
-            vec_z = indivp.z - pset[i].z
-            dist = (vec_x**2+vec_y**2+vec_z**2).sqrt()
-            min_dist.append(dist.value_in(units.parsec))
+            rel_pos = indivp.position - pset[i].position
+            min_dist.append(rel_pos.length().value_in(units.parsec))
     temp = np.sort(min_dist)
-    index = np.where(min(min_dist))[0]
+    index = np.where(min_dist == temp[0])[0]
     index2 = np.where(min_dist == temp[1])[0]
 
     return min(min_dist), pset[index], pset[index2]

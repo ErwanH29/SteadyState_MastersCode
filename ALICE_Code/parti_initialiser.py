@@ -15,7 +15,7 @@ class MW_SMBH(object):
     def __init__(self, mass = 4.e6 | units.MSun,
                  position = [0, 0, 0] | units.parsec,
                  velocity = [0, 0, 0] | (units.AU/units.yr),
-                 distance = 0.5 | units.parsec):
+                 distance = 0.2 | units.parsec):
 
         self.distance = distance
         self.mass = mass
@@ -115,7 +115,8 @@ class IMBH_init(object):
     def custom_mass(self, constant):
         return constant
 
-    def plummer_distr(self, N):
+    def plummer_distr(self, N, seed):
+        np.random.seed(seed)
         distr = new_plummer_model(N, convert_nbody = self.code_conv)
         rhmass = LagrangianRadii(distr)[6].in_(units.parsec)
         return distr, rhmass
@@ -125,14 +126,14 @@ class IMBH_init(object):
         beta = -9
         return new_king_model(N, W0 = beta, convert_nbody = converter)
 
-    def IMBH_first(self, init_parti):
+    def IMBH_first(self, init_parti, seed):
         """
         Function to initialise the first IMBH population.
         The first particle forms the center of the cluster
 
         Inputs:
         init_parti: The (2+N) number of IMBH particles you wish to simulate
-        converter:  Converter used to translate nbody_system to SI units
+        seed:       Seed for which initialises the system
         """
         
         SMBH_parti = MW_SMBH()
@@ -141,7 +142,7 @@ class IMBH_init(object):
         self.code_conv = nbody_system.nbody_to_si(self.N * self.mass, SMBH_parti.distance)
         crazy_ecc = True
 
-        particles, rhmass = self.plummer_distr(init_parti)
+        particles, rhmass = self.plummer_distr(self.N, seed)
         particles.velocity = self.velocityList() * (1 | units.AU/units.yr)
         particles.ejection = 0
         particles.coll_events = 0
