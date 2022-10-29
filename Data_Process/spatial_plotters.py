@@ -5,17 +5,17 @@ import matplotlib.ticker as mtick
 import matplotlib.animation as animation
 import numpy as np
 
-class plotter_setup():
-    def ejected_idx(self, int_string, dir):
+class plotter_setup(object):
+    def ejected_idx(self, int_string, spat):
         """
         Function to extract the index of the 'ejected/merged' particle
         
         Inputs:
         int_string: Choice of GRX/Hermite based on simulation
-        dir:        Boolean telling you whether it is a spatial plot (True) or other plot
+        spat:        Boolean telling you whether it is a spatial plot (True) or other plot
         """
 
-        if (dir):
+        if (spat):
             IMBH_tracker = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
             ejec_parti = file_opener('data/'+str(int_string)+'/no_addition/chaotic_simulation/*')
 
@@ -24,7 +24,7 @@ class plotter_setup():
             ejec_parti = file_opener('data/'+str(int_string)+'/spatial_plotters/chaotic_simulation/*')
 
         col_len = np.shape(IMBH_tracker)[1]
-        index = ejected_index(IMBH_tracker, ejec_parti, col_len)
+        index = ejected_index(IMBH_tracker, ejec_parti)
 
         return index
 
@@ -80,7 +80,8 @@ def animator(init_dist, int_string):
     Function to produce animations. WARNING: SLOW
     
     Inputs:
-    init_dist: The initial distance of the cluster to the central SMBH
+    init_dist:  The initial distance of the cluster to the central SMBH
+    int_string: String to delineate between GRX and Hermite data files
     """
 
     print('!!!!! You have chosen to animate. This will take a while !!!!!')
@@ -317,7 +318,7 @@ def energy_plotter(int_string):
     ax1.plot(time, abs(Et_array), color = 'black', label = r'$|E_{tot}|$', zorder = 1)
     ax1.plot(time, KE_array, color = 'red', label = r'$K_E$', zorder = 2)
     ax1.plot(time, abs(PE_array), color = 'blue', label = r'$|P_E|$', zorder = 3)
-    ax2.plot(time[:-2], dE_array[:-2], color = 'black')
+    ax2.plot(time[:-5], dE_array[:-5], color = 'black')
 
     ax1.set_ylim(0.5*min(abs(KE_array)), 5*max(abs(PE_array)))
     ax1.legend()
@@ -389,26 +390,36 @@ def spatial_plotter(int_string):
     fig = plt.figure(figsize=(12.5, 15))
     ax1 = fig.add_subplot(321)
     ax2 = fig.add_subplot(322)
+    ax3 = fig.add_subplot(323)
+    ax4 = fig.add_subplot(324)
     
     ax1.set_title('Overall System')
     ax2.set_title('Energy Error vs. Time')
     ax1.xaxis.set_major_locator(plt.MaxNLocator(3))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(3))
-    for ax_ in [ax1, ax2]:
+    for ax_ in [ax1, ax2, ax3, ax4]:
         plot_ini.tickers(ax_) 
 
     xaxis_lim = 1.05*np.nanmax(abs(line_x-line_x[0]))
     yaxis_lim = 1.05*np.nanmax(abs(line_y-line_y[0]))
+    zaxis_lim = 1.05*np.nanmax(abs(line_z-line_z[0]))
 
     ax1.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
     ax1.set_ylim(-abs(yaxis_lim), yaxis_lim)
+    ax3.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
+    ax3.set_ylim(-abs(zaxis_lim), zaxis_lim)
+    ax4.set_xlim(-abs(yaxis_lim), abs(yaxis_lim))
+    ax4.set_ylim(-abs(zaxis_lim), zaxis_lim)
+    ax2.set_yscale('log')
 
     ax1.set_xlabel(r'$x$ [pc]')
     ax1.set_ylabel(r'$y$ [pc]')
     ax2.set_xlabel(r'Time [Myr]')
     ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
-    ax2.set_yscale('log')
-
+    ax3.set_xlabel(r'$x$ [pc]')
+    ax3.set_ylabel(r'$z$ [pc]')
+    ax4.set_xlabel(r'$y$ [pc]')
+    ax4.set_ylabel(r'$z$ [pc]')
     iter = -1
     for i in range(len(IMBH_tracker)):
         iter += 1
@@ -417,28 +428,55 @@ def spatial_plotter(int_string):
 
         if i == 0:
             adapt_c = 'black'
-            ax1.scatter((line_x[i][:-1]-line_x[0][:-1]), (line_y[i][:-1]-line_y[0][:-1]), c = adapt_c, zorder = 4, s = 250)
-
+            ax1.scatter((line_x[i][:round(col_len**0.5)]-line_x[0][:round(col_len**0.5)]), 
+                        (line_y[i][:round(col_len**0.5)]-line_y[0][:round(col_len**0.5)]), 
+                         c = adapt_c, zorder = 1, s = 250)
+            ax3.scatter((line_x[i][:round(col_len**0.5)]-line_x[0][:round(col_len**0.5)]), 
+                        (line_z[i][:round(col_len**0.5)]-line_z[0][:round(col_len**0.5)]), 
+                         c = adapt_c, zorder = 1, s = 250)
+            ax4.scatter((line_z[i][:round(col_len**0.5)]-line_z[0][:round(col_len**0.5)]), 
+                        (line_y[i][:round(col_len**0.5)]-line_y[0][:round(col_len**0.5)]), 
+                         c = adapt_c, zorder = 1, s = 250)
         else:
-            ax1.scatter(line_x[i][-1]-line_x[0][-1], line_y[i][-1]-line_y[0][-1], c = colours[iter-2], 
-                        edgecolors = 'black', s = 70, zorder = 3)
-            ax1.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], c = colours[iter-2], s = 1, zorder = 1) 
-    ax2.plot(time[:-2], dE_array[:-2], color = 'black')
-    
+            ax1.scatter(line_x[i][round(col_len**0.5)]-line_x[0][round(col_len**0.5)], 
+                        line_y[i][round(col_len**0.5)]-line_y[0][round(col_len**0.5)], 
+                        c = colours[iter-2], edgecolors = 'black', s = 70, zorder = 3)
+            ax1.scatter(line_x[i][:round(col_len**0.5)]-line_x[0][:round(col_len**0.5)], 
+                        line_y[i][:round(col_len**0.5)]-line_y[0][:round(col_len**0.5)], 
+                        c = colours[iter-2], s = 1, zorder = 1) 
+
+            ax3.scatter(line_x[i][round(col_len**0.5)]-line_x[0][round(col_len**0.5)], 
+                        line_z[i][round(col_len**0.5)]-line_z[0][round(col_len**0.5)], 
+                        c = colours[iter-2], edgecolors = 'black', s = 70, zorder = 3)
+            ax3.scatter(line_x[i][:round(col_len**0.5)]-line_x[0][:round(col_len**0.5)], 
+                        line_z[i][:round(col_len**0.5)]-line_z[0][:round(col_len**0.5)], 
+                        c = colours[iter-2], s = 1, zorder = 1) 
+
+            ax4.scatter(line_y[i][round(col_len**0.5)]-line_y[0][round(col_len**0.5)], 
+                        line_z[i][round(col_len**0.5)]-line_z[0][round(col_len**0.5)], 
+                        c = colours[iter-2], edgecolors = 'black', s = 70, zorder = 3)
+            ax4.scatter(line_y[i][:round(col_len**0.5)]-line_y[0][:round(col_len**0.5)], 
+                        line_z[i][:round(col_len**0.5)]-line_z[0][:round(col_len**0.5)], 
+                        c = colours[iter-2], s = 1, zorder = 1) 
+    ax2.plot(time[:-5], dE_array[:-5], color = 'black')
     plt.savefig('figures/simulation_evolution_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()     
-
 
     fig = plt.figure(figsize=(8, 8))
     ax3D = fig.add_subplot(121, projection="3d")
     iter = -1
     for i in range(len(IMBH_tracker)):
         iter += 1
+        if iter > len(colours):
+            iter = 0
         if i == 0:
             pass
         else:
-            ax3D.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], line_z[i]-line_z[0], c = colours[iter-2], s = 1, zorder = 1)
+            ax3D.scatter(line_x[i][:round(col_len**0.5)]-line_x[0][:round(col_len**0.5)], 
+                         line_y[i][:round(col_len**0.5)]-line_y[0][:round(col_len**0.5)], 
+                         line_z[i][:round(col_len**0.5)]-line_z[0][:round(col_len**0.5)], 
+                         c = colours[iter-2], s = 1, zorder = 1)
     ax3D.scatter(0, 0, 0, color = 'black', s = 150, zorder = 2)
     ax3D.set_xlabel(r'$x$ [pc]')
     ax3D.set_ylabel(r'$y$ [pc]')
@@ -448,7 +486,7 @@ def spatial_plotter(int_string):
 
     return
 
-def bin_trip_systems(int_string):
+def ejected_evolution(int_string):
     
     plot_ini = plotter_setup()
     count = file_counter(int_string)
@@ -457,7 +495,7 @@ def bin_trip_systems(int_string):
     IMBH_tracker = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
 
     col_len = np.shape(IMBH_tracker)[1] - 1 # -1 to remove the NaN entry
-    smoothing = round(0.15 * col_len)
+    smoothing = round(0.01 * col_len)
     
     focus_idx = plot_ini.ejected_idx(int_string, True)
     ejec_particle = IMBH_tracker.iloc[focus_idx]
@@ -489,9 +527,9 @@ def bin_trip_systems(int_string):
         ejec_semi_bin[j]  = time_step[7][1].value_in(units.parsec)
         ejec_semi_ter[j]  = time_step[7][2].value_in(units.parsec)
 
-        ejec_ecc_SMBH[j] = 1-time_step[8][0]
-        ejec_ecc_bin[j]  = 1-time_step[8][1]
-        ejec_ecc_ter[j]  = 1-time_step[8][2]
+        ejec_ecc_SMBH[j] = (1-time_step[8][0])
+        ejec_ecc_bin[j]  = (1-time_step[8][1])
+        ejec_ecc_ter[j]  = (1-time_step[8][2])
 
         ejec_incl_SMBH[j] = time_step[9][0]
         ejec_incl_bin[j]  = time_step[9][1]
@@ -512,8 +550,8 @@ def bin_trip_systems(int_string):
     ejec_semi_SMBH /= (normalise)
     ejec_semi_bin  /= (normalise)
     ejec_semi_ter  /= (normalise)
-    ejec_semi_SMBH_smooth = plot_ini.moving_average(ejec_semi_SMBH, smoothing)
 
+    ejec_semi_SMBH_smooth = plot_ini.moving_average(ejec_semi_SMBH, smoothing)
     ejec_semi_bin_smooth = plot_ini.moving_average(ejec_semi_bin, smoothing)
     ejec_semi_ter_smooth = plot_ini.moving_average(ejec_semi_ter, smoothing)
 
@@ -529,7 +567,7 @@ def bin_trip_systems(int_string):
     nearest_smooth = plot_ini.moving_average(nearest_neigh, smoothing)
     SMBH_dist_smooth = plot_ini.moving_average(SMBH_dist, smoothing)
 
-    fig = plt.figure(figsize=(12.5, 8))
+    fig = plt.figure(figsize=(12.5, 10))
     ax1 = fig.add_subplot(221)
     ax2 = fig.add_subplot(222)
     ax3 = fig.add_subplot(223)
@@ -546,10 +584,10 @@ def bin_trip_systems(int_string):
     for ax_ in [ax1, ax2, ax3, ax4]:
         ax_.set_xlabel('Time [Myr]')
         plot_ini.tickers(ax_) 
+        ax_.set_xlim(0,max(time_smooth))
     ax1.set_ylim(0,1)
     ax2.set_ylim(0,1)
-    ax3.set_ylim(-90,90)
-    #ax4.set_ylim(0,1.2*max(nearest_smooth))
+    ax3.set_ylim(-180,180)
 
     ax1.plot(time_smooth, ejec_ecc_SMBH_smooth, color = 'black', label = 'w.r.t SMBH')
     ax1.plot(time_smooth, ejec_ecc_bin_smooth, color = 'red', label = 'w.r.t Binary')
@@ -563,13 +601,15 @@ def bin_trip_systems(int_string):
     ax3.plot(time_smooth, ejec_incl_bin_smooth, color = 'red')
     ax3.plot(time_smooth, ejec_incl_ter_smooth, color = 'blue')
 
+    ax4.plot(time, SMBH_dist, color = 'black', alpha = 0.3, linestyle = ':')
+    ax4.plot(time, nearest_neigh, color = 'red', alpha = 0.3, linestyle = ':')
     ax4.plot(time_smooth, nearest_smooth, color = 'red')
     ax4.plot(time_smooth, SMBH_dist_smooth, color = 'black')
 
     ax1.legend()
     plt.savefig('figures/bin_trip_evol_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     
-
-"""bin_trip_systems('Hermite')
+"""
 spatial_plotter('Hermite')
-energy_plotter('Hermite')"""
+energy_plotter('Hermite')
+ejected_evolution('Hermite')"""

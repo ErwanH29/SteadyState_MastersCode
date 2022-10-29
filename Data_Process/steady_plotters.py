@@ -86,7 +86,7 @@ class stability_plotters(object):
         ax.set_xlim(2.5,max(tot_pop)+1)
         ax.set_ylim(0, 1.1*max(np.add(Navg, std)))
         ax.set_ylabel(r'$t_{eject}$ [Myr]')
-        ax.set_title(r'Chaotic Black Hole Population vs. Stability Time')
+        ax.set_title(r'Spread in Stability Time')
         
         return ax
 
@@ -127,7 +127,7 @@ class stability_plotters(object):
         mtick_formatter = [mtick.FormatStrFormatter('%0.1f'), mtick.FormatStrFormatter('%0.0f')]
         ylims = [[0, 1.2*(ydata)], [0, 105]]
         y_labs = [r'$t_{eject}$ [Myr]', r'Percentage of Survival [%]']
-        title = [r'Black Hole Population vs. Average $t_{eject}$', r'Black Hole Population vs. Survivability Rate']
+        title = [r'Black Hole Population vs. Stability Time', r'Black Hole Population vs. Survivability Rate']
     
         for i in range(len(axis)):
             axis[i].set_xlabel(r'Number of IMBH [$N$]')
@@ -212,7 +212,7 @@ class stability_plotters(object):
             init_dist_idx_chaos = np.where((np.asarray(chaos_init_dist_data) == dist_))
             init_dist_idx_chaos_GRX = np.where((np.asarray(chaos_init_dist_data_GRX) == dist_))
 
-            fig = plt.figure(figsize=(12.5, 8))
+            fig = plt.figure(figsize=(8, 6))
             ax = fig.add_subplot(111)
 
             tot_pop  = [ ]   
@@ -238,15 +238,25 @@ class stability_plotters(object):
                 colours = next(coloursycler)
                 tot_pop.append(max(pop_size))
 
+                full_simul = []
                 for pop_, samp_ in zip(pop_size, pop_samples):
                     N_parti = np.argwhere(fin_parti == pop_)
                     N_parti_avg.append(np.mean(stab_time[N_parti]))
+                    idx = np.where(stab_time[N_parti] == 100)[0]
+                    ratio = len(idx)/len(stab_time[N_parti])
+                    full_simul.append(ratio)
                 N_parti_avg = np.asarray(N_parti_avg)
+                print('For Hermite, # of full simulations per population: ', pop_size.flatten(), full_simul)
 
+                full_simul = []
                 for pop_, samp_ in zip(pop_size_GRX, pop_samples_GRX):
                     N_parti = np.argwhere(fin_parti_GRX == pop_)
                     N_parti_avg_GRX.append(np.mean(stab_time_GRX[N_parti]))
+                    idx = np.where(stab_time_GRX[N_parti] == 100)[0]
+                    ratio = len(idx)/len(stab_time_GRX[N_parti])
+                    full_simul.append(ratio)
                 N_parti_avg_GRX = np.asarray(N_parti_avg_GRX)
+                print('For GRX, # of full simulations per population: ', pop_size_GRX.flatten(), full_simul)
 
                 ax.scatter(pop_size, N_parti_avg, color = 'red', edgecolor = 'black', zorder = 3,
                            label = r'Hermite')                
@@ -262,7 +272,7 @@ class stability_plotters(object):
             self.mean_plots([ax], pop_size, xints, max(N_parti_avg))
             plot_ini.tickers(ax)
 
-            """p0 = (2000, .1, 50)
+            p0 = (2000, .1, 50)
             pop_size = np.array([float(i) for i in pop_size])
             N_parti_avg = np.array([ float(i) for i in N_parti_avg])
 
@@ -270,11 +280,10 @@ class stability_plotters(object):
             params, cv = scipy.optimize.curve_fit(log_fit, pop_size, N_parti_avg, p0)
             slope, intercept = params
             red_slope = str('{:.2f}'.format(slope))
-            xtemp = np.linspace(2.5, 50, 1000)
+            xtemp = np.linspace(8, 105, 1000)
             ytemp = [log_fit(i, slope, intercept) for i in xtemp]
-            for ax_ in [ax11, ax12]:
-                ax_.plot(xtemp, ytemp, zorder = 1, color = 'black', ls = '-.')
-            ax11.text(2.8, 0.5, r'$t_{{surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')"""
+            ax.plot(xtemp, ytemp, zorder = 1, color = 'black', ls = '-.')
+            ax.text(8, 1.5, r'$t_{{surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')
 
             ax.set_xlim(5,105)
             ax.legend()
@@ -285,7 +294,7 @@ class stability_plotters(object):
                 y_max = []
 
                 plt.clf()
-                fig, ax = plt.subplots(figsize=(9,6))
+                fig, ax = plt.subplots(figsize=(8,6))
 
                 init_dist_idx = np.where((chaos_init_dist_data == dist_))
                 init_mass = chaos_init_mass_data[init_dist_idx]
@@ -320,7 +329,7 @@ class stability_plotters(object):
                     ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
                     ax.scatter(pop_size, N_parti_avg, color = 'black')
                     
-                    ax.text(75, 0.96*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
+                    ax.text(85, 0.96*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
                     xints = [i for i in range(1+int(max(tot_pop))) if i%10 == 0]
                     self.error_plots(ax, xints, tot_pop, N_parti_avg, std)
                     plot_ini.tickers(ax)
@@ -328,11 +337,7 @@ class stability_plotters(object):
                     ax.set_xlim(5, 105)
                     plt.savefig('figures/const_pop_chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
 
-
-string = 'GRX'
-
-#cst = stability_plotters()
-#cst.massdep_plotter()
-
+cst = stability_plotters()
+cst.massdep_plotter()
 
 

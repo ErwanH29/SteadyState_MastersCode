@@ -3,6 +3,7 @@ import pickle as pkl
 import numpy as np
 import glob
 import fnmatch
+import natsort
 import os
 
 def bulk_stat_extractor(file_string, rewrite):
@@ -15,58 +16,49 @@ def bulk_stat_extractor(file_string, rewrite):
     """
 
     filename = glob.glob(file_string)
-    filename = sorted(filename, key=lambda t: os.stat(t).st_mtime)
+    filename = natsort.natsorted(filename)
     data = [ ]
 
     if rewrite == 'N':
         for file_ in range(len(filename)):
             with open(filename[file_], 'rb') as input_file:
                 data.append(pkl.load(input_file))
+                
     else:
         for file_ in range(len(filename)):
             with open(filename[file_], 'rb') as input_file:
                 rewrite_file = pkl.load(input_file)
             data_pts = round((np.shape(rewrite_file)[1])/15)
-            rewrite_file = rewrite_file.drop(rewrite_file.iloc[:, :-1*data_pts], axis = 1) 
+            rewrite_file = rewrite_file.drop(rewrite_file.iloc[:, data_pts:-1*data_pts], axis = 1) 
             data.append(rewrite_file)
 
     return data
 
-def ejected_index(set, ejected):
-    """
-    Extracts index of the ejected particle
-    
-    Inputs:
-    set:     The complete particle set plotting
-    ejected: The ejected particle
-    """
+def ejected_stat_extractor(chaos_dir):
 
-    merger = False
-    eject = False
-    
-    for i in range(len(set)): #Loop for particle that is merged
-        if isinstance(set.iloc[i][-1][0], float):
-            print('Simulation ended in merger')
-            merger = True
-            ejec_idx = i
+    chaos_data = glob.glob(chaos_dir)
+    chaos_data = natsort.natsorted(chaos_data)
 
-    for i in range(len(set)):      
-        if not (merger): #Loop for particle ejected but NOT bound
-            if set.iloc[i][-1][0] == ejected.iloc[0][4]: 
-                print('Simulation ended with ejection')
-                eject = True
-                ejec_idx = i
-    
-    if not (eject) and not (merger):
-        print('Simulation ended over the time limit')
-        for i in range(len(set)):
-            ejec_idx = 5       #Replace this with the most sustaining binary
+    filt_IMBH = []
+    filt_Chaotic = []
 
-    return ejec_idx
+    for file_ in range(len(chaos_data)):
+            with open(chaos_data[file_], 'rb') as input_file:
+                data = pkl.load(input_file)
+                if data.iloc[0][-4] > 0:
+                    pass
+                else:
+                    filt_Chaotic.append(data)
+                    input_file = str(input_file)
+                    IMBH_data = glob.glob('data/Hermite/particle_trajectory/*'+str(input_file[95:105])+'*')
+                    with open(IMBH_data[0], 'rb') as input_file:
+                        data = pkl.load(input_file)
+                        filt_IMBH.append(data)
+    return filt_IMBH, filt_Chaotic
 
 def ejected_extract_final(set, ejected, ejec_merge):
     """
-    Extracts positional info on the ejected particle into an array
+    Extracts the final positional info on the ejected particle into an array
     
     Inputs:
     set:        The complete particle set plotting
@@ -76,40 +68,42 @@ def ejected_extract_final(set, ejected, ejec_merge):
 
     Nclose = 0
     if ejec_merge == 'E':
-        if ejected.iloc[0][6] != ejected.iloc[0][9]:    #Satisfied if a merging event occurs (#final =/= #initial particles)
-            for i in range(len(set)):
-                esc_vel = [ ]
-                if set.iloc[i][0][0] == ejected.iloc[0][4]: 
-                    ejec_data = set.iloc[i]   #Make data set of only ejected particle
-                    ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
-                    if len(ejec_data) > 3:
-                        for vel_ in [ejec_data.iloc[-3][3].value_in(units.kms), 
-                                    ejec_data.iloc[-2][3].value_in(units.kms), 
-                                    ejec_data.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
-                            esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
-                        idx = np.argwhere(esc_vel == max(esc_vel))
-                        idx = np.asarray([i-3 for i in idx])[0]
-                        esc_vel = esc_vel[idx[0]]
+        for i in range(len(set)):
+            esc_vel = [ ]
+            
+            if set.iloc[i][0][0] == ejected.iloc[0][4]: 
+                ejec_data = set.iloc[i]   #Make data set of only ejected particle
+                ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
+                if len(ejec_data) > 3:
+                    for vel_ in [ejec_data.iloc[-3][3].value_in(units.kms), 
+                                ejec_data.iloc[-2][3].value_in(units.kms), 
+                                ejec_data.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
+                        esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
+                    idx = np.argwhere(esc_vel == max(esc_vel))
+                    idx = np.asarray([i-3 for i in idx])[0]
+                    esc_vel = esc_vel[idx[0]]
 
+                else:
+                    for vel_ in [ejec_data.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
+                        esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
+                    idx = [-1]
+
+                xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
+                ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
+                zpos = (ejec_data.iloc[idx][0][2][2]-set.iloc[0][idx][0][2][2]).value_in(units.pc)
+
+                KE = ejec_data.iloc[-1][4].value_in(units.J)
+                PE = ejec_data.iloc[-1][5].value_in(units.J)
+                for j in range(len(ejec_data)):
+                    if j == 0:
+                        pass
                     else:
-                        for vel_ in [ejec_data.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
-                            esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
-                        idx = [-1]
-
-                    xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
-                    ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
-                    zpos = (ejec_data.iloc[idx][0][2][2]-set.iloc[0][idx][0][2][2]).value_in(units.pc)
-
-                    KE = ejec_data.iloc[idx][0][4].value_in(units.J)
-                    PE = ejec_data.iloc[idx][0][5].value_in(units.J)
-                    for j in range(len(ejec_data)):
-                        if j == 0:
-                            pass
-                        else:
-                            deltaKE = ejec_data.iloc[j][4]/ejec_data.iloc[j-1][4]
-                            if abs(deltaKE) > 10:
-                                Nclose += 1
-                    return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
+                        deltaKE = ejec_data.iloc[j][4]/ejec_data.iloc[j-1][4]
+                        if abs(deltaKE) > 10:
+                            Nclose += 1
+                Nmerge = ejected.iloc[0][10]
+                            
+                return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
         else:
             print('Simulation ended with merger')
 
@@ -151,7 +145,40 @@ def ejected_extract_final(set, ejected, ejec_merge):
                 Nmerge = ejected.iloc[0][10]
 
                 return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
-    return
+    return np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN
+
+
+def ejected_index(set, ejected):
+    """
+    Extracts index of the ejected particle
+    
+    Inputs:
+    set:     The complete particle set plotting
+    ejected: The ejected particle
+    """
+
+    merger = False
+    eject = False
+    
+    for i in range(len(set)): #Loop for particle that is merged
+        if isinstance(set.iloc[i][-1][0], float):
+            print('Simulation ended in merger')
+            merger = True
+            ejec_idx = i
+
+    for i in range(len(set)):      
+        if not (merger): #Loop for particle ejected but NOT bound
+            if set.iloc[i][-1][0] == ejected.iloc[0][4]: 
+                print('Simulation ended with ejection')
+                eject = True
+                ejec_idx = i
+    
+    if not (eject) and not (merger):
+        print('Simulation ended over the time limit')
+        for i in range(len(set)):
+            ejec_idx = 5       #Replace this with the most sustaining binary
+
+    return ejec_idx
 
 def file_counter(int_string):
     """
@@ -161,15 +188,15 @@ def file_counter(int_string):
     dir_path = 'data/'+str(int_string)+'/simulation_stats/'
     return len(fnmatch.filter(os.listdir(dir_path), '*.*'))
     
-def file_opener(file_string):
+def file_opener(dir):
     """
     Function which opens and reads the most recent pickle file
     
     Input:
-    file_string: The directory for which to access the file.
+    dir: The directory for which to access the file.
     """
 
-    filename = glob.glob(file_string)
+    filename = glob.glob(dir)
     with open(os.path.join(max(filename, key=os.path.getctime)), 'rb') as input_file:
         temp_data = pkl.load(input_file)
 
