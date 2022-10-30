@@ -70,8 +70,8 @@ class KE_PE_plotters(object):
         for i in range(len(file_IMBH)):
             ex[i], ey[i], ez[i], vesc[i], ejec_KE[i], ejec_PE[i], Nclose[i], \
             ejected[i] = ejected_extract_final(file_IMBH[i], file_ejec[i], 'E') #Change S to E
-
-        ejec_PE = np.asarray([PE_ + ((1000*1|units.MSun) * MW_code.get_potential_at_point(0, x * 1 | units.pc, y * 1 | units.pc, z * 1 | units.pc)).value_in(units.J) for PE_, x, y, z in zip(ejec_PE, ex, ey, ez)])
+        ejec_PE = np.asarray(ejec_PE)
+        #ejec_PE = np.asarray([PE_ + ((1000*1|units.MSun) * MW_code.get_potential_at_point(0, x * 1 | units.pc, y * 1 | units.pc, z * 1 | units.pc)).value_in(units.J) for PE_, x, y, z in zip(ejec_PE, ex, ey, ez)])
         
         if filter == 'B':
             idx = np.where(ejec_KE < 1e46)                   # Change to 1e45 when more data
@@ -163,7 +163,6 @@ class KE_PE_plotters(object):
                 plt.plot(linex, liney, color = 'black', linestyle = '-.')
                 plt.xlim(0,1.05)
                 plt.ylim(1.05*min(PE), 0)
-                print(PE)
                 #plt.yscale('symlog')
                 #plt.xscale('log')
                 plt.xlabel(r'$E_K/E_{{K, {}}}$'.format(str('max')))
@@ -313,7 +312,6 @@ class vejection(object):
                 indices = np.where((pop_ == in_pop))[0]
                 esc_vel = data.vesc[indices[0]]
                 n, bins, patches = ax.hist(esc_vel, 50, density=True, histtype = 'step', color=colors[iter], label = r'$N_{IMBH} = $'+str(pop_))
-                print(n)
             else:
                 pass
         ax.legend()
@@ -379,3 +377,12 @@ class event_tracker(object):
         xints = [i for i in range(1+int(max(in_pop))) if i %10 == 0]
         ax.set_xticks(xints)
         plt.savefig('figures/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')
+
+"""cst = KE_PE_plotters()
+cst.KEPE_plotter()
+
+cst = vejection()
+cst.vejec_histogram()
+cst.vejec_mean_plotter()
+
+cst = event_tracker()"""

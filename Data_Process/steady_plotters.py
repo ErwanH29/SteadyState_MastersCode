@@ -287,6 +287,7 @@ class stability_plotters(object):
 
             ax.set_xlim(5,105)
             ax.legend()
+            ax.xaxis.labelpad = 30
             plt.savefig('figures/const_population_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
 
         for dist_ in in_dist:
@@ -336,8 +337,8 @@ class stability_plotters(object):
 
                     ax.set_xlim(5, 105)
                     plt.savefig('figures/const_pop_chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
-
+"""
 cst = stability_plotters()
-cst.massdep_plotter()
+cst.massdep_plotter()"""
 
 

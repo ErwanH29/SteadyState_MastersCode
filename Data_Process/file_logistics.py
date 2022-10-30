@@ -147,7 +147,6 @@ def ejected_extract_final(set, ejected, ejec_merge):
                 return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
     return np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN
 
-
 def ejected_index(set, ejected):
     """
     Extracts index of the ejected particle

@@ -315,9 +315,9 @@ def energy_plotter(int_string):
     ax1.set_ylabel(r'Energy [J]')
     ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
 
-    ax1.plot(time, abs(Et_array), color = 'black', label = r'$|E_{tot}|$', zorder = 1)
-    ax1.plot(time, KE_array, color = 'red', label = r'$K_E$', zorder = 2)
-    ax1.plot(time, abs(PE_array), color = 'blue', label = r'$|P_E|$', zorder = 3)
+    ax1.plot(time, abs(Et_array), color = 'black', label = r'$|E_{tot}|$', zorder = 3)
+    ax1.plot(time, KE_array, color = 'red', label = r'$K_E$', zorder = 1)
+    ax1.plot(time, abs(PE_array), color = 'blue', label = r'$|P_E|$', zorder = 2)
     ax2.plot(time[:-5], dE_array[:-5], color = 'black')
 
     ax1.set_ylim(0.5*min(abs(KE_array)), 5*max(abs(PE_array)))
@@ -338,12 +338,13 @@ def spatial_plotter(int_string):
     count = file_counter(int_string)
 
     IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
-    col_len = np.shape(IMBH_tracker)[1]
+    energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
+    col_len = round(np.shape(IMBH_tracker)[1]**0.5)
+    parti_size = 20+len(IMBH_tracker)**-0.5
 
     line_x = np.empty((len(IMBH_tracker), col_len))
     line_y = np.empty((len(IMBH_tracker), col_len))
     line_z = np.empty((len(IMBH_tracker), col_len))
-
 
     for i in range(len(IMBH_tracker)):
         tIMBH_tracker = IMBH_tracker.iloc[i]
@@ -372,7 +373,6 @@ def spatial_plotter(int_string):
     for arr_ in [focus_x, focus_y, focus_z, line_x, line_y, line_z]:
         plot_ini.val_filter(arr_)
 
-    energy_tracker = file_opener('data/'+str(int_string)+'/energy/*')
     col_len = np.shape(energy_tracker)[0]
 
     time = np.empty((col_len - 1))
@@ -428,35 +428,26 @@ def spatial_plotter(int_string):
 
         if i == 0:
             adapt_c = 'black'
-            ax1.scatter((line_x[i][:round(col_len**0.5)]-line_x[0][:round(col_len**0.5)]), 
-                        (line_y[i][:round(col_len**0.5)]-line_y[0][:round(col_len**0.5)]), 
+            ax1.scatter((line_x[i]-line_x[0]), (line_y[i]-line_y[0]), 
                          c = adapt_c, zorder = 1, s = 250)
-            ax3.scatter((line_x[i][:round(col_len**0.5)]-line_x[0][:round(col_len**0.5)]), 
-                        (line_z[i][:round(col_len**0.5)]-line_z[0][:round(col_len**0.5)]), 
+            ax3.scatter((line_x[i]-line_x[0]), (line_z[i]-line_z[0]), 
                          c = adapt_c, zorder = 1, s = 250)
-            ax4.scatter((line_z[i][:round(col_len**0.5)]-line_z[0][:round(col_len**0.5)]), 
-                        (line_y[i][:round(col_len**0.5)]-line_y[0][:round(col_len**0.5)]), 
+            ax4.scatter((line_z[i]-line_z[0]), (line_y[i]-line_y[0]), 
                          c = adapt_c, zorder = 1, s = 250)
         else:
-            ax1.scatter(line_x[i][round(col_len**0.5)]-line_x[0][round(col_len**0.5)], 
-                        line_y[i][round(col_len**0.5)]-line_y[0][round(col_len**0.5)], 
-                        c = colours[iter-2], edgecolors = 'black', s = 70, zorder = 3)
-            ax1.scatter(line_x[i][:round(col_len**0.5)]-line_x[0][:round(col_len**0.5)], 
-                        line_y[i][:round(col_len**0.5)]-line_y[0][:round(col_len**0.5)], 
+            ax1.scatter(line_x[i][-1]-line_x[0][-1], line_y[i][-1]-line_y[0][-1], 
+                        c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+            ax1.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], 
                         c = colours[iter-2], s = 1, zorder = 1) 
 
-            ax3.scatter(line_x[i][round(col_len**0.5)]-line_x[0][round(col_len**0.5)], 
-                        line_z[i][round(col_len**0.5)]-line_z[0][round(col_len**0.5)], 
-                        c = colours[iter-2], edgecolors = 'black', s = 70, zorder = 3)
-            ax3.scatter(line_x[i][:round(col_len**0.5)]-line_x[0][:round(col_len**0.5)], 
-                        line_z[i][:round(col_len**0.5)]-line_z[0][:round(col_len**0.5)], 
+            ax3.scatter(line_x[i][-1]-line_x[0][-1], line_z[i][-1]-line_z[0][-1], 
+                        c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+            ax3.scatter(line_x[i]-line_x[0], line_z[i]-line_z[0], 
                         c = colours[iter-2], s = 1, zorder = 1) 
 
-            ax4.scatter(line_y[i][round(col_len**0.5)]-line_y[0][round(col_len**0.5)], 
-                        line_z[i][round(col_len**0.5)]-line_z[0][round(col_len**0.5)], 
-                        c = colours[iter-2], edgecolors = 'black', s = 70, zorder = 3)
-            ax4.scatter(line_y[i][:round(col_len**0.5)]-line_y[0][:round(col_len**0.5)], 
-                        line_z[i][:round(col_len**0.5)]-line_z[0][:round(col_len**0.5)], 
+            ax4.scatter(line_y[i][-1]-line_y[0][-1], line_z[i][-1]-line_z[0][-1], 
+                        c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+            ax4.scatter(line_y[i]-line_y[0], line_z[i]-line_z[0], 
                         c = colours[iter-2], s = 1, zorder = 1) 
     ax2.plot(time[:-5], dE_array[:-5], color = 'black')
     plt.savefig('figures/simulation_evolution_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
@@ -473,9 +464,9 @@ def spatial_plotter(int_string):
         if i == 0:
             pass
         else:
-            ax3D.scatter(line_x[i][:round(col_len**0.5)]-line_x[0][:round(col_len**0.5)], 
-                         line_y[i][:round(col_len**0.5)]-line_y[0][:round(col_len**0.5)], 
-                         line_z[i][:round(col_len**0.5)]-line_z[0][:round(col_len**0.5)], 
+            ax3D.scatter(line_x[i]-line_x[0], 
+                         line_y[i]-line_y[0], 
+                         line_z[i]-line_z[0], 
                          c = colours[iter-2], s = 1, zorder = 1)
     ax3D.scatter(0, 0, 0, color = 'black', s = 150, zorder = 2)
     ax3D.set_xlabel(r'$x$ [pc]')
@@ -495,7 +486,7 @@ def ejected_evolution(int_string):
     IMBH_tracker = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
 
     col_len = np.shape(IMBH_tracker)[1] - 1 # -1 to remove the NaN entry
-    smoothing = round(0.01 * col_len)
+    smoothing = round(0.1 * col_len)
     
     focus_idx = plot_ini.ejected_idx(int_string, True)
     ejec_particle = IMBH_tracker.iloc[focus_idx]
@@ -586,7 +577,6 @@ def ejected_evolution(int_string):
         plot_ini.tickers(ax_) 
         ax_.set_xlim(0,max(time_smooth))
     ax1.set_ylim(0,1)
-    ax2.set_ylim(0,1)
     ax3.set_ylim(-180,180)
 
     ax1.plot(time_smooth, ejec_ecc_SMBH_smooth, color = 'black', label = 'w.r.t SMBH')
@@ -609,7 +599,7 @@ def ejected_evolution(int_string):
     ax1.legend()
     plt.savefig('figures/bin_trip_evol_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     
-"""
-spatial_plotter('Hermite')
-energy_plotter('Hermite')
-ejected_evolution('Hermite')"""
+
+#spatial_plotter('Hermite')
+#energy_plotter('Hermite')
+#ejected_evolution('Hermite')
