@@ -53,6 +53,8 @@ def ejected_stat_extractor(chaos_dir):
                     IMBH_data = glob.glob('data/Hermite/particle_trajectory/*'+str(input_file[95:105])+'*')
                     with open(IMBH_data[0], 'rb') as input_file:
                         data = pkl.load(input_file)
+                        data_pts = round((np.shape(data)[1])/15)
+                        data = data.drop(data.iloc[:, data_pts:-1*data_pts], axis = 1)
                         filt_IMBH.append(data)
     return filt_IMBH, filt_Chaotic
 
@@ -160,15 +162,15 @@ def ejected_index(set, ejected):
     eject = False
     
     for i in range(len(set)): #Loop for particle that is merged
-        if isinstance(set.iloc[i][-1][0], float):
+        if isinstance(set.iloc[i][-1][0], float): #Will detect NAN if merger occurs
             print('Simulation ended in merger')
             merger = True
             ejec_idx = i
 
-    for i in range(len(set)):      
-        if not (merger): #Loop for particle ejected but NOT bound
-            if set.iloc[i][-1][0] == ejected.iloc[0][4]: 
-                print('Simulation ended with ejection')
+    if not (merger) and ejected.iloc[0][-2] != 1e8 | units.yr: 
+        print('Simulation ended with ejection')
+        for i in range(len(set)):   
+            if set.iloc[i][-1][0] == ejected.iloc[0][4]: #Loop for particle ejected but NOT bound
                 eject = True
                 ejec_idx = i
     

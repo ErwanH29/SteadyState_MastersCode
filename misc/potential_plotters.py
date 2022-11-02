@@ -1,37 +1,49 @@
 from amuse.ext.galactic_potentials import MWpotentialBovy2015
-from parti_initialiser import *
+from amuse.lab import *
 import numpy as np
 import matplotlib.pyplot as plt
-import glob, os
-import pickle as pkl
+import matplotlib.ticker as mtick
 
 def potential_plotters():
     """
     Function to plot the potentials present in the simulation
     """
     
-    SMBH_code = MW_SMBH()
     MWG_code  = MWpotentialBovy2015()
 
-    dist_range = np.linspace(-0.1, 0.1, 10000) | units.parsec
+    dist_range = np.linspace(-2, 2, 10000) | units.parsec
     test_mass  = 100 | units.MSun
-    r = 0.01 | units.parsec
+    r = 0.1 | units.parsec
 
-    SMBH_potential = [(-test_mass*SMBH_code.get_potential_at_point(0, (i+r), (i+r), r*0.01**2)).value_in(units.J) for i in dist_range]
-    MWG_potential  = [(-test_mass*MWG_code.get_potential_at_point(0 | units.kpc, (i+r), (i+r), r*0.01**2)).value_in(units.J) for i in dist_range]
-    GC_potential   = [(-test_mass*GC_code.get_potential_at_point(0, i, i, r*0.01**2)).value_in(units.J) for i in dist_range]
-    cum_potential  = [i+j+z for i,j,z in zip(GC_potential, SMBH_potential, MWG_potential)]
+    SMBH_potential = [(-test_mass*(-constants.G*(4*10**6 | units.MSun))/(abs(i))).value_in(units.J) for i in dist_range]
+    MWG_potential  = [(-test_mass*MWG_code.get_potential_at_point(0 | units.kpc, (i+r), (i+r), r*0.01**2)).value_in(units.J) for i in dist_range]    
+    cum_potential  = [i+j for i,j in zip(SMBH_potential, MWG_potential)]
 
-    plt.title('Potential Wells Used in the Simulation')
-    plt.plot(dist_range.value_in(units.parsec), SMBH_potential, color = 'black', linestyle = '--', label = r'SMBH (m = $4\times10^6 M_{\odot}$)')
-    plt.plot(dist_range.value_in(units.parsec), MWG_potential, color = 'black', linestyle = ':', label = 'Milky Way [Bovy (2015)]')
-    plt.plot(dist_range.value_in(units.parsec), GC_potential, color = 'black', linestyle = '-.', label = 'Globular Cluster')
-    plt.plot(dist_range.value_in(units.parsec), cum_potential, color = 'C0', label = 'Cumulative Potential')
-    plt.xlabel(r'$R_c$ [parsec]')
-    plt.ylabel(r'Binding Energy [Joules]')
+    #MW domiantes potential at r ~ 0.002pc. The esc. velocity for this distance is:
+    vesc = np.sqrt(2)*np.sqrt(abs(MWG_code.get_potential_at_point(0 | units.kpc, (r), (r), r))).in_(units.pc/units.yr)
+    print('Escape vel.: ', vesc)
+    #Thus the crossing time for my ejection condition is:
+    tcross = ((2 | units.parsec)/vesc).in_(units.yr)
+    print('Cross time', tcross, '. \nThis is: ', (tcross/1000).value_in(units.yr), ' timesteps.')
+
+    fig, ax = plt.subplots()
+    ax.yaxis.set_ticks_position('both')
+    ax.xaxis.set_ticks_position('both')
+    ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+    ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+    ax.tick_params(axis="y", which = 'both', direction="in")
+    ax.tick_params(axis="x", which = 'both', direction="in") 
+
+    ax.set_title('Potential Wells Used in the Simulation')
+    ax.plot(dist_range.value_in(units.parsec), SMBH_potential, color = 'blue', label = r'SMBH (m = $4\times10^6 M_{\odot}$)')
+    ax.plot(dist_range.value_in(units.parsec), MWG_potential, color = 'red', label = 'Milky Way [Bovy (2015)]')
+    ax.plot(dist_range.value_in(units.parsec), cum_potential, color = 'black', label = 'Cumulative Potential')
+    ax.set_xlabel(r'$R_c$ [parsec]')
+    ax.set_ylabel(r'Binding Energy [Joules]')
+    ax.set_xlim(3e-4, 2)
     plt.legend()
-    plt.xlim(-0.05, 0.05)
-    plt.yscale('log')
+    ax.set_yscale('log')
+    ax.set_xscale('log')
     plt.savefig('figures/potentials_used.pdf', dpi = 300)
 
 def find_nearest(array, value):
@@ -67,3 +79,5 @@ def velocityList():
     plt.xlim(0,100)
     plt.legend()
     plt.savefig('figures/BasicMB.pdf', dpi = 300)
+
+potential_plotters()

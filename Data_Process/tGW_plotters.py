@@ -1,9 +1,8 @@
-from time import time
 from amuse.lab import *
 from spatial_plotters import *
 from file_logistics import *
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
+import matplotlib.gridspec as gridspec
 import numpy as np
 
 class bin_tert_systems(object):
@@ -61,7 +60,7 @@ class bin_tert_systems(object):
                             val -=1
                         self.init_pop.append(val)
 
-                        if sim_data.iloc[parti_][-2][8][1] < 1 and sim_data.iloc[parti_][-2][6][1] < 0.15 | units.parsec:    #Second Nearest binary and only look if eccentricity < 1
+                        if sim_data.iloc[parti_][-2][8][1] < 1 and abs(sim_data.iloc[parti_][-2][7][1]) < 0.15 | units.parsec:    #Second Nearest binary and only look if eccentricity < 1
                             if sim_data.iloc[parti_][-2][6][1] == sim_data.iloc[0][0][0]:                    #Do not consider SMBH
                                 pass
                             else:
@@ -77,8 +76,8 @@ class bin_tert_systems(object):
                                 self.mass_bin.append([sim_data.iloc[0][0][1], m2])
 
                         for k in range(np.shape(sim_data)[1]):
-                            if sim_data.iloc[parti_][k][-1] < 2e-3:    # 2e-3 pc = 500 AU and corresponds to ~5e42 J, a large KE when looking at their typical values
-                                Nenc += 1
+                            if sim_data.iloc[parti_][k][-1] < 5e-3:    # 5e-3 pc ~ 1000 AU and corresponds to ~5e42 J, a large KE when looking at their typical values
+                                Nenc += 1/2
                         self.close_enc.append(Nenc)
     
     def gw_calc(self, semi, ecc, m1, m2):
@@ -109,53 +108,75 @@ class bin_tert_systems(object):
         semi_SMBH = np.asarray([i.value_in(units.parsec) for i in self.semi_SMBH_fin])
         ecc_SMBH  = np.asarray([np.log10(i) for i in np.asarray(self.ecc_SMBH_fin)])
 
-        index_excess = np.where(tcomp > 1)[0]
-        index_merger = np.where(tcomp <= 1)[0]
-        cbar_min = min(tcomp)
-        cbar_max = max(tcomp)
+        tcomp_crop = tcomp[tcomp<1e9]
+        index_excess_crop = np.where(tcomp_crop > 1)[0]
+        index_merger_crop = np.where(tcomp_crop <= 1)[0]
+        tgw_SMBH_fin_crop = tgw_SMBH_fin[tcomp<1e9]
+        tgw_SMBH_ini_crop = tgw_SMBH_ini[tcomp<1e9]
+        tgw_SMBH_fin_ratio = tgw_SMBH_fin / self.tH
+        tgw_SMBH_ini_ratio = tgw_SMBH_ini / self.tH
+        
+        exc_norm_tgw_fin_crop = tgw_SMBH_fin_crop[index_excess_crop] / max(tgw_SMBH_ini_crop)
+        exc_norm_tgw_ini_crop = tgw_SMBH_ini_crop[index_excess_crop] / max(tgw_SMBH_ini_crop)
+        mer_norm_tgw_fin_crop = tgw_SMBH_fin_crop[index_merger_crop] / max(tgw_SMBH_ini_crop)
+        mer_norm_tgw_ini_crop = tgw_SMBH_ini_crop[index_merger_crop] / max(tgw_SMBH_ini_crop)
+
+        xlist = np.linspace(min(np.log10(tgw_SMBH_ini_crop / max(tgw_SMBH_ini_crop))), max(np.log10(tgw_SMBH_ini / max(tgw_SMBH_ini))))
+
+        cbar_min = min(tcomp_crop)
+        cbar_max = max(tcomp_crop)
         normalise = plt.Normalize(np.log10(cbar_min), np.log10(cbar_max))
 
-        exc_norm_tgw_fin = tgw_SMBH_fin[index_excess] / max(tgw_SMBH_ini)
-        exc_norm_tgw_ini = tgw_SMBH_ini[index_excess] / max(tgw_SMBH_ini)
+        plt.figure(figsize=(12, 4))
+        gs = gridspec.GridSpec(1, 2)
+        ax1 = plt.subplot(gs[0,0])
+        ax2 = plt.subplot(gs[0,1])
+        plt.set_title('Evolution of Merging Timescale \n for Individual Particles')
+        
+        ax1.set_ylabel(r'$log_{10}(t_{GW,f}/$max $t_{GW,0})$')
+        ax1.set_xlabel(r'$log_{10}(t_{GW,0}/$max $t_{GW,0})$')
+        ax2.set_ylabel(r'$log_{10}(t_{GW,f}/t_H)$')
+        ax2.set_xlabel(r'$log_{10}(t_{GW,0}/t_H)$')
+        for ax_ in [ax1, ax2]:
+            plot_init.tickers(ax_)
+        ax1.scatter(np.log10(exc_norm_tgw_ini_crop), np.log10(exc_norm_tgw_fin_crop), edgecolors = 'black', c = np.log10(tcomp_crop[index_excess_crop]), norm = normalise)
+        ax1.scatter(np.log10(mer_norm_tgw_ini_crop), (np.log10(mer_norm_tgw_fin_crop)), marker = 'X', c = np.log10(tcomp_crop[index_merger_crop]), norm = normalise)
+        ax1.plot(xlist, xlist, linestyle = ':', color = 'black')
+        plt.colorbar(ax=ax1).set_label(r'$\log_{10}(t_{GW}/t_H)$') #Change to tGW/tbin for later
 
-        mer_norm_tgw_fin = tgw_SMBH_fin[index_merger] / max(tgw_SMBH_ini)
-        mer_norm_tgw_ini = tgw_SMBH_ini[index_merger] / max(tgw_SMBH_ini)
+        xlist = np.linspace(0, 1.1*max(np.log10(tgw_SMBH_ini_ratio)))
 
-        xlist = np.linspace(min(np.log10(tgw_SMBH_ini / max(tgw_SMBH_ini))), max(np.log10(tgw_SMBH_ini / max(tgw_SMBH_ini))))
+        bin2d_sim, xedges_s, yedges_s, image = ax2.hist2d(np.log10(tgw_SMBH_fin_ratio), np.log10(tgw_SMBH_ini_ratio), bins=(50,50), \
+                                                         range=([0, 1.1*np.log10(max(tgw_SMBH_fin_ratio))],[0, 1.1*np.log10(max(tgw_SMBH_ini_ratio))]))
+        bin2d_sim /= np.max(bin2d_sim)
+        extent = [0, 1.1*np.log10(max(tgw_SMBH_fin_ratio)), 0, 1.1*np.log10(max(tgw_SMBH_ini_ratio))]
+        contours = ax.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
 
-        fig, ax = plt.subplots()
-        ax.set_ylabel(r'$log_{10}(t_{GW,f}/$max $t_{GW,0})$')
-        ax.set_xlabel(r'$log_{10}(t_{GW,0}/$max $t_{GW,0})$')
-        plot_init.tickers(ax)
-        plt.scatter(np.log10(exc_norm_tgw_ini), np.log10(exc_norm_tgw_fin), edgecolors = 'black', c = np.log10(tcomp[index_excess]), norm = normalise)
-        plt.scatter(np.log10(mer_norm_tgw_ini), (np.log10(mer_norm_tgw_fin)), marker = 'X', c = np.log10(tcomp[index_merger]), norm = normalise)
-        ax.plot(xlist, xlist, linestyle = ':', color = 'black')
-        plt.colorbar().set_label(r'$\log_{10}(t_{GW}/t_H)$') #Change to tGW/tbin for later
-        #ax.set_xlim(0,1)
-        #ax.set_ylim(-4,0)
+        ax2.plot(xlist, xlist, linestyle = ':', color = 'white')
         plt.savefig('figures/tgw_SMBH_evol.pdf', dpi=300, bbox_inches='tight')
 
         #DO THE SAME FOR GRX
         fig, ax = plt.subplots()
-        bin2d_sim, xedges_s, yedges_s, image = ax.hist2d(semi_SMBH, ecc_SMBH, bins=(100,100), range=([0, 1.1*max(semi_SMBH)],[min(ecc_SMBH), 0]))
+        bin2d_sim, xedges_s, yedges_s, image = ax.hist2d(semi_SMBH, ecc_SMBH, bins=(50,50), range=([0, 1.1*max(semi_SMBH)],[min(ecc_SMBH), 0]))
         bin2d_sim /= np.max(bin2d_sim)
-        extent = [0, 1.1*max(semi_SMBH), min(ecc_SMBH), 0]
+        extent = [-0.1, 1.2*max(semi_SMBH), 1.2*min(ecc_SMBH), -0.1]
         contours = ax.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
         ax.set_ylabel(r'$\log_{10}(1-e)$')
         ax.set_xlabel(r'$a$ [pc]')
         ax.set_ylim(min(ecc_SMBH), 0)
+        plot_init.tickers(ax)
         plt.savefig('figures/ecc_semi_SMBH_histogram.pdf', dpi=300, bbox_inches='tight')
 
         #DO THE SAME FOR GRX
         fig, ax = plt.subplots()
-        bin2d_sim, xedges_s, yedges_s, image = ax.hist2d(self.close_enc, np.log10(tgw_evol_SMBH), bins=(100,100), range=([0, 1.1*max(self.close_enc)],[min(np.log10(tgw_evol_SMBH)), 1.1*np.max(np.log10(tgw_evol_SMBH))]))
+        bin2d_sim, xedges_s, yedges_s, image = ax.hist2d(np.log10(self.close_enc), np.log10(tgw_evol_SMBH), bins=(50,50), range=([0, 1.1*max(np.log10(self.close_enc))],[min(np.log10(tgw_evol_SMBH)), 1.1*np.max(np.log10(tgw_evol_SMBH))]))
         bin2d_sim /= np.max(bin2d_sim)
-        extent = [0, 1.1*max(self.close_enc), 1.1*min(np.log10(tgw_evol_SMBH)), 1.1*np.max(np.log10(tgw_evol_SMBH))]
+        extent = [-0.1, 1.2*max(np.log10(self.close_enc)), 1.2*min(np.log10(tgw_evol_SMBH)), 1.2*np.max(np.log10(tgw_evol_SMBH))]
         contours = ax.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-
         ax.set_xlabel(r'$N_{enc}$')
         ax.set_ylabel(r'$\log_{10}(t_{GW,f}/t_{GW,0})$')
-        ax.set_xlim(0, 1.1*max(self.close_enc))
+        ax.set_xlim(0, 1.1*max(np.log10(self.close_enc)))
+        plot_init.tickers(ax)
         plt.savefig('figures/semi_tgw_Smbh_evolution_histogram.pdf', dpi=300, bbox_inches='tight')
         plt.clf()
 
@@ -176,9 +197,9 @@ class bin_tert_systems(object):
         ax.set_xlabel(r'IMBH Population [$N$]')
         ax.set_ylabel(r'$\log_{10}(t_{GW,f}/t_{GW,0}$)')
         ax.set_ylim(0, 1.1*max(avg_tgw))
+        plot_init.tickers(ax)
         plt.colorbar(colour_axes, ax = ax, label = r'# Close Encounters')
         plt.savefig('figures/pop_tgwevol_enc_plot.pdf', dpi=300, bbox_inches='tight')
-
 
     def semi_ecc_bin_gw_plotter(self):
         """
@@ -196,24 +217,27 @@ class bin_tert_systems(object):
             tgw_bin_fin.append(grav_ftimescale)
             tgw_bin_SMBH.append(grav_SMBH_timescale)
         tgw_evol_bin = np.asarray([i/j for i, j in zip(tgw_bin_fin, tgw_bin_SMBH)])
-        ecc_evol_bin = np.asarray([i/j for i, j in zip(self.ecc_bin_fin, self.ecc_bin_fin)])
 
         tcomp = np.asarray([i/self.tH for i in min(tgw_bin_fin, tgw_bin_SMBH)])
         semi_bin = np.asarray([i.value_in(units.parsec) for i in self.semi_bin_fin])
         ecc_bin  = np.asarray([np.log10(i) for i in np.asarray(self.ecc_bin_fin)])
 
-        index_excess = np.where(tcomp > 1)[0]
-        index_merger = np.where(tcomp <= 1)[0]
-        cbar_min = 0.1*min(tgw_evol_bin)
-        cbar_max = 1.1*max(tgw_evol_bin)
-        normalise = plt.Normalize(np.log10(cbar_min), np.log10(cbar_max))
+        index_excess = np.where(tcomp >= 1)[0]
+        index_merger = np.where(tcomp < 1)[0]
+        min_norm = min(np.min(tgw_evol_bin[index_excess]), np.min(tgw_evol_bin[index_merger]))
+        max_norm = max(np.max(tgw_evol_bin[index_excess]), np.max(tgw_evol_bin[index_merger]))
+        normalise = plt.Normalize(np.log10(min_norm), np.log10(max_norm))
 
         #DO THE SAME FOR GRX
         fig, ax = plt.subplots()
         ax.set_ylabel(r'$\log_{10}(1-e)$')
         ax.set_xlabel(r'$\log_{10}a$ [pc]')
         plot_init.tickers(ax)
-        plt.scatter(np.log10(semi_bin[index_excess]), (ecc_bin[index_excess]), edgecolors = 'black', c = (tgw_evol_bin[index_excess]), norm = normalise)
-        plt.scatter(np.log10(semi_bin[index_merger]), (ecc_bin[index_merger]), marker = 'X', edgecolors='black', c = (tgw_evol_bin[index_merger]), norm = normalise)
+        plt.scatter(np.log10(semi_bin[index_excess]), (ecc_bin[index_excess]), edgecolors = 'black', c = (np.log10(tgw_evol_bin[index_excess])), norm = normalise)
+        plt.scatter(np.log10(semi_bin[index_merger]), (ecc_bin[index_merger]), marker = 'X', edgecolors='black', c = (np.log10(tgw_evol_bin[index_merger])), norm = normalise)
         plt.colorbar().set_label(r'$\log_{10}(t_{GW,bin}/t_{GW,SMBH})$') #Change to tGW/tbin for later
         plt.savefig('figures/semi_ecc_bin_plot.pdf', dpi=300, bbox_inches='tight')
+
+"""
+cst = bin_tert_systems()
+cst.semi_ecc_SMBH_gw_plotter()"""

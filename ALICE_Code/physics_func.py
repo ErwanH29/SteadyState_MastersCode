@@ -64,7 +64,7 @@ def indiv_PE_all(indivp, set):
         if indivp == comp_:
             pass
         else:
-            distance = (indivp.position.length()-comp_.position.length())
+            distance = (indivp.position-comp_.position).length()
             if distance == 0 | units.m:
                pass
             else:

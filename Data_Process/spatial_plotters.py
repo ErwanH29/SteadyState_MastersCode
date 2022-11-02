@@ -6,27 +6,19 @@ import matplotlib.animation as animation
 import numpy as np
 
 class plotter_setup(object):
-    def ejected_idx(self, int_string, spat):
+    def ejected_idx(self, int_string):
         """
         Function to extract the index of the 'ejected/merged' particle
         
         Inputs:
         int_string: Choice of GRX/Hermite based on simulation
-        spat:        Boolean telling you whether it is a spatial plot (True) or other plot
+        output:     Row index of the ejected particle
         """
 
-        if (spat):
-            IMBH_tracker = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
-            ejec_parti = file_opener('data/'+str(int_string)+'/no_addition/chaotic_simulation/*')
+        IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
+        ejec_parti = file_opener('data/'+str(int_string)+'/spatial_plotters/chaotic_simulation/*')
 
-        else:
-            IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
-            ejec_parti = file_opener('data/'+str(int_string)+'/spatial_plotters/chaotic_simulation/*')
-
-        col_len = np.shape(IMBH_tracker)[1]
-        index = ejected_index(IMBH_tracker, ejec_parti)
-
-        return index
+        return ejected_index(IMBH_tracker, ejec_parti)
 
     def moving_average(self, array, smoothing):
         """
@@ -35,6 +27,7 @@ class plotter_setup(object):
         Inputs:
         array:     Array consisting of variable for which to produce running average of
         smoothing: Number of elements to average over
+        output:    Smoothened array
         """
 
         value = np.cumsum(array, dtype=float)
@@ -52,7 +45,26 @@ class plotter_setup(object):
         ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.tick_params(axis="y", which = 'both', direction="in")
-        ax.tick_params(axis="x", which = 'both', direction="in")    
+        ax.tick_params(axis="x", which = 'both', direction="in")
+
+        return ax
+
+    def tickers_pop(self, ax, pop):
+        """
+        Function to setup axis for population plots
+        """
+
+        xints = [i for i in range(1+int(max(pop))) if i % 10 == 0]
+
+        ax.set_xlabel(r'IMBH Population [$N$]')
+        ax.yaxis.set_ticks_position('both')
+        ax.xaxis.set_ticks_position('both')
+        ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.tick_params(axis="y", which = 'both', direction="in")
+        ax.tick_params(axis="x", which = 'both', direction="in")     
+        ax.set_xticks(xints)
+        ax.set_xlim(min(xints)-5, max(xints)+5)
+
         return ax
         
     def val_filter(self, arr):
@@ -272,12 +284,14 @@ def animator(init_dist, int_string):
 def energy_plotter(int_string):
     """
     Function to plot the energy evolution of the system
+
+    output: Energy evolution plot of the system
     """
 
     plot_ini = plotter_setup()
     count = file_counter(int_string)
     energy_tracker = file_opener('data/'+str(int_string)+'/energy/*')
-    col_len = np.shape(energy_tracker)[0]
+    col_len = np.shape(energy_tracker)[0]**0.5
 
     time = np.empty((col_len - 1))
     Et_array = np.empty((col_len - 1))
@@ -332,6 +346,8 @@ def energy_plotter(int_string):
 def spatial_plotter(int_string):
     """
     Function to plot the evolution of the system
+
+    output: The spatial evolution of the system
     """
 
     plot_ini = plotter_setup()
@@ -339,7 +355,7 @@ def spatial_plotter(int_string):
 
     IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
     energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
-    col_len = round(np.shape(IMBH_tracker)[1]**0.5)
+    col_len = round(np.shape(IMBH_tracker)[1])#**0.5)
     parti_size = 20+len(IMBH_tracker)**-0.5
 
     line_x = np.empty((len(IMBH_tracker), col_len))
@@ -357,7 +373,7 @@ def spatial_plotter(int_string):
                 line_y[i][j] = coords[1].value_in(units.pc)
                 line_z[i][j] = coords[2].value_in(units.pc)
 
-    focus_idx = plot_ini.ejected_idx(int_string, False)
+    focus_idx = plot_ini.ejected_idx(int_string)
     focus_particle = IMBH_tracker.iloc[focus_idx]
 
     focus_x = np.empty((col_len))
@@ -370,10 +386,9 @@ def spatial_plotter(int_string):
         focus_y[j] = coords[1].value_in(units.pc)
         focus_z[j] = coords[2].value_in(units.pc)
 
+
     for arr_ in [focus_x, focus_y, focus_z, line_x, line_y, line_z]:
         plot_ini.val_filter(arr_)
-
-    col_len = np.shape(energy_tracker)[0]
 
     time = np.empty((col_len - 1))
     dE_array = np.empty((col_len - 1))
@@ -450,6 +465,7 @@ def spatial_plotter(int_string):
             ax4.scatter(line_y[i]-line_y[0], line_z[i]-line_z[0], 
                         c = colours[iter-2], s = 1, zorder = 1) 
     ax2.plot(time[:-5], dE_array[:-5], color = 'black')
+    ax4.scatter(focus_y[-1]-line_y[0][-1], focus_z[-1]-line_z[0][-1], s = 250, color = 'red', zorder = 5)
     plt.savefig('figures/simulation_evolution_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()     
@@ -478,17 +494,23 @@ def spatial_plotter(int_string):
     return
 
 def ejected_evolution(int_string):
+    """
+    Function which plots various Kepler elements of the IMBH particle stopping the simulation
+    
+    output: Plots of the inclination,semi-major axis, nearest neighbour and eccentricity of the 
+            merged/ejected particle relative to the SMBH, nearest neighbour and second-nearest neighbour
+    """
     
     plot_ini = plotter_setup()
     count = file_counter(int_string)
 
-    energy_tracker = file_opener('data/'+str(int_string)+'/energy/*')
-    IMBH_tracker = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
+    IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
+    energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
 
     col_len = np.shape(IMBH_tracker)[1] - 1 # -1 to remove the NaN entry
     smoothing = round(0.1 * col_len)
     
-    focus_idx = plot_ini.ejected_idx(int_string, True)
+    focus_idx = plot_ini.ejected_idx(int_string)
     ejec_particle = IMBH_tracker.iloc[focus_idx]
     SMBH_data = IMBH_tracker.iloc[0]
 
@@ -579,6 +601,7 @@ def ejected_evolution(int_string):
     ax1.set_ylim(0,1)
     ax3.set_ylim(-180,180)
 
+    ax1.plot(time, ejec_ecc_SMBH, color = 'black', alpha = 0.3, linestyle = ':')
     ax1.plot(time_smooth, ejec_ecc_SMBH_smooth, color = 'black', label = 'w.r.t SMBH')
     ax1.plot(time_smooth, ejec_ecc_bin_smooth, color = 'red', label = 'w.r.t Binary')
     ax1.plot(time_smooth, ejec_ecc_ter_smooth, color = 'blue', label = 'w.r.t Tertiary')
@@ -599,7 +622,6 @@ def ejected_evolution(int_string):
     ax1.legend()
     plt.savefig('figures/bin_trip_evol_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     
-
 #spatial_plotter('Hermite')
 #energy_plotter('Hermite')
 #ejected_evolution('Hermite')

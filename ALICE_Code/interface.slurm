@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=SteadyStateBH_Orbits_100
+#SBATCH --job-name=SteadyStateBH_Orbits_ALICE_Code_1020
 #SBATCH --export=NONE
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
 #SBATCH --mail-user="ehochart@gmail.com"
 #SBATCH --mail-type="ALL"
-#SBATCH --time=22:00:00
-#SBATCH --partition=cpu-medium
+#SBATCH --time=120:00:00
+#SBATCH --partition=cpu-long
 #SBATCH --nodes=1
 #SBATCH --ntasks=18
 

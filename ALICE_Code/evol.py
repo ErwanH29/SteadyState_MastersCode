@@ -41,7 +41,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
     initial_set = parti.copy()
 
     if int_string == 'Hermite':
-        code = Hermite(converter, number_of_workers = 6)
+        code = Hermite(converter, number_of_workers = 18)
         pert = 'Newtonian'
         code.particles.add_particles(parti)
 
@@ -91,6 +91,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
     else: 
         E0 = code.get_total_energy_with(pert)[0]
 
+
     data_trackers = data_initialiser()
     energy_tracker = data_trackers.energy_tracker(E0p, parti_KE, parti_BE, time, 0 | units.s)
     IMBH_tracker = data_trackers.IMBH_tracker(parti, time, N_parti)
@@ -109,12 +110,12 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
         if iter % 1000 == 0:
             print('Iteration', iter)
             print('DeltaE: ', de)
-
+  
         time += eta*tend
         channel_IMBH["to_gravity"].copy()
         code.evolve_model(time)
-
-        for particle in SMBH_filter(parti):
+        
+        for particle in parti[1:]:
             rel_vel = particle.velocity - parti[0].velocity
             dist_core = particle.position - parti[0].position
 
@@ -122,11 +123,17 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
             vel_vect  = np.sqrt(np.dot(rel_vel, rel_vel))
             curr_traj = (np.dot(dist_core, rel_vel))/(dist_vect * vel_vect) #Movement towards SMBH
 
-            parti_KE = 0.5*particle.mass*(particle.velocity.length())**2
+            parti_KE = 0.5*particle.mass*(rel_vel.length())**2
             temp_PE = indiv_PE_all(particle, parti)
             parti_BE = np.sum(temp_PE)
 
-            if parti_KE > abs(parti_BE) and particle.position.length() > 0.4 | units.parsec and curr_traj > 0:
+            bin_sys = Particles()
+            bin_sys.add_particle(particle)
+            bin_sys.add_particle(parti[0])
+            kepler_elements = orbital_elements_from_binary(bin_sys, G=constants.G)
+            eccentricity = kepler_elements[3]
+
+            if parti_KE > abs(parti_BE) and dist_core.length() > 2 | units.parsec and curr_traj > 0 and eccentricity > 1:
                 eject = 1
                 ejected_key_track = particle.key_tracker
                 ejected_mass = particle.mass
@@ -162,7 +169,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                     
                     ejected_key_track = parti[-1].key_tracker
                     extra_note = 'Stopped due to merger'
-
+        
         channel_IMBH["from_gravity"].copy()     
         rows = (len(parti)+Nenc)
         df_IMBH = pd.DataFrame()
@@ -170,7 +177,6 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
             for j in range(len(parti)):
                 if IMBH_tracker.iloc[i][0][0] == parti[j].key_tracker:
                     neighbour_dist, nearest_parti, second_nearest = nearest_neighbour(parti[j], parti)
-
                     semimajor = []
                     eccentric = []
                     inclinate = []
@@ -178,7 +184,6 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                     asc_node  = []
                     true_anom = []
                     neigh_key = []
-
                     if i == 0:
                         semimajor = [0, 0, 0]
                         eccentric = [0, 0, 0]
@@ -228,7 +233,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                         neigh_key.append(second_nearest.key_tracker)
 
 
-                    parti_KE = 0.5*parti[j].mass*parti[j].velocity.length()**2
+                    parti_KE = 0.5*parti[j].mass*((parti[j].velocity-parti[0].velocity).length())**2
                     temp_PE = indiv_PE_all(parti[j], parti)
                     parti_PE = np.sum(temp_PE)
                     df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].key_tracker, parti[j].mass, parti[j].position, parti[j].velocity, 
@@ -255,9 +260,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
         else: 
             Et = code.get_total_energy_with(pert)[0]
         de = abs(Et-E0)/abs(E0)
-        print(de)
-        if iter > 20:
-            STOP
+        
         if 20 < iter:
             dEs = abs(Et-energy_tracker.iloc[19][3])/abs(energy_tracker.iloc[19][3])
             df_energy_tracker = pd.Series({'Time': time.in_(units.kyr), 'Et': Et, 'dE': de, 'dEs': dEs, 
