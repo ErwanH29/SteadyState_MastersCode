@@ -11,7 +11,7 @@ class loss_cone(object):
     """
 
     def __init__(self):
-        self.IMBH_tracker = bulk_stat_extractor('data/Hermite/particle_trajectory_temp/*', 'Y')
+        self.IMBH_tracker = bulk_stat_extractor('data/Hermite/particle_trajectory/*', 'Y')
         self.no_data = len(self.IMBH_tracker)
 
         self.SMBH_mass = self.IMBH_tracker[0].iloc[0][1][1]
@@ -36,6 +36,9 @@ class loss_cone(object):
         return angMom_val
 
     def data_extractor(self):
+        """
+        Function which extracts needed data for the angular momentum calculations
+        """
 
         for j in range(self.no_data):
             sim_data = self.IMBH_tracker[j]
@@ -43,14 +46,14 @@ class loss_cone(object):
                 if parti_ == 0:  # Don't care for SMBH
                     pass
                 else:
-                    self.init_pop.append((np.shape(self.IMBH_tracker[j]))[0])
                     if isinstance(sim_data.iloc[parti_][-1][0], np.uint64):           # Neglect removed particle
+                        self.init_pop.append((np.shape(self.IMBH_tracker[j]))[0])
                         angL_val = 0
                         for col_ in range(np.shape(sim_data)[1]-1):
                             semi_val = sim_data.iloc[parti_][col_][7][0]
                             ecc_val = (1-sim_data.iloc[parti_][col_][8][0])
                             angL_val += self.ang_momentum(semi_val, ecc_val)
-                        angL_val /= np.shape(sim_data)[1]
+                        angL_val /= np.shape(sim_data)[1] - 1                         # Average change per kyr
                         self.angL_avg.append(angL_val)
 
                         semi_val_init = sim_data.iloc[parti_][2][7][0]
@@ -62,28 +65,14 @@ class loss_cone(object):
                         ecc_val_fin = 1-sim_data.iloc[parti_][-2][8][0]
                         angL_fin_val = self.ang_momentum(semi_val_fin, ecc_val_fin)
                         self.angL_fin.append(angL_fin_val)
-                    else:
-                        angL_val = 0
-                        for col_ in range(np.shape(sim_data)[1]-1):
-                            semi_val = sim_data.iloc[parti_][col_][7][0]
-                            ecc_val = (1-sim_data.iloc[parti_][col_][8][0])
-                            angL_val += self.ang_momentum(semi_val, ecc_val)
-                        angL_val /= np.shape(sim_data)[1]
-                        self.angL_avg.append(angL_val)
-
-                        semi_val_init = sim_data.iloc[parti_][2][7][0]
-                        ecc_val_init = 1-sim_data.iloc[parti_][2][8][0]
-                        angL_init_val = self.ang_momentum(semi_val_init, ecc_val_init)
-                        self.angL_init.append(angL_init_val)
-
-                        semi_val_fin = sim_data.iloc[parti_][-3][7][0]
-                        ecc_val_fin = 1-sim_data.iloc[parti_][-3][8][0]
-                        angL_fin_val = self.ang_momentum(semi_val_fin, ecc_val_fin)
-                        self.angL_fin.append(angL_fin_val)
 
         return self.angL_avg, self.angL_init, self.angL_fin
 
     def log_ratio(self):
+        """
+        Function to normalise all the angular momentum data to make it more presentable
+        """
+
         angL_avg, angL_init, angL_fin = self.data_extractor()
 
         angL_avg = np.log10(self.angL_avg)
@@ -95,11 +84,21 @@ class loss_cone(object):
         return angL_avg, angL_init, angL_fin
 
     def lcone_fininit_plotter(self):
+        """
+        Plotting function aimed to show the loss-cone evolution during all simulations
+        """
 
         plot_ini = plotter_setup()
 
         angL_avg, angL_init, angL_fin = self.log_ratio()
         angL_avg = np.asarray(angL_avg)
+        angL_init = np.asarray(angL_init)
+        init_pop = np.asarray(self.init_pop)
+
+        angL_itemp = np.asarray([i**10 for i in angL_init])
+        angL_ftemp = np.asarray([i**10 for i in angL_fin])
+        filter_val = (abs(angL_itemp - angL_ftemp)/angL_itemp)
+        idx = np.argwhere(filter_val > 5e-1)
         
         xline = np.linspace(1, 1.1*max(angL_init))
 
@@ -116,45 +115,20 @@ class loss_cone(object):
             ax_.axhline(1, color = colours[iter])
             ax_.axvline(1, color = colours[iter])
             ax_.plot(xline, xline, color = colours[iter], linestyle = ':')
-            plot_ini.tickers(ax_)
+            ax_.set_xlim(0.95*min(angL_init), 1.01*max(angL_init))
+            ax_.set_ylim(0.95*min(angL_fin),  1.01*max(angL_fin))
+        plot_ini.tickers(ax2, 'hist')
+        plot_ini.tickers(ax2, 'plot')
 
-        bin2d_sim, xedges_s, yedges_s, image = ax2.hist2d(angL_init, angL_fin, bins=(20, 20), range=([0.75*min(angL_init),1.1*max(angL_init)],[0.75*min(angL_fin), 1.1*max(angL_fin)]))
-        extent = [0,max(angL_init), 0, max(angL_fin)]
+        bin2d_sim, xedges_s, yedges_s, image = ax2.hist2d(angL_init, angL_fin, bins=(100, 100), range=([0.95*min(angL_init),1.01*max(angL_init)],[0.95*min(angL_fin), 1.01*max(angL_fin)]))
+        extent = [0,1.01*max(angL_init), 0, 1.01*max(angL_fin)]
         bin2d_sim /= np.max(bin2d_sim)
         contours = ax2.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-        colour_axes = ax1.scatter(angL_init, angL_fin, c = self.init_pop, edgecolors='black')
+        colour_axes = ax1.scatter(angL_init[idx], angL_fin[idx], c = init_pop[idx], edgecolors='black')
+        ax1.text(1.1, 1.01, r'$\|\Delta L\|/L_i > 0.5$')
         plt.colorbar(colour_axes, ax=ax1, label = r'IMBH Population [$N$]')
         plt.savefig('figures/loss_cone_evolution.pdf', dpi=300, bbox_inches='tight')
         plt.clf()
-
-    def lcone_evolution_plotter(self):
-
-        angL_avg, angL_init, angL_fin = self.log_ratio
-        angL_avg = np.asarray(angL_avg)
-
-        init_pop = []
-        for pop_ in self.init_pop:
-            if pop_%10 == 0:
-                init_pop.append(pop_)
-            else:
-                init_pop.append(pop_-1)
-        init_pop = np.unique(init_pop)
-        avg_angL = np.empty(len(init_pop))
-
-        iter = -1
-        for pop_ in init_pop:
-            iter += 1            
-            indices = np.where((init_pop == pop_))[0]
-            avg_angL[iter] = np.mean(angL_avg[indices])
-        avg_angL /= max(avg_angL)
-
-        plot_ini = plotter_setup()
-        fig, ax = plt.subplots()
-        plot_ini.tickers_pop(ax, self.init_pop)
-        ax.set_ylabel(r'$\langle \Delta L\rangle / \langle \Delta L\rangle_{max}$')
-        ax.scatter(init_pop, avg_angL, color = 'red', edgecolors = 'black', label = 'Hermite')
-        ax.legend()
-        plt.savefig('figures/avg_N_loss_cone_evolution.pdf', dpi=300, bbox_inches='tight')
 
     def lcone_timescale(self):
         angL_avg, angL_init, angL_fin = self.data_extractor()
@@ -170,24 +144,24 @@ class loss_cone(object):
                 init_pop.append(pop_-1)
         init_pop = np.unique(init_pop)
         avg_angL_timescale = np.empty(len(init_pop))
+        avg_angL_replenish = np.empty(len(init_pop))
 
         iter = -1
         for pop_ in init_pop:
             iter += 1            
             indices = np.where((init_pop == pop_))[0]
-            avg_angL_timescale[iter] = 1000*np.mean(angL_init[indices]-self.SMBH_angL)/np.mean(angL_avg[indices])
+            avg_angL_timescale[iter] = (1000)*np.mean(angL_init[indices]-self.SMBH_angL)/np.mean(angL_avg[indices])
+            avg_angL_replenish[iter] = avg_angL_timescale[iter]/pop_
 
         plot_ini = plotter_setup()
-        fig, ax = plt.subplots()
-        plot_ini.tickers_pop(ax, self.init_pop)
-        ax.set_ylabel(r'$t_{LC, repl}$ [Myr]')
-        ax.scatter(init_pop, avg_angL_timescale, color = 'red', edgecolors = 'black', label = 'Hermite')
-        #ax.hline()
-        ax.legend()
-        plt.savefig('figures/avg_N_loss_cone_evolution.pdf', dpi=300, bbox_inches='tight')
-
-        
-cst = loss_cone()
-cst.lcone_timescale()
-cst.lcone_fininit_plotter()
-cst.lcone_evolution_plotter()
+        fig = plt.figure(figsize=(12.5, 5))
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        for ax_ in [ax1, ax2]:
+            plot_ini.tickers_pop(ax_, self.init_pop)
+        ax1.set_ylabel(r'$t_{repl,rate}$ [Myr]')
+        ax1.scatter(init_pop, avg_angL_replenish, color = 'red', edgecolors = 'black', label = 'Hermite')
+        ax2.set_ylabel(r'$\langle t_{LC, repl}\rangle$ [Myr]')
+        ax2.scatter(init_pop, avg_angL_timescale, color = 'red', edgecolors = 'black')
+        ax1.legend()
+        plt.savefig('figures/avg_N_loss_cone_tscale_repl.pdf', dpi=300, bbox_inches='tight')

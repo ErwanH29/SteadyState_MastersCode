@@ -42,10 +42,10 @@ def df_timescale(dist, dispvel, IMBH_mass):
     return 1.9 * 10 **9 * ((dist)/5000)**2 * (dispvel)/200 * 10**8/(IMBH_mass)
 
 #Units in MSun
-MW_bulge = 2*10**10
-avg_cluster = 10**5
-avg_stellarL = [0.4, 0.6]
-clust_effL = [0.05, 0.1]
+MW_bulge = 2*10**10                           #Taken from Bovy 2015
+avg_cluster = 10**5                           #Taken from TB2008
+avg_stellarL = [0.4, 0.6]                     #Average of Kroupa and Salpeter mass DF
+clust_effL = [0.05, 0.1]                      #Taken from Zhang and Fall 1999
 cluster_eff = 0.25
 no_clusterS = avg_cluster/avg_stellarL[0]
 IMBH_pop(MW_bulge, 0.2, 0.5)

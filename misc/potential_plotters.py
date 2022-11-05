@@ -38,13 +38,13 @@ def potential_plotters():
     ax.plot(dist_range.value_in(units.parsec), SMBH_potential, color = 'blue', label = r'SMBH (m = $4\times10^6 M_{\odot}$)')
     ax.plot(dist_range.value_in(units.parsec), MWG_potential, color = 'red', label = 'Milky Way [Bovy (2015)]')
     ax.plot(dist_range.value_in(units.parsec), cum_potential, color = 'black', label = 'Cumulative Potential')
-    ax.set_xlabel(r'$R_c$ [parsec]')
-    ax.set_ylabel(r'Binding Energy [Joules]')
+    ax.set_xlabel(r'$r$ [pc]')
+    ax.set_ylabel(r'$|P_E|$ [J]')
     ax.set_xlim(3e-4, 2)
     plt.legend()
     ax.set_yscale('log')
     ax.set_xscale('log')
-    plt.savefig('figures/potentials_used.pdf', dpi = 300)
+    plt.savefig('figures/potentials_used.pdf', dpi = 300, bbox_inches='tight')
 
 def find_nearest(array, value):
     """

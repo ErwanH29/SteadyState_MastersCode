@@ -124,7 +124,7 @@ class KE_PE_plotters(object):
             for ax_ in [ax1, ax2]:
                 ax_.plot(linex, liney, color = 'black', linestyle = '-.', zorder = 1)
                 ax_.set_xlabel(r'$E_K/E_{{K, {}}}$'.format(str('max')))
-                plot_ini.tickers(ax_)
+                plot_ini.tickers(ax_, 'plot')
                 
             if hist == 'Y':
                 bin2d_sim, xedges_s, yedges_s, image = ax2.hist2d(KE, PE, bins=(200, 200), range=([0,1.1],[1.1*min(PE),0]))
@@ -175,7 +175,7 @@ class KE_PE_plotters(object):
                 plt.colorbar(colour_axes, ax = ax, label = r'Final Distance to Core [pc]')
                 ax.set_xlabel(r'$E_K/E_{{K, {}}}$'.format(str('max')))
                 ax.set_ylabel(r'$E_{{P, MW}}/E_{{K, {}}}$'.format(str('max')))
-                plot_ini.tickers(ax)
+                plot_ini.tickers(ax, 'hist')
                 plt.savefig('figures/KEPE_histogram_'+str(save_file)+'.pdf', dpi=300, bbox_inches='tight')
                 plt.clf()
                 
@@ -201,7 +201,7 @@ class KE_PE_plotters(object):
                 cbar.set_label(r"$\log_{10}(N/N_{max})$", labelpad=15)
                 
                 ax.set_yscale('symlog')
-                plot_ini.tickers(ax)
+                plot_ini.tickers(ax, 'plot')
                 plt.savefig('figures/KEPE_diagram_'+str(save_file)+'.pdf', dpi=300, bbox_inches='tight')
                 plt.clf()
             return
@@ -228,7 +228,7 @@ class vejection(object):
     Class to plot the velocity ejection statistics
     """
 
-    def vejec_mean_plotter(self):
+    def vejec_plotter(self):
         """
         Function to plot how the total population/ mass of the system influences the ejection velocity
         """
@@ -237,10 +237,8 @@ class vejection(object):
 
         for i in range(len(data.ejec_data)):
             data.ex[i], data.ey[i], data.ez[i], data.vesc[i], data.ejec_KE[i], data.ejec_PE[i], data.Nclose[i], \
-            data.ejected[i] = ejected_extract_final(data.IMBH_data[i], data.ejec_data[i], 'E') #Change S to E
-            
-            vals_df = data.ejec_data[i].iloc[0]    
-            data.tot_mass[i] = np.sum(vals_df[8].value_in(units.MSun))
+            data.ejected[i] = ejected_extract_final(data.IMBH_data[i], data.ejec_data[i], 'E')
+            vals_df = data.ejec_data[i].iloc[0]
             data.tot_pop[i] = vals_df[6]
             data.surv_time[i] = vals_df[-2].value_in(units.Myr)
 
@@ -259,9 +257,6 @@ class vejection(object):
             avg_surv[iter] = np.mean(temp_surv)
 
         avg_vel = np.asarray(avg_vel)
-        #yint, slope = polyfit(popul, avg_vel, 1)
-        #xlist = np.linspace(2.5,10.5)
-        #ylist = [yint+slope*i for i in xlist]
 
         plot_ini = plotter_setup()
         fig, ax = plt.subplots()
@@ -270,44 +265,24 @@ class vejection(object):
         ax.set_ylabel(r'$\langle v_{ej} \rangle$ [km/s]')
         ax.axhline(676, color = 'black', linestyle = ':')
         ax.text(15, 690, r'$v_{esc, MW}$')
-        #ax.plot(xlist, ylist, linestyle = '--', zorder = 1)
-        #ax.text(3, 50, r'$v_{ejec} = '+str('{:.2f}'.format(slope))+r'$N +'+str('{:.2f}'.format(yint)))
-        ax.set_ylim(0, 800)
-        ax.set_xlim(5, 105)
+        ax.set_ylim(0, 1600)
         plot_ini.tickers_pop(ax, in_pop)
         plt.savefig('figures/mean_vej.pdf', dpi=300, bbox_inches='tight')
 
-    def vejec_histogram(self):
-        """
-        Function to plot the ejection velocity w.r.t number of times occuring in bins
-        """
-
-        #DO THE SAME WITH GRX
-        data = data_ext_files()
-        plot_ini = plotter_setup()
         MW_code = MWpotentialBovy2015()
         vesc = (np.sqrt(2)*MW_code.circular_velocity(0.1 | units.parsec) + np.sqrt(2*constants.G*(4e6 | units.MSun)/(0.1 | units.parsec))).value_in(units.kms)
-
-        for i in range(len(data.ejec_data)):
-            data.ex[i], data.ey[i], data.ez[i], data.vesc[i], data.ejec_KE[i], data.ejec_PE[i], \
-            data.Nclose[i], data.ejected[i] = ejected_extract_final(data.IMBH_data[i], data.ejec_data[i], 'E') #TO CHANGE WHEN MORE DATA
-            
-            vals_df = data.ejec_data[i].iloc[0]          
-            data.tot_mass[i] = np.sum(vals_df[8].value_in(units.MSun))
-            data.tot_pop[i] = vals_df[6]
-            data.surv_time[i] = vals_df[-2].value_in(units.Myr)
         
         fig, ax = plt.subplots()
         ax.set_title('Ejection Velocity Histogram')
-        n, bins, patches = ax.hist(data.vesc, 20, density=True, histtype = 'step', color='black')
-        n, bins, patches = ax.hist(data.vesc, 20, density=True, color='black', alpha = 0.3)
+        n, bins, patches = ax.hist(data.vesc, 20, histtype = 'step', color='black')
+        n, bins, patches = ax.hist(data.vesc, 20, color='black', alpha = 0.3)
         
         ax.axvline(vesc, linestyle = ':', color = 'black')
         ax.text(vesc*(1+0.02), 0.9*max(n), r'$v_{esc, MW}$', horizontalalignment = 'center', rotation = 270)
-        ax.set_xlabel(r'$v_{ejec}$ [km/s]')
-        ax.set_ylabel(r'Fractional Occurence')
+        ax.set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
+        ax.set_ylabel(r'Occurence')
         ax.set_title('Ejection Velocity Histogram for All Simulations')
-        plot_ini.tickers(ax)
+        plot_ini.tickers(ax, 'plot')
         plt.savefig('figures/vejection_histogram.pdf', dpi = 300, bbox_inches='tight')
 
 class event_tracker(object):
@@ -358,7 +333,7 @@ class event_tracker(object):
             frac_merge_GRX[iter] = np.mean(temp_frac)
 
         fig, ax = plt.subplots()
-        ax.set_ylabel(r'Fraction of Simulations Ending with SMBH Mergers')
+        ax.set_ylabel(r'$N_{merge}/N_{sim}$')
         ax.set_ylim(0,1.05)
         ax.scatter(in_pop, frac_merge, color = 'red', edgecolors = 'black', label = 'Hermite')
         ax.scatter(in_pop_GRX, frac_merge_GRX, color = 'red', edgecolors = 'black', label = 'GRX')

@@ -28,13 +28,98 @@ def bulk_stat_extractor(file_string, rewrite):
         for file_ in range(len(filename)):
             with open(filename[file_], 'rb') as input_file:
                 rewrite_file = pkl.load(input_file)
-            data_pts = round((np.shape(rewrite_file)[1])/15)
+            if np.shape(rewrite_file)[1] > 50:
+                data_pts = round((np.shape(rewrite_file)[1])/15)
+            else:
+                data_pts = np.shape(rewrite_file)[1]
             rewrite_file = rewrite_file.drop(rewrite_file.iloc[:, data_pts:-1*data_pts], axis = 1) 
             data.append(rewrite_file)
 
     return data
 
+def ejected_extract_final(set, ejected, ejec_merge):
+    """
+    Extracts the final info on the ejected particle into an array
+    
+    Inputs:
+    set:        The complete particle set plotting
+    ejected:    The ejected particle
+    ejec_merge: String whether we care for ejection simulations (E) or want to account for all simulations (else)
+    """
+
+    Nclose = 0
+    if ejec_merge == 'E':
+        for i in range(len(set)):
+            if set.iloc[i][0][0] == ejected.iloc[0][4]: 
+                print('Ejection detected for pop.: ', len(set)-1)
+                ejec_data = set.iloc[i]   #Make data set of only ejected particle
+                ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
+                ejec_vel = []
+                tot_steps = round(len(ejec_data)/2)
+                
+                for steps_ in range(tot_steps):
+                    vel_ = ejec_data.iloc[(-steps_)][3].value_in(units.kms)
+                    vx = vel_[0] - set.iloc[0][-(-steps_)][3][0].value_in(units.kms)
+                    vy = vel_[1] - set.iloc[0][-(-steps_)][3][1].value_in(units.kms)
+                    vz = vel_[2] - set.iloc[0][-(-steps_)][3][2].value_in(units.kms)
+                    ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
+                idx = np.argwhere(ejec_vel == max(ejec_vel))[0]
+                idx -= tot_steps
+                esc_vel = ejec_vel[idx[0]]
+
+                xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
+                ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
+                zpos = (ejec_data.iloc[idx][0][2][2]-set.iloc[0][idx][0][2][2]).value_in(units.pc)
+
+                KE = ejec_data.iloc[-1][4].value_in(units.J)
+                PE = ejec_data.iloc[-1][5].value_in(units.J)
+
+                for j in range(len(ejec_data)):
+                    if abs(ejec_data.iloc[j][-1]) < 1e-2:
+                        Nclose += 1
+                Nmerge = ejected.iloc[0][10]
+                            
+                return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
+        else:
+            print('Simulation ended with merger')
+
+    else:
+        for i in range(len(set)):
+            if set.iloc[i][0][0] == ejected.iloc[0][4]: 
+                ejec_data = set.iloc[i]   #Make data set of only ejected particle
+                ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
+                ejec_vel = []
+                tot_steps = round(len(ejec_data)/2)
+                
+                for steps_ in range(tot_steps):
+                    vel_ = ejec_data.iloc[(-steps_)][3].value_in(units.kms)
+                    vx = vel_[0] - set.iloc[0][-(-steps_)][3][0].value_in(units.kms)
+                    vy = vel_[1] - set.iloc[0][-(-steps_)][3][1].value_in(units.kms)
+                    vz = vel_[2] - set.iloc[0][-(-steps_)][3][2].value_in(units.kms)
+                    ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
+                idx = np.argwhere(ejec_vel == max(ejec_vel))[0]
+                idx -= tot_steps
+                esc_vel = ejec_vel[idx[0]]
+
+                xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
+                ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
+                zpos = (ejec_data.iloc[idx][0][2][2]-set.iloc[0][idx][0][2][2]).value_in(units.pc)
+
+                KE = ejec_data.iloc[idx][0][4].value_in(units.J)
+                PE = ejec_data.iloc[idx][0][5].value_in(units.J)
+
+                for j in range(len(ejec_data)):
+                    if abs(ejec_data.iloc[j][-1]) < 1e-2:
+                        Nclose += 1
+                Nmerge = ejected.iloc[0][10]
+
+                return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
+    return np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN
+
 def ejected_stat_extractor(chaos_dir):
+    """
+    Function to extract a cropped data set of any given simulation to analyse ejected particles
+    """
 
     chaos_data = glob.glob(chaos_dir)
     chaos_data = natsort.natsorted(chaos_data)
@@ -56,98 +141,8 @@ def ejected_stat_extractor(chaos_dir):
                         data_pts = round((np.shape(data)[1])/15)
                         data = data.drop(data.iloc[:, data_pts:-1*data_pts], axis = 1)
                         filt_IMBH.append(data)
+
     return filt_IMBH, filt_Chaotic
-
-def ejected_extract_final(set, ejected, ejec_merge):
-    """
-    Extracts the final positional info on the ejected particle into an array
-    
-    Inputs:
-    set:        The complete particle set plotting
-    ejected:    The ejected particle
-    ejec_merge: String whether we care for ejection simulations (E) or want to account for all simulations (else)
-    """
-
-    Nclose = 0
-    if ejec_merge == 'E':
-        for i in range(len(set)):
-            esc_vel = [ ]
-            
-            if set.iloc[i][0][0] == ejected.iloc[0][4]: 
-                ejec_data = set.iloc[i]   #Make data set of only ejected particle
-                ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
-                if len(ejec_data) > 3:
-                    for vel_ in [ejec_data.iloc[-3][3].value_in(units.kms), 
-                                ejec_data.iloc[-2][3].value_in(units.kms), 
-                                ejec_data.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
-                        esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
-                    idx = np.argwhere(esc_vel == max(esc_vel))
-                    idx = np.asarray([i-3 for i in idx])[0]
-                    esc_vel = esc_vel[idx[0]]
-
-                else:
-                    for vel_ in [ejec_data.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
-                        esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
-                    idx = [-1]
-
-                xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
-                ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
-                zpos = (ejec_data.iloc[idx][0][2][2]-set.iloc[0][idx][0][2][2]).value_in(units.pc)
-
-                KE = ejec_data.iloc[-1][4].value_in(units.J)
-                PE = ejec_data.iloc[-1][5].value_in(units.J)
-                for j in range(len(ejec_data)):
-                    if j == 0:
-                        pass
-                    else:
-                        deltaKE = ejec_data.iloc[j][4]/ejec_data.iloc[j-1][4]
-                        if abs(deltaKE) > 10:
-                            Nclose += 1
-                Nmerge = ejected.iloc[0][10]
-                            
-                return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
-        else:
-            print('Simulation ended with merger')
-
-    else:
-        for i in range(len(set)):
-            esc_vel = [ ]
-            if set.iloc[i][0][0] == ejected.iloc[0][4]: 
-                ejec_data = set.iloc[i]   #Make data set of only ejected particle
-                ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
-
-                if len(ejec_data) > 3:
-                    for vel_ in [ejec_data.iloc[-3][3].value_in(units.kms), 
-                                ejec_data.iloc[-2][3].value_in(units.kms), 
-                                ejec_data.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
-                        esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
-                    idx = np.argwhere(esc_vel == max(esc_vel))
-                    idx = np.asarray([i-3 for i in idx])[0]
-                    esc_vel = esc_vel[idx[0]]
-
-                else:
-                    for vel_ in [ejec_data.iloc[-1][3].value_in(units.kms)]: #Last three time steps ~the typical crossing time based on cluster param
-                        esc_vel.append(np.sqrt(vel_[0]**2+vel_[1]**2+vel_[2]**2))
-                    idx = [-1]
-
-                xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
-                ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
-                zpos = (ejec_data.iloc[idx][0][2][2]-set.iloc[0][idx][0][2][2]).value_in(units.pc)
-
-                KE = ejec_data.iloc[idx][0][4].value_in(units.J)
-                PE = ejec_data.iloc[idx][0][5].value_in(units.J)
-
-                for j in range(len(ejec_data)):
-                    if j == 0:
-                        pass
-                    else:
-                        deltaKE = ejec_data.iloc[j][4]/ejec_data.iloc[j-1][4]
-                        if abs(deltaKE) > 10:
-                            Nclose += 1
-                Nmerge = ejected.iloc[0][10]
-
-                return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
-    return np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN
 
 def ejected_index(set, ejected):
     """

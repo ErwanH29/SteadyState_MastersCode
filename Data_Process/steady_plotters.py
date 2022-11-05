@@ -109,7 +109,7 @@ class stability_plotters(object):
 
         return pop_size, pop_samples, final_part, stab_time
 
-    def mean_plots(self, axis, ydata):
+    def mean_plots(self, axis, ydata, pops):
         """
         Function to set up the various stability time plotters
         
@@ -123,7 +123,7 @@ class stability_plotters(object):
         ylims = [[0, 1.2*(ydata)], [0, 105]]
     
         for i in range(len(axis)):
-            plot_ini.tickers_pop(axis[i])
+            plot_ini.tickers_pop(axis[i], pops)
             axis[i].yaxis.set_major_formatter(mtick_formatter[i])
             axis[i].set_ylim(ylims[i])
     
@@ -153,8 +153,7 @@ class stability_plotters(object):
             #else:
             #   ax.text(xpos, -0.12*max(N_parti_avg)*(1+0.6*iter), 'Set '+str(iter)+': '+str(pop_samples[j][0]), fontsize = 'xx-small', ha = 'center' )
             
-        self.mean_plots([ax], y_max)
-        plot_ini.tickers_pop(ax)
+        self.mean_plots([ax], y_max, pops_f)
         ax.xaxis.labelpad = 30
         ax.legend()
 
@@ -256,11 +255,10 @@ class stability_plotters(object):
             pop_size = np.array([float(i) for i in pop_size])
             N_parti_avg = np.array([ float(i) for i in N_parti_avg])   
              
-            self.mean_plots([ax], max(N_parti_avg))
-            plot_ini.tickers_pop(ax)
+            self.mean_plots([ax], max(N_parti_avg), pop_size)
             ax.set_xlim(5,105)
 
-            p0 = (6,  0.50)
+            """p0 = (6,  0.50)
             params, cv = scipy.optimize.curve_fit(log_fit, pop_size, N_parti_avg, p0)
             slope, intercept = params
             red_slope = str('{:.2f}'.format(slope))
@@ -270,7 +268,7 @@ class stability_plotters(object):
             
             ax.plot(xtemp, ytemp, zorder = 1, color = 'black', ls = '-.')
             #ax.plot(xtemp, ytemp2, zorder = 4, color = 'blue', ls = '-.')
-            ax.text(8, 4, r'$t_{{surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')
+            ax.text(8, 4, r'$t_{{surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')"""
 
             ax.legend()
             ax.xaxis.labelpad = 30
@@ -318,10 +316,7 @@ class stability_plotters(object):
                     
                     ax.text(85, 0.96*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
                     self.error_plots(ax, tot_pop, N_parti_avg, std)
-                    plot_ini.tickers(ax)
+                    plot_ini.tickers(ax, 'plot')
 
                     ax.set_xlim(5, 105)
                     plt.savefig('figures/const_pop_chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
-
-cst = stability_plotters()
-cst.massdep_plotter()
