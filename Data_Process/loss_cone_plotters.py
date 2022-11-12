@@ -118,7 +118,7 @@ class loss_cone(object):
             ax_.set_xlim(0.95*min(angL_init), 1.01*max(angL_init))
             ax_.set_ylim(0.95*min(angL_fin),  1.01*max(angL_fin))
         plot_ini.tickers(ax2, 'hist')
-        plot_ini.tickers(ax2, 'plot')
+        plot_ini.tickers(ax1, 'plot')
 
         bin2d_sim, xedges_s, yedges_s, image = ax2.hist2d(angL_init, angL_fin, bins=(100, 100), range=([0.95*min(angL_init),1.01*max(angL_init)],[0.95*min(angL_fin), 1.01*max(angL_fin)]))
         extent = [0,1.01*max(angL_init), 0, 1.01*max(angL_fin)]
@@ -127,7 +127,7 @@ class loss_cone(object):
         colour_axes = ax1.scatter(angL_init[idx], angL_fin[idx], c = init_pop[idx], edgecolors='black')
         ax1.text(1.1, 1.01, r'$\|\Delta L\|/L_i > 0.5$')
         plt.colorbar(colour_axes, ax=ax1, label = r'IMBH Population [$N$]')
-        plt.savefig('figures/loss_cone_evolution.pdf', dpi=300, bbox_inches='tight')
+        plt.savefig('figures/loss_cone/loss_cone_evolution.pdf', dpi=300, bbox_inches='tight')
         plt.clf()
 
     def lcone_timescale(self):
@@ -164,4 +164,4 @@ class loss_cone(object):
         ax2.set_ylabel(r'$\langle t_{LC, repl}\rangle$ [Myr]')
         ax2.scatter(init_pop, avg_angL_timescale, color = 'red', edgecolors = 'black')
         ax1.legend()
-        plt.savefig('figures/avg_N_loss_cone_tscale_repl.pdf', dpi=300, bbox_inches='tight')
+        plt.savefig('figures/loss_cone/avg_N_loss_cone_tscale_repl.pdf', dpi=300, bbox_inches='tight')

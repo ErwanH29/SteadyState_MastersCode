@@ -567,4 +567,4 @@ class vejec_mass(object):
         plt.show()
         plt.clf()
 
-spatial_plotter(60 | units.parsec, 'Hermite')
+spatial_plotter(60 | units.parsec, 'GRX')

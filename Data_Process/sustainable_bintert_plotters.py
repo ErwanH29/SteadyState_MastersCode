@@ -16,21 +16,25 @@ class sustainable_sys(object):
         filename = natsort.natsorted(filename)
 
         self.pop = []
-        self.stab_bin = []
-        self.stab_ter = []
         self.dedt = []
         self.dadt = []
         self.bin_life = []
+        self.sys_bin = []
         self.ter_life = []
+        self.sys_ter = []
         
         for file_ in range(len(filename)):
             with open(filename[file_], 'rb') as input_file:
+                print('Reading file', file_, ':', filename[file_])
                 data = pkl.load(input_file)
+
                 self.pop.append(np.shape(data)[0])
-                bin_val = 0 
-                ter_val = 0
                 bin_key = []
                 ter_key = []
+                bin_life = []
+                bin_formed = []
+                ter_life = []
+                ter_formed = []
                 temp_dedt = []
                 temp_dadt = []
 
@@ -40,6 +44,8 @@ class sustainable_sys(object):
                 avg_mass /= (np.shape(data)[0])
 
                 for parti_ in range(np.shape(data)[0]): #Iterate over all particles present
+                    bin_val = 0
+                    ter_val = 0
                     if parti_ == 0:
                         pass
                     else:
@@ -47,9 +53,8 @@ class sustainable_sys(object):
                         temp_dadt.append((data.iloc[parti_][-2][7][0]**-1 - data.iloc[parti_][2][7][0]**-1).value_in((units.pc)**-1)/(np.shape(data)[1]-3))
                         if isinstance(data.iloc[parti_][-1][0], np.uint64):
                             for col_ in range(np.shape(data)[1]): #Iterate over the data time-steps
-                                if data.iloc[parti_][col_][6][1] == data.iloc[parti_][col_-1][6][1] \
-                                    and abs(data.iloc[parti_][col_][8][1]) < 1 \
-                                        and data.iloc[parti_][col_][7][1] < 0.15 | units.parsec:
+                                if abs(data.iloc[parti_][col_][8][1]) < 1 \
+                                    and data.iloc[parti_][col_][7][1] < 0.02 | units.parsec:
                                     mass1 = data.iloc[parti_][0][1]
                                     for part_ in range(np.shape(data)[0]):
                                         if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
@@ -60,18 +65,17 @@ class sustainable_sys(object):
                                                 bin_key.append(data.iloc[parti_][col_][6][1])
 
                                                 #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
-                                                if data.iloc[parti_][col_][8][2] < 1:
+                                                if data.iloc[parti_][col_][8][2] < 1 \
+                                                    and data.iloc[parti_][col_][7][2] < 0.1 | units.parsec:
                                                     semi_inner = data.iloc[parti_][col_][7][1]
                                                     semi_outer = data.iloc[parti_][col_][7][2]
                                                     for part_ in range(np.shape(data)[0]):
                                                         if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
                                                             mass_outer = data.iloc[part_][0][1]
                                                     ecc_outer = data.iloc[parti_][col_][8][2]
-
                                                     semi_ratio = semi_outer / semi_inner
                                                     equality = 2.8 * ((1+mass_outer/(mass1+mass2))*(1+ecc_outer)/(1-ecc_outer**2)**0.5)**0.4
                                                     if semi_ratio > equality:
-                                                        print('Hierarchical Triple Detected!')
                                                         ter_val += 1
                                                         ter_key.append(data.iloc[parti_][col_][6][2])
 
@@ -83,9 +87,8 @@ class sustainable_sys(object):
                                 if col_ < 3 or col_ == np.shape(data)[1]-1:
                                     pass
                                 else:
-                                    if data.iloc[parti_][col_][6][1] == data.iloc[parti_][col_-1][6][1] \
-                                        and abs(data.iloc[parti_][col_][8][1]) < 1 \
-                                            and data.iloc[parti_][col_][7][1] < 0.15 | units.parsec:
+                                    if abs(data.iloc[parti_][col_][8][1]) < 1 \
+                                        and data.iloc[parti_][col_][7][1] < 0.02 | units.parsec:
                                         mass1 = data.iloc[parti_][0][1]
                                         for part_ in range(np.shape(data)[0]):
                                             if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
@@ -95,14 +98,14 @@ class sustainable_sys(object):
                                                     bin_val += 1
                                                     bin_key.append(data.iloc[parti_][col_][6][1])
 
-                                                    if data.iloc[parti_][col_][8][2] < 1:
+                                                    if data.iloc[parti_][col_][8][2] < 1 \
+                                                        and data.iloc[parti_][col_][7][2] < 0.1 | units.parsec:
                                                         semi_inner = data.iloc[parti_][col_][7][1]
                                                         semi_outer = data.iloc[parti_][col_][7][2]
                                                         for part_ in range(np.shape(data)[0]):
                                                             if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
                                                                 mass_outer = data.iloc[part_][0][1]
                                                         ecc_outer = data.iloc[parti_][col_][8][2]
-
                                                         semi_ratio = semi_outer / semi_inner
                                                         equality = 2.8 * ((1+mass_outer/(mass1+mass2))*(1+ecc_outer)/(1-ecc_outer**2)**0.5)**0.4
                                                         if semi_ratio > equality:
@@ -111,32 +114,33 @@ class sustainable_sys(object):
                                             else:
                                                 pass
 
-                bin_val0 = bin_val
-                ter_val0 = ter_val
-                for rep_ in range(len(bin_key)):
-                    if bin_key[rep_] != 0 and rep_ != 0 and bin_key[rep_] == bin_key[rep_-1]:
-                        bin_val -= 1
+                    bin_formed.append(len(np.unique(bin_key)))
+                    ter_formed.append(len(np.unique(ter_key)))
 
-                for rep_ in range(len(ter_key)):
-                    if ter_key[rep_] != 0 and rep_ != 0 and ter_key[rep_] == ter_key[rep_-1]:
-                        ter_val -= 1
-                
-                self.stab_bin.append(bin_val)
-                self.stab_ter.append(ter_val)
-                self.bin_life.append((bin_val0)/max(1,bin_val))
-                self.ter_life.append((ter_val0)/max(1,ter_val))
+                    if len(bin_formed) > 0:
+                        bin_life.append(len(bin_key)/(max(1,bin_formed[-1])))
+                    if len(ter_formed) > 0:
+                        ter_life.append(len(ter_key)/(max(1,ter_formed[-1])))
+
+                self.sys_bin.append(np.sum(bin_formed))
+                self.sys_ter.append(np.sum(ter_formed))
+
+                self.bin_life.append(np.mean(bin_life))
+                self.ter_life.append(np.mean(ter_life))
+
                 self.dedt.append(np.mean(temp_dedt))
                 self.dadt.append(np.mean(temp_dadt))
 
         self.bin_life = np.asarray(self.bin_life)
         self.ter_life = np.asarray(self.ter_life)
-        self.stab_bin = np.asarray(self.stab_bin)
-        self.stab_ter = np.asarray(self.stab_ter)
+        self.sys_bin = np.asarray(self.sys_bin)
+        self.sys_ter = np.asarray(self.sys_ter)
         self.dedt = np.asarray(self.dedt)
         self.dadt = np.asarray(self.dadt)
         self.pop = np.asarray(self.pop)
         self.pop[self.pop %10 != 0] -= 1
         self.pop = np.asarray(self.pop)
+
 
     def system_formation(self):
         """
@@ -156,8 +160,9 @@ class sustainable_sys(object):
         for pop_ in ini_pop:
             iter += 1
             idx = np.where(self.pop == pop_)[0]
-            bin_formed[iter] = np.mean(self.stab_bin[idx])
-            ter_formed[iter] = np.mean(self.stab_ter[idx])
+            bin_formed[iter] = np.mean(self.sys_bin[idx])
+            ter_formed[iter] = np.mean(self.sys_ter[idx])
+            print(self.bin_life)
             bin_life[iter] = np.mean(self.bin_life[idx])
             ter_life[iter] = np.mean(self.ter_life[idx])
         bin_formed = np.asarray(bin_formed)
@@ -165,21 +170,20 @@ class sustainable_sys(object):
         bin_life = np.asarray(bin_life)
         ter_life = np.asarray(ter_life)
 
-        norm_min = np.log10(min(np.min(bin_life[bin_formed>0]), np.min(ter_life[ter_formed>0])))
-        norm_max = np.log10(max(np.max(bin_life[bin_formed>0]), np.max(ter_life[ter_formed>0])))
+        norm_min = (min(np.min(bin_life[bin_formed>0]), np.min(ter_life[ter_formed>0])))
+        norm_max = (max(np.max(bin_life[bin_formed>0]), np.max(ter_life[ter_formed>0])))
 
         fig, ax = plt.subplots()
         plot_ini.tickers_pop(ax, ini_pop)
         ax.set_xlabel(r'IMBH Population [$N$]')
-        ax.set_ylabel(r'$\langle N_{sys} \rangle$')
+        ax.set_ylabel(r'$\log_{10}\langle N_{sys} \rangle$')
         normalise = plt.Normalize((norm_min), (norm_max))
-        plt.scatter(ini_pop[bin_formed>0], bin_formed[bin_formed>0], edgecolors  = 'black', c = np.log10(bin_life[bin_formed>0]), norm = (normalise), label = 'Hard Binary')
-        plt.scatter(ini_pop[ter_formed>0], ter_formed[ter_formed>0], edgecolors  = 'black', c = np.log10(ter_life[ter_formed>0]), norm = (normalise), marker = 's', label = 'Stable Triple')
-        plt.colorbar().set_label(r'$\log_{10}\langle t_{sys} \rangle$ [kyr]')
-        ax.set_xlim(5,105)
-        ax.set_ylim(0, 1.05*max(np.max(bin_formed), np.max(ter_formed)))
+        plt.scatter(ini_pop[bin_formed>0], np.log10(bin_formed[bin_formed>0]), edgecolors  = 'black', c = (bin_life[bin_formed>0]), norm = (normalise), label = 'Stable Binary')
+        plt.scatter(ini_pop[ter_formed>0], np.log10(ter_formed[ter_formed>0]), edgecolors  = 'black', c = (ter_life[ter_formed>0]), norm = (normalise), marker = 's', label = 'Stable Triple')
+        plt.colorbar().set_label(r'$\langle t_{sys} \rangle$ [kyr]')
+        ax.set_ylim(0,1.1*np.log10(max(np.max(bin_formed), np.max(ter_formed))))
         ax.legend()
-        plt.savefig('figures/sys_formation_N_plot.pdf', dpi=300, bbox_inches='tight')
+        plt.savefig('figures/binary_hierarchical/sys_formation_N_plot.pdf', dpi=300, bbox_inches='tight')
 
         fig = plt.figure(figsize=(12.5, 6))
         ax1 = fig.add_subplot(121)
@@ -195,7 +199,7 @@ class sustainable_sys(object):
         colour_axes = ax1.scatter(np.log10(10**6*self.dadt), np.log10(10**6*self.dedt), edgecolors = 'black', c = self.pop)
         colour_axes = ax2.scatter((10**6*self.dadt), (10**6*self.dedt), edgecolors = 'black', c = self.pop)
         plt.colorbar(colour_axes, ax = ax2, label = r'Initial Population')
-        plt.savefig('figures/dadt_dedt_plot.pdf', dpi=300, bbox_inches='tight')
+        plt.savefig('figures/binary_hierarchical/dadt_dedt_plot.pdf', dpi=300, bbox_inches='tight')
 """
 cst = sustainable_sys()
 cst.system_formation()"""

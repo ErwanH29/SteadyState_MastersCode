@@ -146,7 +146,7 @@ class KE_PE_plotters(object):
 
                 ax1.set_xlim(0,0.3)
                 ax1.set_ylim(-0.3,0)
-                plt.savefig('figures/KEPE_diagram_'+str(save_file)+'_.pdf', dpi=500, bbox_inches='tight')
+                plt.savefig('figures/ejection_stats/KEPE_diagram_'+str(save_file)+'_.pdf', dpi=500, bbox_inches='tight')
 
             if hist == 'N':
                 colour_axes = ax1.scatter(KE, PE, edgecolor = 'black', c=cdata, s = 20, zorder = 2)
@@ -176,7 +176,7 @@ class KE_PE_plotters(object):
                 ax.set_xlabel(r'$E_K/E_{{K, {}}}$'.format(str('max')))
                 ax.set_ylabel(r'$E_{{P, MW}}/E_{{K, {}}}$'.format(str('max')))
                 plot_ini.tickers(ax, 'hist')
-                plt.savefig('figures/KEPE_histogram_'+str(save_file)+'.pdf', dpi=300, bbox_inches='tight')
+                plt.savefig('figures/ejection_stats/KEPE_histogram_'+str(save_file)+'.pdf', dpi=300, bbox_inches='tight')
                 plt.clf()
                 
             else: 
@@ -202,7 +202,7 @@ class KE_PE_plotters(object):
                 
                 ax.set_yscale('symlog')
                 plot_ini.tickers(ax, 'plot')
-                plt.savefig('figures/KEPE_diagram_'+str(save_file)+'.pdf', dpi=300, bbox_inches='tight')
+                plt.savefig('figures/ejection_stats/KEPE_diagram_'+str(save_file)+'.pdf', dpi=300, bbox_inches='tight')
                 plt.clf()
             return
 
@@ -267,7 +267,7 @@ class vejection(object):
         ax.text(15, 690, r'$v_{esc, MW}$')
         ax.set_ylim(0, 1600)
         plot_ini.tickers_pop(ax, in_pop)
-        plt.savefig('figures/mean_vej.pdf', dpi=300, bbox_inches='tight')
+        plt.savefig('figures/ejection_stats/mean_vej.pdf', dpi=300, bbox_inches='tight')
 
         MW_code = MWpotentialBovy2015()
         vesc = (np.sqrt(2)*MW_code.circular_velocity(0.1 | units.parsec) + np.sqrt(2*constants.G*(4e6 | units.MSun)/(0.1 | units.parsec))).value_in(units.kms)
@@ -278,12 +278,12 @@ class vejection(object):
         n, bins, patches = ax.hist(data.vesc, 20, color='black', alpha = 0.3)
         
         ax.axvline(vesc, linestyle = ':', color = 'black')
-        ax.text(vesc*(1+0.02), 0.9*max(n), r'$v_{esc, MW}$', horizontalalignment = 'center', rotation = 270)
+        ax.text(vesc*(1+0.05), 0.9*max(n), r'$v_{esc, MW}$', horizontalalignment = 'center', rotation = 270)
         ax.set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
         ax.set_ylabel(r'Occurence')
         ax.set_title('Ejection Velocity Histogram for All Simulations')
         plot_ini.tickers(ax, 'plot')
-        plt.savefig('figures/vejection_histogram.pdf', dpi = 300, bbox_inches='tight')
+        plt.savefig('figures/ejection_stats/vejection_histogram.pdf', dpi = 300, bbox_inches='tight')
 
 class event_tracker(object):
     """
@@ -312,7 +312,7 @@ class event_tracker(object):
             temp_frac = [merger[i] for i in indices]
             frac_merge[iter] = np.mean(temp_frac)
 
-        chaos_data_GRX = glob.glob('data/GRX/no_addition/chaotic_simulation/*')
+        chaos_data_GRX = glob.glob('data/Hermite/no_addition/chaotic_simulation/*')
         chaos_data_GRX = natsort.natsorted(chaos_data)
 
         init_pop_GRX = []
@@ -338,7 +338,7 @@ class event_tracker(object):
         ax.scatter(in_pop, frac_merge, color = 'red', edgecolors = 'black', label = 'Hermite')
         ax.scatter(in_pop_GRX, frac_merge_GRX, color = 'red', edgecolors = 'black', label = 'GRX')
         plot_ini.tickers_pop(ax, in_pop)
-        plt.savefig('figures/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')
+        plt.savefig('figures/ejection_stats/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')
 
 #cst = KE_PE_plotters()
 #cst.KEPE_plotter()

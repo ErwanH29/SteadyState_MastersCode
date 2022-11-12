@@ -47,8 +47,6 @@ class plotter_setup(object):
         if plot_type == 'plot':
             ax.tick_params(axis="y", which = 'both', direction="in")
             ax.tick_params(axis="x", which = 'both', direction="in")
-        else:
-            None
 
         return ax
 
@@ -76,7 +74,6 @@ class plotter_setup(object):
         Function which removes the excessive terms
         """
         
-        arr[:][abs(arr[:]) < 10**-20] = np.NaN
         arr[:][abs(arr[:]) > 10**5] = np.NaN
         return arr
 
@@ -216,7 +213,7 @@ def animator(init_dist, int_string):
         plot_ini.xy_pc(ax3D2)
 
     anim3D = animation.FuncAnimation(fig, animate_3D, interval = 100, frames=(col_len-1))
-    anim3D.save('figures/animation3D'+str(count)+'.gif', writer='pillow')
+    anim3D.save('figures/system_evolution/animation3D'+str(count)+'.gif', writer='pillow')
 
     fig = plt.figure(figsize=(12.5, 8))
     ax1 = fig.add_subplot(221)
@@ -281,7 +278,7 @@ def animator(init_dist, int_string):
         ax4.set_ylabel(r'Distance [pc]')
 
     anim = animation.FuncAnimation(fig, animate, interval = 100, frames=(col_len-1))
-    anim.save('figures/animation2D'+str(count)+'.gif', writer='pillow')
+    anim.save('figures/system_evolution/animation2D'+str(count)+'.gif', writer='pillow')
 
     return 
         
@@ -341,7 +338,7 @@ def energy_plotter(int_string):
     ax1.set_ylim(0.5*min(abs(KE_array)), 5*max(abs(PE_array)))
     ax1.legend()
 
-    plt.savefig('figures/energy_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/system_evolution/energy_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()
 
@@ -359,7 +356,8 @@ def spatial_plotter(int_string):
 
     IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
     energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
-    col_len = round(np.shape(IMBH_tracker)[1]**0.5)
+    col_len = round(np.shape(IMBH_tracker)[1])
+    col_len_time = np.shape(IMBH_tracker)[1]
     parti_size = 20+len(IMBH_tracker)**-0.5
 
     line_x = np.empty((len(IMBH_tracker), col_len))
@@ -393,10 +391,10 @@ def spatial_plotter(int_string):
     for arr_ in [focus_x, focus_y, focus_z, line_x, line_y, line_z]:
         plot_ini.val_filter(arr_)
 
-    time = np.empty((col_len - 1))
-    dE_array = np.empty((col_len - 1))
+    time = np.empty((col_len_time - 1))
+    dE_array = np.empty((col_len_time - 1))
 
-    for i in range(col_len):
+    for i in range(col_len_time):
         if i == 0:
             pass
         else:
@@ -439,6 +437,7 @@ def spatial_plotter(int_string):
     ax4.set_xlabel(r'$y$ [pc]')
     ax4.set_ylabel(r'$z$ [pc]')
     iter = -1
+    print(line_x[0])
     for i in range(len(IMBH_tracker)):
         iter += 1
         if iter > len(colours):
@@ -457,6 +456,7 @@ def spatial_plotter(int_string):
                         c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
             ax1.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], 
                         c = colours[iter-2], s = 1, zorder = 1) 
+            ax1.scatter(focus_x[-1]-line_x[0][-1], focus_y[-1]-line_y[0][-1], s = 250, color = 'red')
 
             ax3.scatter(line_x[i][-1]-line_x[0][-1], line_z[i][-1]-line_z[0][-1], 
                         c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
@@ -468,7 +468,7 @@ def spatial_plotter(int_string):
             ax4.scatter(line_y[i]-line_y[0], line_z[i]-line_z[0], 
                         c = colours[iter-2], s = 1, zorder = 1) 
     ax2.plot(time[:-5], dE_array[:-5], color = 'black')
-    plt.savefig('figures/simulation_evolution_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/system_evolution/simulation_evolution_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close()     
 
@@ -491,7 +491,7 @@ def spatial_plotter(int_string):
     ax3D.set_ylabel(r'$y$ [pc]')
     ax3D.set_zlabel(r'$z$ [pc]')
     ax3D.view_init(30, 160)
-    plt.savefig('figures/simulation_evolution_3D_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/system_evolution/simulation_evolution_3D_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
 
     return
 
@@ -618,7 +618,7 @@ def ejected_evolution(int_string):
     ax4.plot(time_smooth, SMBH_dist_smooth, color = 'black')
 
     ax1.legend()
-    plt.savefig('figures/bin_trip_evol_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/system_evolution/bin_trip_evol_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     
 
 def direct_comparison(int_string):
@@ -784,9 +784,9 @@ def direct_comparison(int_string):
 
     ax1.legend()
     ax2.legend()
-    plt.savefig('figures/herm_GRX_trajdiff_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/system_evolution/herm_GRX_trajdiff_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
 
-"""direct_comparison('Hermite')
-spatial_plotter('Hermite')
-energy_plotter('Hermite')
-ejected_evolution('Hermite')"""
+#direct_comparison('Hermite')
+spatial_plotter('GRX')
+#energy_plotter('Hermite')
+#ejected_evolution('Hermite')

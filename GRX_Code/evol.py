@@ -2,11 +2,12 @@ from amuse.lab import *
 from amuse.units import units
 from parti_initialiser import *
 from data_init import *
-from physics_func import *
 from evol_func import *
+
 from amuse.ext.orbital_elements import orbital_elements_from_binary
 from amuse.community.hermite import Hermite
-#from amuse.community.hermite_grx.interface import *
+from amuse.community.hermite_grx.interface import *
+
 import numpy as np
 import pandas as pd
 import time as cpu_time
@@ -35,33 +36,37 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                                                        precision = 20, prefix = "", separator = " ", suffix = "")
 
     comp_start = cpu_time.time()
-    #SMBH_code = MW_SMBH()
-    #IMBH_adder = IMBH_init()
-
     initial_set = parti.copy()
 
     if int_string == 'Hermite':
-        code = Hermite(converter, number_of_workers = 14)
+        code = Hermite(converter, number_of_workers = 4)
         pert = 'Newtonian'
         code.particles.add_particles(parti)
 
-    """else:
+    else:
+        large_particle = Particles(1)
+        large_particle.mass = parti[0].mass
+        large_particle.velocity = parti[0].velocity
+        large_particle.position = parti[0].position
+        large_particle.key_tracker = parti[0].key_tracker
+        large_particle.collision_radius = 10000*parti[0].collision_radius
+        large_particle.radius = parti[0].radius
+        large_particle.ejection = 0
+        large_particle.collision_events = 0
+
+        code = HermiteGRX(converter, number_of_workers = 4)
         perturbations = ["1PN_Pairwise", "1PN_EIH", "2.5PN_EIH"]
         pert = perturbations[2]
-        code = HermiteGRX(converter, number_of_workers = 18)
         code.parameters.perturbation = pert
         code.parameters.integrator = 'SymmetrizedRegularizedHermite'
-        code.large_particles.add_particles(parti[0])
+        code.large_particles.add_particles(large_particle)
         code.small_particles.add_particles(parti[1:])
-        print('Simulating with: ', pert)
-        code.parameters.light_speed = constants.c"""
+        code.parameters.light_speed = constants.c
+        print('Simulating GRX with: ', pert)
 
-    code.parameters.dt_param = 1e-2
+    parti.collision_radius *= 10**6
+    parti.position *= 10**-4
 
-    code.commit_particles()
-    stopping_condition = code.stopping_conditions.collision_detection
-    stopping_condition.enable()
-    
     channel_IMBH = {"from_gravity": 
                     code.particles.new_channel_to(parti,
                     attributes=["x", "y", "z", "vx", "vy", "vz", "mass"],
@@ -70,12 +75,16 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                     parti.new_channel_to(code.particles,
                     attributes=["mass", "collision_radius"],
                     target_names=["mass", "radius"])} 
+        
+    code.parameters.dt_param = 1e-3
+
+    code.commit_particles()
+    stopping_condition = code.stopping_conditions.collision_detection
+    stopping_condition.enable()
       
     time = 0 | units.yr
     iter = 0
-    #add_iter = 0
     Nenc = 0
-    #app_time2 = time #To activate when allowing ejections to occur in a continuous simulation
     cum_merger_mass = 0 | units.MSun
     stab_timescale = time
 
@@ -86,35 +95,35 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
     if pert == 'Newtonian':    
         parti_KE = code.particles.kinetic_energy()
         parti_BE = code.particles.potential_energy()
-        E0p = parti_KE + parti_BE 
-        E0 = E0p
+        E0 = parti_KE + parti_BE 
     else: 
+        parti_KE = code.particles.kinetic_energy()
+        parti_BE = code.particles.potential_energy()
         E0 = code.get_total_energy_with(pert)[0]
 
-
     data_trackers = data_initialiser()
-    energy_tracker = data_trackers.energy_tracker(E0p, parti_KE, parti_BE, time, 0 | units.s)
+    energy_tracker = data_trackers.energy_tracker(E0, parti_KE, parti_BE, time, 0 | units.s)
     IMBH_tracker = data_trackers.IMBH_tracker(parti, time, N_parti)
     ejected_key_track = 000   
+
 
     while time < tend:
         eject  = 0
         iter += 1
         app_time = 0 | units.s
-        
         merger_mass = 0 | units.MSun
         added_mass = 0 | units.MSun
         ejected_mass = 0 | units.MSun
         tcoll = 0 | units.yr
 
-        if iter % 1000 == 0:
-            print('Iteration', iter)
-            print('DeltaE: ', de)
-  
+        if iter % 100 == 0:
+            print('Iteration', iter, '@', cpu_time.ctime(cpu_time.time()))
+            print('Change in Energy: ', de)
+
         time += eta*tend
         channel_IMBH["to_gravity"].copy()
+            
         code.evolve_model(time)
-        
         for particle in parti[1:]:
             rel_vel = particle.velocity - parti[0].velocity
             dist_core = particle.position - parti[0].position
@@ -148,31 +157,47 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                 print("........Encounter Detected........")
                 print('Collision at step: ', iter)
                 print('Simulation will now stop')
-                energy_before = code.potential_energy + code.kinetic_energy
                 merge = 1
                 for ci in range(len(stopping_condition.particles(0))):
                     Nenc += 1
+                    if pert == 'Newtonian':
+                        energy_before = code.potential_energy + code.kinetic_energy
 
-                    enc_particles_set = Particles(particles=[stopping_condition.particles(0)[ci],
-                                                         stopping_condition.particles(1)[ci]])
-                    enc_particles = enc_particles_set.get_intersecting_subset_in(parti)
-                    merged_parti = merge_IMBH(parti, enc_particles, code.model_time, int_string, code)
-                    merger_mass = merged_parti.mass.sum()
-                    cum_merger_mass += merger_mass
-                    if int_string == 'Hermite':
+                        enc_particles_set = Particles(particles=[stopping_condition.particles(0)[ci],
+                                                            stopping_condition.particles(1)[ci]])
+                        enc_particles = enc_particles_set.get_intersecting_subset_in(parti)
+                        merged_parti = merge_IMBH(parti, enc_particles, code.model_time, int_string, code)
+                        merger_mass = merged_parti.mass.sum()
+                        cum_merger_mass += merger_mass
                         parti.synchronize_to(code.particles)
+                        energy_after = code.potential_energy + code.kinetic_energy
+                    else:
+                        energy_before = code.get_total_energy_with(pert)[0]
+                        enc_particles_set = Particles(particles=[code.stopping_conditions.collision_detection.particles(0),
+                                                                 code.stopping_conditions.collision_detection.particles(1)])
+                        enc_particles = enc_particles_set.get_intersecting_subset_in(parti)
+                        merged_parti = merge_IMBH(parti, enc_particles, code.model_time, int_string, code)
+                        merger_mass = merged_parti.mass.sum()
+                        cum_merger_mass += merger_mass
+                        parti.synchronize_to(code.particles)
+                        energy_after= code.get_total_energy_with(pert)[0]
 
-                    tcoll = time.in_(units.s) - eta*tend
-                    energy_after = code.potential_energy + code.kinetic_energy
+                    tcoll = time.in_(units.s) - eta*tend     
+                                   
                     deltaE = abs(energy_after-energy_before)/abs(energy_before)
                     data_trackers.stable_sim_tracker(parti, injbin, merge, merger_mass, stab_timescale, int_string, deltaE, pert) 
                     
                     ejected_key_track = parti[-1].key_tracker
                     extra_note = 'Stopped due to merger'
-        
-        channel_IMBH["from_gravity"].copy()     
+
+        channel_IMBH["from_gravity"].copy()
+
+        parti[0].position = code.particles[0].position
+        parti[0].velocity = code.particles[0].velocity
+
         rows = (len(parti)+Nenc)
         df_IMBH = pd.DataFrame()
+        
         for i in range(len(parti)):
             for j in range(len(parti)):
                 if IMBH_tracker.iloc[i][0][0] == parti[j].key_tracker:
@@ -263,20 +288,17 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
         
         if 20 < iter:
             dEs = abs(Et-energy_tracker.iloc[19][3])/abs(energy_tracker.iloc[19][3])
-            df_energy_tracker = pd.Series({'Time': time.in_(units.kyr), 'Et': Et, 'dE': de, 'dEs': dEs, 
-                                           'Kinetic E': parti_KE.in_(units.J), 'Pot.E': parti_BE.in_(units.J),
-                                           'Appearance': app_time, 'Collision Time': tcoll, 
-                                           'Collision Mass': merger_mass})
+            df_energy_tracker = pd.Series({'Appearance': app_time, 'Collision Mass': merger_mass, 'Collision Time': tcoll, 
+                                           'Et': Et, 'Kinetic E': parti_KE.in_(units.J), 'Pot.E': parti_BE.in_(units.J),
+                                           'Time': time.in_(units.kyr), 'dE': de, 'dEs': dEs, 'Pot.E': parti_BE.in_(units.J)})
         else:
-            df_energy_tracker = pd.Series({'Time': time.in_(units.kyr), 'Et': Et, 'dE': de, 'dEs': 0,
-                                           'Kinetic E': parti_KE.in_(units.J), 'Pot.E': parti_BE.in_(units.J),
-                                           'Appearance': app_time, 'Collision Time': tcoll, 
-                                           'Collision Mass': merger_mass })
+            df_energy_tracker = pd.Series({'Appearance': app_time, 'Collision Mass': merger_mass, 'Collision Time': tcoll, 
+                                           'Et': Et, 'Kinetic E': parti_KE.in_(units.J), 'Pot.E': parti_BE.in_(units.J),
+                                           'Time': time.in_(units.kyr), 'dE': de, 'dEs': 0, 'Pot.E': parti_BE.in_(units.J) })
         energy_tracker = energy_tracker.append(df_energy_tracker, ignore_index=True)
         time1 = time
-       
         if eject > 0 or Nenc > 0:
-            time = tend   
+            time = tend 
 
     code.stop()
     comp_end = cpu_time.time()
@@ -291,13 +313,13 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
         if time1 == tend:
             ejected_key_track = parti[1].key_tracker
        
-        path = '/home/s2009269/data1/HERMITE_Orbit_Data/'
+        path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/GRX/'
         file_names = 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(init_IMBH)+'_sim'+str(count)+'_init_dist'+str('{:.3f}'.format(init_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(parti[2].mass.value_in(units.MSun)))+'.pkl'
 
         IMBH_tracker.to_pickle(os.path.join(path+str('particle_trajectory'), file_names))
         energy_tracker.to_pickle(os.path.join(path+str('energy'), file_names))
         data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, chaos_stab_timescale, 
-                                          added_mass, ejected_mass, comp_time, eject, int_string, pert)                   #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
+                                          added_mass, ejected_mass, comp_time, eject, int_string, pert) #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
         if Nenc > 0:
             data_trackers.coll_tracker(int_string, init_IMBH, count, init_dist, parti, tcoll, 
                                        enc_particles_set, ejected_key_track, merger_mass, pert)
@@ -309,8 +331,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                  'Masses of IMBH: '+str(parti.mass.value_in(units.MSun))+' MSun',
                  "No. of initial IMBH: "+str(init_IMBH), 
                  'Number of new particles: '+str(len(parti)-1-init_IMBH),
-                 'Total Number of (Final) IMBH: '+str(len(parti)-2), 
-                # 'IMBH Appearance Rate: '+str(IMBHapp.value_in(units.yr))+' years',    #To add when continuous ejecting simulations occur
+                 'Total Number of (Final) IMBH: '+str(len(parti)-2),
                  'Number of mergers: '+str(Nenc), 'End Time: '+str(tend.value_in(units.yr))+' years', 
                  'Integrator: Hermite (NO PN)',
                  'Extra Notes: ', extra_note]

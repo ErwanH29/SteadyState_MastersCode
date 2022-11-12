@@ -59,11 +59,11 @@ def ejected_extract_final(set, ejected, ejec_merge):
                 
                 for steps_ in range(tot_steps):
                     vel_ = ejec_data.iloc[(-steps_)][3].value_in(units.kms)
-                    vx = vel_[0] - set.iloc[0][-(-steps_)][3][0].value_in(units.kms)
-                    vy = vel_[1] - set.iloc[0][-(-steps_)][3][1].value_in(units.kms)
-                    vz = vel_[2] - set.iloc[0][-(-steps_)][3][2].value_in(units.kms)
+                    vx = vel_[0] - set.iloc[0][(-steps_)][3][0].value_in(units.kms)
+                    vy = vel_[1] - set.iloc[0][(-steps_)][3][1].value_in(units.kms)
+                    vz = vel_[2] - set.iloc[0][(-steps_)][3][2].value_in(units.kms)
                     ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
-                idx = np.argwhere(ejec_vel == max(ejec_vel))[0]
+                idx = np.nanargmax(ejec_vel)[0]
                 idx -= tot_steps
                 esc_vel = ejec_vel[idx[0]]
 
@@ -93,9 +93,9 @@ def ejected_extract_final(set, ejected, ejec_merge):
                 
                 for steps_ in range(tot_steps):
                     vel_ = ejec_data.iloc[(-steps_)][3].value_in(units.kms)
-                    vx = vel_[0] - set.iloc[0][-(-steps_)][3][0].value_in(units.kms)
-                    vy = vel_[1] - set.iloc[0][-(-steps_)][3][1].value_in(units.kms)
-                    vz = vel_[2] - set.iloc[0][-(-steps_)][3][2].value_in(units.kms)
+                    vx = vel_[0] - set.iloc[0][(-steps_)][3][0].value_in(units.kms)
+                    vy = vel_[1] - set.iloc[0][(-steps_)][3][1].value_in(units.kms)
+                    vz = vel_[2] - set.iloc[0][(-steps_)][3][2].value_in(units.kms)
                     ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
                 idx = np.argwhere(ejec_vel == max(ejec_vel))[0]
                 idx -= tot_steps
@@ -163,9 +163,9 @@ def ejected_index(set, ejected):
             ejec_idx = i
 
     if not (merger) and ejected.iloc[0][-2] != 1e8 | units.yr: 
-        print('Simulation ended with ejection')
         for i in range(len(set)):   
             if set.iloc[i][-1][0] == ejected.iloc[0][4]: #Loop for particle ejected but NOT bound
+                print('Simulation ended with ejection')
                 eject = True
                 ejec_idx = i
     
@@ -274,3 +274,35 @@ def stats_stable_extractor(dir):
 
     return ini_parti_data, inj_event_data, merge_no_data, mergerm_data, simulated_end, initial_dist, \
            cluster_rad, init_parti_m, trelax_data
+
+def simulation_stats_checker(int_string):
+    """
+    Function to check the final outcomes of all the simulations
+    """
+
+    filename = glob.glob('data/'+str(int_string)+'/simulation_stats/*')
+    filename = natsort.natsorted(filename)
+    SMBH_merger = 0
+    IMBH_merger = 0
+    ejection = 0
+    tot_sims = 0
+
+    print('Simulation outcomes for', str(int_string))
+    for file_ in range(len(filename)):
+        tot_sims += 1
+        with open(filename[file_]) as f:
+            line = f.readlines()[-9][:-7]
+            data = line.split()
+            data = [float(i) for i in data]
+            if 4001000 in data:
+                SMBH_merger += 1
+            if 2000 in data:
+                IMBH_merger += 1
+            if 4001000 not in data and 2000 not in data:
+                ejection += 1
+    print('Total simulations:   ', tot_sims)
+    print('SMBH merging events: ', SMBH_merger)
+    print('IMBH merging events: ', IMBH_merger)
+    print('Ejection events:     ', ejection)
+
+simulation_stats_checker('Hermite')

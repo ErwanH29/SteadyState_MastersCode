@@ -31,12 +31,15 @@ def tickers(ax):
     return ax
 
 def IMBH_pop(MW_mass, clust_eff, avg_stellar):
+  """
+  Function to extract the ~ stellar population of the galactic core
+  """
 
-    no_stars = MW_mass/avg_stellar
-    MW_clustS = no_stars * cluster_eff #number of stars from clusters
-    no_clust = MW_clustS / no_clusterS
-    no_IMBH = clust_eff * no_clust
-    return no_IMBH
+  no_stars = MW_mass/avg_stellar
+  MW_clustS = no_stars * cluster_eff #number of stars from clusters
+  no_clust = MW_clustS / no_clusterS
+  no_IMBH = clust_eff * no_clust
+  return no_IMBH
 
 def df_timescale(dist, dispvel, IMBH_mass):
     return 1.9 * 10 **9 * ((dist)/5000)**2 * (dispvel)/200 * 10**8/(IMBH_mass)
@@ -51,13 +54,9 @@ no_clusterS = avg_cluster/avg_stellarL[0]
 IMBH_pop(MW_bulge, 0.2, 0.5)
 
 plummer_prof = PowerLawCutoff_profile(2.22638e8|units.MSun/units.kpc**3, 1.|units.kpc, 1.8, 1.9|units.kpc)
-#plummer_prof = MWpotentialBovy2015()
 swag = plummer_prof.enclosed_mass(8 | units.parsec)/10**6
 distances = np.linspace(1,100,1000)
-#enc_mass = [66*i**0.3/distances[-1]**0.3*(plummer_prof.enclosed_mass(i * 1 | units.parsec)).value_in(units.MSun) for i in distances]
-enc_mass = [4*10**6+(i/6.5)**(1.75)*(plummer_prof.enclosed_mass(i * 1 | units.parsec)).value_in(units.MSun) for i in distances]
-print(enc_mass[-1]/10**10)
-print(enc_mass[100]/10**7)
+enc_mass = [4*10**6+(i/6.5)**(1.75)*(plummer_prof.enclosed_mass(i * 1 | units.parsec)).value_in(units.MSun) for i in distances] #Function based on Ghez et al. 1998
 close_dist = np.linspace(0.1,10)
 close_mass = [4*10**6 * i for i in close_dist]
 
@@ -65,8 +64,6 @@ plt.plot(distances, enc_mass)
 plt.xscale('log')
 plt.yscale('log')
 plt.show()
-#enc_mass = np.concatenate((close_mass,enc_mass), axis = 0)
-#distances = np.concatenate((close_dist, distances))
 
 no_IMBH = IMBH_pop(MW_bulge, clust_effL[0], avg_stellarL[0])
 df_time = df_timescale(100, 50, 1000)
