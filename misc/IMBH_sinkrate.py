@@ -49,9 +49,9 @@ MW_bulge = 2*10**10                           #Taken from Bovy 2015
 avg_cluster = 10**5                           #Taken from TB2008
 avg_stellarL = [0.4, 0.6]                     #Average of Kroupa and Salpeter mass DF
 clust_effL = [0.05, 0.1]                      #Taken from Zhang and Fall 1999
-cluster_eff = 0.25
+cluster_eff = 0.25                            #Taken from Chandar et al. 2018
 no_clusterS = avg_cluster/avg_stellarL[0]
-IMBH_pop(MW_bulge, 0.2, 0.5)
+IMBH_pop(MW_bulge, 0.2, 0.4)
 
 plummer_prof = PowerLawCutoff_profile(2.22638e8|units.MSun/units.kpc**3, 1.|units.kpc, 1.8, 1.9|units.kpc)
 swag = plummer_prof.enclosed_mass(8 | units.parsec)/10**6

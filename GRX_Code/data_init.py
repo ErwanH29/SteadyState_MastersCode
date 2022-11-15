@@ -29,7 +29,7 @@ class data_initialiser(object):
 
         SMBH_code = MW_SMBH()
         count = file_counter(int_string)
-        path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/GRX'
+        path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/GRX/'
         stab_tracker = pd.DataFrame()
         df_stabtime = pd.Series({'Added Particle Mass': added_mass.in_(units.MSun),
                                  'Computation Time': str(comp_time),
@@ -65,7 +65,7 @@ class data_initialiser(object):
         pert:          The PN term simulated
         """
 
-        path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/GRX'
+        path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/GRX/'
         file_names = 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(init_IMBH)+'_sim'+str(count)+'_init_dist'+str('{:.3f}'.format(init_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(pset[2].mass.value_in(units.MSun)))+'.pkl'
         coll_tracker = pd.DataFrame()
         df_coll_tracker = pd.Series({'Collision Time': coll_time.in_(units.kyr),
@@ -224,7 +224,7 @@ class data_initialiser(object):
 
         count = file_counter(int_string)
         SMBH_code = MW_SMBH()
-        path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/GRX'
+        path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/GRX/'
 
         stable_sim_tracker = pd.DataFrame()
         df_stablesim = pd.Series({'Initial Particles': (len(pset)-1), 'Injected Event': Ninj,

@@ -63,9 +63,10 @@ def ejected_extract_final(set, ejected, ejec_merge):
                     vy = vel_[1] - set.iloc[0][(-steps_)][3][1].value_in(units.kms)
                     vz = vel_[2] - set.iloc[0][(-steps_)][3][2].value_in(units.kms)
                     ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
-                idx = np.nanargmax(ejec_vel)[0]
+                idx = np.where(ejec_vel == max(ejec_vel))[0]
                 idx -= tot_steps
-                esc_vel = ejec_vel[idx[0]]
+                ejec_vel = np.asarray(ejec_vel)
+                esc_vel = ejec_vel[idx]
 
                 xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
                 ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
@@ -99,7 +100,8 @@ def ejected_extract_final(set, ejected, ejec_merge):
                     ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
                 idx = np.argwhere(ejec_vel == max(ejec_vel))[0]
                 idx -= tot_steps
-                esc_vel = ejec_vel[idx[0]]
+                ejec_vel = np.asarray(ejec_vel)
+                esc_vel = ejec_vel[idx]
 
                 xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
                 ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)

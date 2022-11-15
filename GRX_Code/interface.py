@@ -21,4 +21,17 @@ for ipop_ in pops:
         IMBH_code = IMBH_init()
         code_conv = nbody_system.nbody_to_si((ipop_*IMBH_code.mass + SMBH_code.mass), SMBH_code.distance)
         IMBH_parti, rhmass = IMBH_code.IMBH_first(ipop_, seed_)
-        failed_simul = evolve_system(IMBH_parti, tend, eta, SMBH_code.distance, code_conv, int_string)
+        if int_string == 'GRX':
+            SMBH = Particles(1)
+            SMBH.mass = IMBH_parti[0].mass
+            SMBH.velocity = IMBH_parti[0].velocity
+            SMBH.position = IMBH_parti[0].position
+            SMBH.key_tracker = IMBH_parti[0].key_tracker
+            SMBH.collision_radius = 2*IMBH_parti[0].collision_radius
+            SMBH.radius = IMBH_parti[0].radius
+            SMBH.ejection = 0
+            SMBH.collision_events = 0
+            failed_simul = evolve_system(IMBH_parti, tend, eta, SMBH_code.distance, code_conv, int_string, SMBH)
+
+        else:
+            failed_simul = evolve_system(IMBH_parti, tend, eta, SMBH_code.distance, code_conv, int_string, None)

@@ -18,7 +18,7 @@ import time as cpu_time
 #   - ENSURE CORRECT FILE SAVING FORMAT (NAME)
 #   - WHEN USING GRX ENSURE THAT THE INT_STRING IS CHANGED + UNCOMMENT LINES 47 - 54
 
-def evolve_system(parti, tend, eta, init_dist, converter, int_string):
+def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
     """
     Bulk of the simulation. Uses Hermite integrator to evolve the system while bridging it.
     Keeps track of the particles' position and stores it in a pickle file.
@@ -42,30 +42,22 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
         code = Hermite(converter, number_of_workers = 4)
         pert = 'Newtonian'
         code.particles.add_particles(parti)
-
+    
     else:
-        large_particle = Particles(1)
-        large_particle.mass = parti[0].mass
-        large_particle.velocity = parti[0].velocity
-        large_particle.position = parti[0].position
-        large_particle.key_tracker = parti[0].key_tracker
-        large_particle.collision_radius = 10000*parti[0].collision_radius
-        large_particle.radius = parti[0].radius
-        large_particle.ejection = 0
-        large_particle.collision_events = 0
+        particles = Particles()
+        particles.add_particle(GRX_set)
+        particles.add_particle(parti[1:])
+        parti = particles
 
         code = HermiteGRX(converter, number_of_workers = 4)
         perturbations = ["1PN_Pairwise", "1PN_EIH", "2.5PN_EIH"]
         pert = perturbations[2]
         code.parameters.perturbation = pert
         code.parameters.integrator = 'SymmetrizedRegularizedHermite'
-        code.large_particles.add_particles(large_particle)
         code.small_particles.add_particles(parti[1:])
+        code.large_particles.add_particles(GRX_set)
         code.parameters.light_speed = constants.c
-        print('Simulating GRX with: ', pert)
-
-    parti.collision_radius *= 10**6
-    parti.position *= 10**-4
+        print('Simulating GRX with: ', pert)   
 
     channel_IMBH = {"from_gravity": 
                     code.particles.new_channel_to(parti,
@@ -75,10 +67,9 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                     parti.new_channel_to(code.particles,
                     attributes=["mass", "collision_radius"],
                     target_names=["mass", "radius"])} 
-        
+
     code.parameters.dt_param = 1e-3
 
-    code.commit_particles()
     stopping_condition = code.stopping_conditions.collision_detection
     stopping_condition.enable()
       
@@ -91,7 +82,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
     N_parti = len(parti)
     init_IMBH = N_parti-1
     extra_note = ''
-
+    
     if pert == 'Newtonian':    
         parti_KE = code.particles.kinetic_energy()
         parti_BE = code.particles.potential_energy()
@@ -106,7 +97,6 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
     IMBH_tracker = data_trackers.IMBH_tracker(parti, time, N_parti)
     ejected_key_track = 000   
 
-
     while time < tend:
         eject  = 0
         iter += 1
@@ -116,7 +106,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
         ejected_mass = 0 | units.MSun
         tcoll = 0 | units.yr
 
-        if iter % 100 == 0:
+        if iter % 10 == 0:
             print('Iteration', iter, '@', cpu_time.ctime(cpu_time.time()))
             print('Change in Energy: ', de)
 
@@ -160,6 +150,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                 merge = 1
                 for ci in range(len(stopping_condition.particles(0))):
                     Nenc += 1
+                    print(Nenc)
                     if pert == 'Newtonian':
                         energy_before = code.potential_energy + code.kinetic_energy
 
@@ -169,18 +160,21 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string):
                         merged_parti = merge_IMBH(parti, enc_particles, code.model_time, int_string, code)
                         merger_mass = merged_parti.mass.sum()
                         cum_merger_mass += merger_mass
-                        parti.synchronize_to(code.particles)
                         energy_after = code.potential_energy + code.kinetic_energy
                     else:
                         energy_before = code.get_total_energy_with(pert)[0]
-                        enc_particles_set = Particles(particles=[code.stopping_conditions.collision_detection.particles(0),
-                                                                 code.stopping_conditions.collision_detection.particles(1)])
-                        enc_particles = enc_particles_set.get_intersecting_subset_in(parti)
-                        merged_parti = merge_IMBH(parti, enc_particles, code.model_time, int_string, code)
+                        particles = code.stopping_conditions.collision_detection.particles
+                        enc_particles_set = Particles()
+                        enc_particles_set.add_particle(particles(0))
+                        enc_particles_set.add_particle(particles(1))
+                        print(particles(0), particles(1))
+                        print('Set:', enc_particles_set)
+                        print(parti)
+                        merged_parti = merge_IMBH(parti, enc_particles_set, code.model_time, int_string, code)
                         merger_mass = merged_parti.mass.sum()
                         cum_merger_mass += merger_mass
-                        parti.synchronize_to(code.particles)
                         energy_after= code.get_total_energy_with(pert)[0]
+                    parti.synchronize_to(code.particles)
 
                     tcoll = time.in_(units.s) - eta*tend     
                                    

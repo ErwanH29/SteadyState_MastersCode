@@ -104,16 +104,17 @@ def merge_IMBH(parti, parti_in_enc, tcoll, int_string, code):
     new_particle.velocity = com_vel
     new_particle.radius = (2*constants.G*new_particle.mass)/(constants.c**2)
     new_particle.collision_radius = 3 * new_particle.radius
+    new_particle.coll_events = 1
 
     if int_string != 'Hermite':
-        code.small_particles.remove_particle(parti_in_enc[1])
         if new_particle.mass > 1e6 | units.MSun:
-            code.large_particles.remove_particles(parti_in_enc[idx])
+            print('code particles', code.particles)
+            code.particles.remove_particles(parti_in_enc)
             code.large_particles.add_particles(new_particle)
         else:
-            code.small_particles.remove_particles(parti_in_enc[idx])
+            code.particles.remove_particles(parti_in_enc)
             code.small_particles.add_particles(new_particle)
-            
+    
     parti.add_particles(new_particle)
     parti.remove_particles(parti_in_enc)
 
