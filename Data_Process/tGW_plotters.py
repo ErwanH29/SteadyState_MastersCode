@@ -72,149 +72,76 @@ class bin_tert_systems(object):
                     bin_sem = []
                     bin_ecc = []
 
-                    data_iter = np.shape(data)[1]
                     if parti_ == 0:
                         pass
                     else:
                         self.pop.append(np.shape(data)[0])
-                        if isinstance(data.iloc[parti_][-1][0], np.uint64):
-                            self.semi_SMBH_fin.append(data.iloc[parti_][-2][7][0])    # Preserve SMBH data 
-                            self.semi_SMBH_ini.append(data.iloc[parti_][2][7][0]) 
-                            self.ecc_SMBH_fin.append(data.iloc[parti_][-2][8][0])
-                            self.ecc_SMBH_ini.append(data.iloc[parti_][2][8][0])
-                            self.time_steps.append(np.shape(data)[1])
+                        self.semi_SMBH_fin.append(data.iloc[parti_][-2][7][0])
+                        self.semi_SMBH_ini.append(data.iloc[parti_][2][7][0]) 
+                        self.ecc_SMBH_fin.append(data.iloc[parti_][-2][8][0])
+                        self.ecc_SMBH_ini.append(data.iloc[parti_][2][8][0])
+                        self.time_steps.append(np.shape(data)[1])
 
-                            for col_ in range(np.shape(data)[1]): #Iterate over the data time-steps
-                                if data.iloc[parti_][col_][8][0] < 1:
-                                    semi_SMBH_temp.append(data.iloc[parti_][col_][7][0].value_in(units.pc))
-                                    ecc_SMBH_temp.append(data.iloc[parti_][col_][8][0])
-                                    val = (data.iloc[parti_][col_][7][0].value_in(units.pc))**4 * (1-data.iloc[parti_][col_][8][0]**2)**3.5
-                                    min_GW_SMBH.append(val)
-                                
-                                if abs(data.iloc[parti_][col_][8][1]) < 1 \
-                                    and data.iloc[parti_][col_][7][1] < 0.02 | units.parsec:
-                                    for part_ in range(np.shape(data)[0]):
-                                        if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
-                                            mass2 = data.iloc[part_][0][1]
-                                            bin_BE = ((constants.G*mass1*mass2)/(2*data.iloc[parti_][col_][7][1])).value_in(units.J) 
-                                            if bin_BE > avg_mass * 150000:   #Hard binary conditions based on Quinlan 1996b, 150000 from vel. dispersion found in Ghez et al. 1998
-                                                bin_key.append(data.iloc[parti_][col_][6][1])
-                                                bin_sem.append(data.iloc[parti_][col_][7][1].value_in(units.pc))
-                                                bin_ecc.append(data.iloc[parti_][col_][8][1])
-                                                mass_bin.append([mass1.value_in(units.MSun), mass2.value_in(units.MSun)])
-                                                val = (data.iloc[parti_][col_][7][1].value_in(units.pc))**4 * (1-data.iloc[parti_][col_][8][1]**2)**3.5
-                                                min_GW_bin.append(val)
+                        for col_ in range(np.shape(data)[1]-1):
+                            if data.iloc[parti_][col_][8][0] < 1:
+                                semi_SMBH_temp.append(data.iloc[parti_][col_][7][0].value_in(units.pc))
+                                ecc_SMBH_temp.append(data.iloc[parti_][col_][8][0])
+                                val = (data.iloc[parti_][col_][7][0].value_in(units.pc))**4 * (1-data.iloc[parti_][col_][8][0]**2)**3.5
+                                min_GW_SMBH.append(val)
+                            
+                            if abs(data.iloc[parti_][col_][8][1]) < 1 \
+                                and data.iloc[parti_][col_][7][1] < 0.02 | units.parsec:
+                                for part_ in range(np.shape(data)[0]):
+                                    if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
+                                        mass2 = data.iloc[part_][0][1]
+                                        bin_BE = ((constants.G*mass1*mass2)/(2*data.iloc[parti_][col_][7][1])).value_in(units.J) 
+                                        if bin_BE > (150000)**2*(1+mass1/mass2):  #Hard binary conditions based on Quinlan 1996b, 150000 from vel. dispersion found in Ghez et al. 1998
+                                            bin_key.append(data.iloc[parti_][col_][6][1])
+                                            bin_sem.append(data.iloc[parti_][col_][7][1].value_in(units.pc))
+                                            bin_ecc.append(data.iloc[parti_][col_][8][1])
+                                            mass_bin.append([mass1.value_in(units.MSun), mass2.value_in(units.MSun)])
+                                            val = (data.iloc[parti_][col_][7][1].value_in(units.pc))**4 * (1-data.iloc[parti_][col_][8][1]**2)**3.5
+                                            min_GW_bin.append(val)
 
-                                if data.iloc[parti_][col_][-1] < 1e-2:
-                                    Nclose += 1
-                            self.close_enc.append(Nclose)
+                            if data.iloc[parti_][col_][-1] < 1e-2:
+                                Nclose += 1
+                        self.close_enc.append(Nclose)
 
-                            mass_bin = np.asarray(mass_bin)
-                            bin_in = 0
-                            if len(bin_key) > 1:
-                                bin_sem = np.asarray(bin_sem)
-                                bin_ecc = np.asarray(bin_ecc)
-                                for rep_ in range(len(bin_key)):
+                        mass_bin = np.asarray(mass_bin)
+                        bin_in = 0
+                        if len(bin_key) > 1:
+                            bin_sem = np.asarray(bin_sem)
+                            bin_ecc = np.asarray(bin_ecc)
+                            for rep_ in range(len(bin_key)):
 
-                                    if bin_key[rep_] != bin_key[rep_-1]:
-                                        self.ecc_bin_avg.append(np.mean(bin_ecc[bin_in:rep_+1]))
-                                        self.semi_bin_avg.append(np.mean(bin_sem[bin_in:rep_+1]))
+                                if bin_key[rep_] != bin_key[rep_-1]:
+                                    self.ecc_bin_avg.append(np.mean(bin_ecc[bin_in:rep_+1]))
+                                    self.semi_bin_avg.append(np.mean(bin_sem[bin_in:rep_+1]))
 
-                                        idx = np.nanargmin(min_GW_bin)
-                                        self.ecc_bin_min.append(bin_ecc[idx])
-                                        self.semi_bin_min.append(bin_sem[idx])
-                                        self.mass_bin.append([mass_bin[idx][0], mass_bin[idx][1]])
+                                    idx = np.nanargmin(min_GW_bin)
+                                    self.ecc_bin_min.append(bin_ecc[idx])
+                                    self.semi_bin_min.append(bin_sem[idx])
+                                    self.mass_bin.append([mass_bin[idx][0], mass_bin[idx][1]])
 
-                                        bin_in = rep_
+                                    bin_in = rep_
 
-                                    if rep_ == len(bin_key)-1:
-                                        self.ecc_bin_avg.append(np.mean(bin_ecc[bin_in:rep_+1]))
-                                        self.semi_bin_avg.append(np.mean(bin_sem[bin_in:rep_+1]))
+                                if rep_ == len(bin_key)-1:
+                                    self.ecc_bin_avg.append(np.mean(bin_ecc[bin_in:rep_+1]))
+                                    self.semi_bin_avg.append(np.mean(bin_sem[bin_in:rep_+1]))
 
-                                        idx = np.nanargmin(min_GW_bin)
-                                        self.ecc_bin_min.append(bin_ecc[idx])
-                                        self.semi_bin_min.append(bin_sem[idx])
-                                        self.mass_bin.append([mass_bin[idx][0], mass_bin[idx][1]])
+                                    idx = np.nanargmin(min_GW_bin)
+                                    self.ecc_bin_min.append(bin_ecc[idx])
+                                    self.semi_bin_min.append(bin_sem[idx])
+                                    self.mass_bin.append([mass_bin[idx][0], mass_bin[idx][1]])
 
-                                        bin_in = rep_
+                                    bin_in = rep_
 
-                            if len(bin_key) == 1:
-                                self.semi_bin_avg.append(bin_sem[0])
-                                self.semi_bin_min.append(bin_sem[0])
-                                self.ecc_bin_avg.append(bin_ecc[0])
-                                self.ecc_bin_min.append(bin_ecc[0])
-                                self.mass_bin.append([mass_bin[0][0], mass_bin[0][1]])
-                                    
-                        else:
-                            self.semi_SMBH_fin.append(data.iloc[parti_][-2][7][0])    # Preserve SMBH data 
-                            self.semi_SMBH_ini.append(data.iloc[parti_][2][7][0]) 
-                            self.ecc_SMBH_fin.append(data.iloc[parti_][-2][8][0])
-                            self.ecc_SMBH_ini.append(data.iloc[parti_][2][8][0])
-                            self.time_steps.append(np.shape(data)[1])
-
-                            for col_ in range(np.shape(data)[1]):
-                                if col_ < 3 or col_ == np.shape(data)[1]-1:
-                                    pass
-                                else:
-                                    if data.iloc[parti_][col_][8][0] < 1:
-                                        semi_SMBH_temp.append(data.iloc[parti_][col_][7][0].value_in(units.pc))
-                                        ecc_SMBH_temp.append(data.iloc[parti_][col_][8][0])
-                                        val = (data.iloc[parti_][col_][7][0].value_in(units.pc))**4 * (1-data.iloc[parti_][col_][8][0]**2)**3.5
-                                        min_GW_SMBH.append(val)
-                                                                      
-                                    if abs(data.iloc[parti_][col_][8][1]) < 1 \
-                                        and data.iloc[parti_][col_][7][1] < 0.02 | units.parsec:
-                                        for part_ in range(np.shape(data)[0]):
-                                            if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
-                                                mass2 = data.iloc[part_][0][1]
-                                                bin_BE = ((constants.G*mass1*mass2)/(2*data.iloc[parti_][col_][7][1])).value_in(units.J) 
-                                                if bin_BE > avg_mass * 150000:   #Hard binary conditions based on Quinlan 1996b
-                                                    bin_key.append(data.iloc[parti_][col_][6][1])
-                                                    bin_sem.append(data.iloc[parti_][col_][7][1].value_in(units.pc))
-                                                    bin_ecc.append(data.iloc[parti_][col_][8][1])
-                                                    mass_bin.append([mass1.value_in(units.MSun), mass2.value_in(units.MSun)])
-                                                    val = (data.iloc[parti_][col_][7][1].value_in(units.pc))**4 * (1-data.iloc[parti_][col_][8][1]**2)**3.5
-                                                    min_GW_bin.append(val)
-
-                                if data.iloc[parti_][col_][-1] < 1e-2:
-                                    Nclose += 1
-                            self.close_enc.append(Nclose)
-
-                            mass_bin = np.asarray(mass_bin)
-                            bin_in = 0
-                            if len(bin_key) > 1:
-                                bin_sem = np.asarray(bin_sem)
-                                bin_ecc = np.asarray(bin_ecc)
-                                for rep_ in range(len(bin_key)):
-
-                                    if bin_key[rep_] != bin_key[rep_-1]:
-                                        self.ecc_bin_avg.append(np.mean(bin_ecc[bin_in:rep_+1]))
-                                        self.semi_bin_avg.append(np.mean(bin_sem[bin_in:rep_+1]))
-
-                                        idx = np.nanargmin(min_GW_bin)
-                                        self.ecc_bin_min.append(bin_ecc[idx])
-                                        self.semi_bin_min.append(bin_sem[idx])
-                                        
-                                        self.mass_bin.append([mass_bin[idx][0], mass_bin[idx][1]])
-                                        bin_in = rep_
-
-                                    if rep_ == len(bin_key)-1:
-                                        self.ecc_bin_avg.append(np.mean(bin_ecc[bin_in:rep_+1]))
-                                        self.semi_bin_avg.append(np.mean(bin_sem[bin_in:rep_+1]))
-
-                                        idx = np.nanargmin(min_GW_bin)
-                                        self.ecc_bin_min.append(bin_ecc[idx])
-                                        self.semi_bin_min.append(bin_sem[idx])
-
-                                        self.mass_bin.append([mass_bin[idx][0], mass_bin[idx][1]])
-                                        bin_in = rep_
-                                        
-                            if len(bin_key) == 1:
-                                self.semi_bin_avg.append(bin_sem[0])
-                                self.semi_bin_min.append(bin_sem[0])
-                                self.ecc_bin_avg.append(bin_ecc[0])
-                                self.ecc_bin_min.append(bin_ecc[0])
-                                self.mass_bin.append([mass_bin[0][0], mass_bin[0][1]])
+                        if len(bin_key) == 1:
+                            self.semi_bin_avg.append(bin_sem[0])
+                            self.semi_bin_min.append(bin_sem[0])
+                            self.ecc_bin_avg.append(bin_ecc[0])
+                            self.ecc_bin_min.append(bin_ecc[0])
+                            self.mass_bin.append([mass_bin[0][0], mass_bin[0][1]])
 
                         semi_SMBH_temp = np.asarray(semi_SMBH_temp)
                         ecc_SMBH_temp = np.asarray(ecc_SMBH_temp)
@@ -262,11 +189,11 @@ class bin_tert_systems(object):
         ax.plot(self.LIGO_semimaj_min, self.ecc_range, linestyle = ':', color = 'black')
         ax.plot(self.LIGO_semimaj, self.ecc_range, linestyle = '-.', color = 'black')
         ax.plot(self.LIGO_semimaj_max, self.ecc_range, linestyle = ':', color = 'black')
+        ax.fill_between(np.append(self.LIGO_semimaj_min, self.LIGO_semimaj_max[::-1]), np.append(self.ecc_range[:], self.ecc_range[::-1]), alpha = 0.2, color = 'blue')
         ax.plot(self.LISA_semimaj_min, self.ecc_range, linestyle = ':', color = 'black')
         ax.plot(self.LISA_semimaj, self.ecc_range, linestyle = '-.', color = 'black')
         ax.plot(self.LISA_semimaj_max, self.ecc_range, linestyle = ':', color = 'black')
         ax.fill_between(np.append(self.LISA_semimaj_min, self.LISA_semimaj_max[::-1]), np.append(self.ecc_range[:], self.ecc_range[::-1]), alpha = 0.2, color = 'red')
-        ax.fill_between(np.append(self.LIGO_semimaj_min, self.LIGO_semimaj_max[::-1]), np.append(self.ecc_range[:], self.ecc_range[::-1]), alpha = 0.2, color = 'blue')
 
         return ax
 
@@ -350,9 +277,13 @@ class bin_tert_systems(object):
         ax.set_xlabel(r'$\log_{10}h$')
         ax.set_ylabel(r'Occurence')
         ax.set_title('Gravitational Strain Histogram')
+        ax.text(-16, 0.6, r'$r_{merger} = 8$ kpc')
         plot_ini.tickers(ax, 'plot')
         ax.legend()
         plt.savefig('figures/gravitational_waves/GWstrain__IMBH_histogram.pdf', dpi = 300, bbox_inches='tight')
+
+        print('For z ~ 2.5, IMBH-IMBH strain which is inversely proportional to distance becomes: ', np.mean(tgw_amp_avg_IMBH) * (8000/6025) * 10**-6)
+        print('For z ~ 2.5, SMBH-IMBH strain which is inversely proportional to distance becomes: ', np.mean(tgw_amp_avg_SMBH) * (8000/6025) * 10**-6)
 
     def SMBH_tgw_plotter(self):
         """
@@ -461,7 +392,6 @@ class bin_tert_systems(object):
             idx = np.where(self.pop == pop_)[0]
             avg_tgw[iter] = np.mean(tgw_ratio[idx])
             close_enc[iter] = np.mean(np.asarray(self.close_enc)[idx])
-        print(tgw_ratio)
 
         fig, ax = plt.subplots()
         colour_axes = ax.scatter(ini_pop, np.log10(avg_tgw), edgecolors = 'black', c = close_enc)

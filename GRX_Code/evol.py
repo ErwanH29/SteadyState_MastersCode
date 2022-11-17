@@ -39,7 +39,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
     initial_set = parti.copy()
 
     if int_string == 'Hermite':
-        code = Hermite(converter, number_of_workers = 4)
+        code = Hermite(converter, number_of_workers = 6)
         pert = 'Newtonian'
         code.particles.add_particles(parti)
     
@@ -49,15 +49,19 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
         particles.add_particle(parti[1:])
         parti = particles
 
-        code = HermiteGRX(converter, number_of_workers = 4)
+        code = HermiteGRX(converter, number_of_workers = 6)
         perturbations = ["1PN_Pairwise", "1PN_EIH", "2.5PN_EIH"]
         pert = perturbations[2]
         code.parameters.perturbation = pert
-        code.parameters.integrator = 'SymmetrizedRegularizedHermite'
+        code.parameters.integrator = 'RegularizedHermite'
         code.small_particles.add_particles(parti[1:])
         code.large_particles.add_particles(GRX_set)
         code.parameters.light_speed = constants.c
         print('Simulating GRX with: ', pert)   
+
+    code.parameters.dt_param = 1e-3
+    stopping_condition = code.stopping_conditions.collision_detection
+    stopping_condition.enable()
 
     channel_IMBH = {"from_gravity": 
                     code.particles.new_channel_to(parti,
@@ -68,11 +72,6 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
                     attributes=["mass", "collision_radius"],
                     target_names=["mass", "radius"])} 
 
-    code.parameters.dt_param = 1e-3
-
-    stopping_condition = code.stopping_conditions.collision_detection
-    stopping_condition.enable()
-      
     time = 0 | units.yr
     iter = 0
     Nenc = 0
@@ -123,8 +122,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
             curr_traj = (np.dot(dist_core, rel_vel))/(dist_vect * vel_vect) #Movement towards SMBH
 
             parti_KE = 0.5*particle.mass*(rel_vel.length())**2
-            temp_PE = indiv_PE_all(particle, parti)
-            parti_BE = np.sum(temp_PE)
+            parti_BE = np.sum(indiv_PE_all(particle, parti))
 
             bin_sys = Particles()
             bin_sys.add_particle(particle)
@@ -150,12 +148,11 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
                 merge = 1
                 for ci in range(len(stopping_condition.particles(0))):
                     Nenc += 1
-                    print(Nenc)
+
                     if pert == 'Newtonian':
                         energy_before = code.potential_energy + code.kinetic_energy
-
                         enc_particles_set = Particles(particles=[stopping_condition.particles(0)[ci],
-                                                            stopping_condition.particles(1)[ci]])
+                                                                 stopping_condition.particles(1)[ci]])
                         enc_particles = enc_particles_set.get_intersecting_subset_in(parti)
                         merged_parti = merge_IMBH(parti, enc_particles, code.model_time, int_string, code)
                         merger_mass = merged_parti.mass.sum()
@@ -164,20 +161,14 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
                     else:
                         energy_before = code.get_total_energy_with(pert)[0]
                         particles = code.stopping_conditions.collision_detection.particles
-                        enc_particles_set = Particles()
-                        enc_particles_set.add_particle(particles(0))
-                        enc_particles_set.add_particle(particles(1))
-                        print(particles(0), particles(1))
-                        print('Set:', enc_particles_set)
-                        print(parti)
+                        enc_particles_set = Particles(particles=[particles(0), particles(1)])
                         merged_parti = merge_IMBH(parti, enc_particles_set, code.model_time, int_string, code)
                         merger_mass = merged_parti.mass.sum()
                         cum_merger_mass += merger_mass
                         energy_after= code.get_total_energy_with(pert)[0]
                     parti.synchronize_to(code.particles)
 
-                    tcoll = time.in_(units.s) - eta*tend     
-                                   
+                    tcoll = time.in_(units.s) - eta*tend
                     deltaE = abs(energy_after-energy_before)/abs(energy_before)
                     data_trackers.stable_sim_tracker(parti, injbin, merge, merger_mass, stab_timescale, int_string, deltaE, pert) 
                     
@@ -186,8 +177,13 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
 
         channel_IMBH["from_gravity"].copy()
 
-        parti[0].position = code.particles[0].position
-        parti[0].velocity = code.particles[0].velocity
+        if int_string == 'GRX':
+            if Nenc == 0 :
+                parti[0].position = code.particles[0].position
+                parti[0].velocity = code.particles[0].velocity
+            else:
+                parti[-1].position = code.particles[0].position
+                parti[-1].velocity = code.particles[0].velocity
 
         rows = (len(parti)+Nenc)
         df_IMBH = pd.DataFrame()
@@ -196,6 +192,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
             for j in range(len(parti)):
                 if IMBH_tracker.iloc[i][0][0] == parti[j].key_tracker:
                     neighbour_dist, nearest_parti, second_nearest = nearest_neighbour(parti[j], parti)
+
                     semimajor = []
                     eccentric = []
                     inclinate = []
@@ -203,7 +200,8 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
                     asc_node  = []
                     true_anom = []
                     neigh_key = []
-                    if i == 0:
+
+                    if i == 0 and Nenc == 0:
                         semimajor = [0, 0, 0]
                         eccentric = [0, 0, 0]
                         inclinate = [0, 0, 0]
@@ -213,48 +211,33 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
                         neigh_key = [0, 0, 0]
 
                     else:
-                        bin_sys = Particles()                # First elements of the orbital arrays will be parti + SMBH
-                        bin_sys.add_particle(parti[j])
-                        bin_sys.add_particle(parti[0])
-                        kepler_elements = orbital_elements_from_binary(bin_sys, G=constants.G)
-                        semimajor.append(kepler_elements[2].value_in(units.parsec))
-                        eccentric.append(kepler_elements[3])
-                        inclinate.append(kepler_elements[4])
-                        arg_peri.append(kepler_elements[5])
-                        asc_node.append(kepler_elements[6])
-                        true_anom.append(kepler_elements[7])
-                        neigh_key.append(parti[0].key_tracker)
-
-                        bin_sys = Particles()                 # Second elements correspond to IMBH + IMBH
-                        bin_sys.add_particle(parti[j])
-                        bin_sys.add_particle(nearest_parti)
-                        kepler_elements = orbital_elements_from_binary(bin_sys, G=constants.G)
-                        semimajor.append(kepler_elements[2].value_in(units.parsec))
-                        eccentric.append(kepler_elements[3])
-                        inclinate.append(kepler_elements[4])
-                        arg_peri.append(kepler_elements[5])
-                        asc_node.append(kepler_elements[6])
-                        true_anom.append(kepler_elements[7])
-                        neigh_key.append(nearest_parti.key_tracker)
-                        
-                        hier_sys = Particles(1)
-                        hier_sys[0].mass = bin_sys.mass.sum()
-                        hier_sys[0].position = bin_sys.center_of_mass()
-                        hier_sys[0].velocity = bin_sys.center_of_mass_velocity()
-                        hier_sys.add_particle(second_nearest)
-                        kepler_elements = orbital_elements_from_binary(hier_sys, G=constants.G)
-                        semimajor.append(kepler_elements[2].value_in(units.parsec))
-                        eccentric.append(kepler_elements[3])
-                        inclinate.append(kepler_elements[4])
-                        arg_peri.append(kepler_elements[5])
-                        asc_node.append(kepler_elements[6])
-                        true_anom.append(kepler_elements[7])
-                        neigh_key.append(second_nearest.key_tracker)
-
+                                      # First elements of the orbital arrays will be parti + SMBH
+                        if Nenc == 0:
+                            SMBH_parti = parti[0]
+                        else:
+                            SMBH_parti = parti[-1]
+                        for part_ in [SMBH_parti, nearest_parti, second_nearest]:
+                            bin_sys = Particles()  
+                            bin_sys.add_particle(parti[j])
+                            bin_sys.add_particle(part_)
+                            kepler_elements = orbital_elements_from_binary(bin_sys, G=constants.G)
+                            semimajor.append(kepler_elements[2].value_in(units.parsec))
+                            eccentric.append(kepler_elements[3])
+                            inclinate.append(kepler_elements[4])
+                            arg_peri.append(kepler_elements[5])
+                            asc_node.append(kepler_elements[6])
+                            true_anom.append(kepler_elements[7])
+                            if part_ == SMBH_parti:
+                                if Nenc == 0:
+                                    neigh_key.append(parti[0].key_tracker)
+                                else:
+                                    neigh_key.append(parti[-1].key_tracker)
+                            else:
+                                neigh_key.append(part_.key_tracker)
 
                     parti_KE = 0.5*parti[j].mass*((parti[j].velocity-parti[0].velocity).length())**2
-                    temp_PE = indiv_PE_all(parti[j], parti)
-                    parti_PE = np.sum(temp_PE)
+                    parti_PE = np.sum(indiv_PE_all(parti[j], parti))
+
                     df_IMBH_vals = pd.Series({'{}'.format(time): [parti[j].key_tracker, parti[j].mass, parti[j].position, parti[j].velocity, 
                                                                   parti_KE, parti_PE, neigh_key, semimajor * 1 | units.parsec, 
                                                                   eccentric, inclinate, arg_peri, asc_node, true_anom, neighbour_dist]})
@@ -308,12 +291,15 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
             ejected_key_track = parti[1].key_tracker
        
         path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/GRX/'
-        file_names = 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(init_IMBH)+'_sim'+str(count)+'_init_dist'+str('{:.3f}'.format(init_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(parti[2].mass.value_in(units.MSun)))+'.pkl'
+        file_names = 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(init_IMBH)+'_sim'+str(count)+ \
+                     '_init_dist'+str('{:.3f}'.format(init_dist.value_in(units.parsec)))+'_equal_mass_' \
+                     +str('{:.3f}'.format(parti[2].mass.value_in(units.MSun)))+'.pkl'
 
         IMBH_tracker.to_pickle(os.path.join(path+str('particle_trajectory'), file_names))
         energy_tracker.to_pickle(os.path.join(path+str('energy'), file_names))
         data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, chaos_stab_timescale, 
-                                          added_mass, ejected_mass, comp_time, eject, int_string, pert) #For different dependent variables [clust_dist, clust_rad, ALICE/local...], change output file name
+                                          added_mass, ejected_mass, comp_time, eject, int_string, pert)
+                                          
         if Nenc > 0:
             data_trackers.coll_tracker(int_string, init_IMBH, count, init_dist, parti, tcoll, 
                                        enc_particles_set, ejected_key_track, merger_mass, pert)

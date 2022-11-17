@@ -15,7 +15,7 @@ class loss_cone(object):
         self.no_data = len(self.IMBH_tracker)
 
         self.SMBH_mass = self.IMBH_tracker[0].iloc[0][1][1]
-        self.SMBH_angL = np.log10(np.sqrt((((2*constants.G*self.SMBH_mass)*(8*constants.G*self.SMBH_mass*constants.c**-2)))).value_in(units.m*units.m/units.s))
+        self.SMBH_angL = np.log10(np.sqrt((((2*constants.G*self.SMBH_mass)*(8*constants.G*self.SMBH_mass*constants.c**-2)))).value_in(units.m*units.m/units.s)) #TB2008 chapter 7
 
         self.angL_init = []
         self.angL_avg = []
@@ -32,7 +32,7 @@ class loss_cone(object):
         outputs: The angular momentum of a particular particle
         """
         qK_val = semi_ax * ecc
-        angMom_val = (2*constants.G*self.SMBH_mass*qK_val).sqrt().value_in(units.m*units.m/units.s)
+        angMom_val = (2*constants.G*self.SMBH_mass*qK_val).sqrt().value_in(units.m*units.m/units.s) #TB2008 chapter 7
         return angMom_val
 
     def data_extractor(self):
@@ -43,17 +43,14 @@ class loss_cone(object):
         for j in range(self.no_data):
             sim_data = self.IMBH_tracker[j]
             for parti_ in range(len(sim_data)):
-                if parti_ == 0:  # Don't care for SMBH
-                    pass
-                else:
-                    if isinstance(sim_data.iloc[parti_][-1][0], np.uint64):           # Neglect removed particle
+                if parti_ !=0 and isinstance(sim_data.iloc[parti_][-1][0], np.uint64):
                         self.init_pop.append((np.shape(self.IMBH_tracker[j]))[0])
                         angL_val = 0
                         for col_ in range(np.shape(sim_data)[1]-1):
                             semi_val = sim_data.iloc[parti_][col_][7][0]
                             ecc_val = (1-sim_data.iloc[parti_][col_][8][0])
                             angL_val += self.ang_momentum(semi_val, ecc_val)
-                        angL_val /= np.shape(sim_data)[1] - 1                         # Average change per kyr
+                        angL_val /= np.shape(sim_data)[1] - 1                # Average change per kyr
                         self.angL_avg.append(angL_val)
 
                         semi_val_init = sim_data.iloc[parti_][2][7][0]

@@ -1,9 +1,9 @@
 from amuse.lab import *
 from amuse.units import (units, constants)
 from amuse.ic.plummer import new_plummer_model
-from random import random, choices
-import numpy as np
 from amuse.ext.LagrangianRadii import LagrangianRadii
+from random import choices
+import numpy as np
 
 class MW_SMBH(object):
     """
@@ -26,7 +26,7 @@ class IMBH_init(object):
     """
     def __init__(self):
         self.N = 0
-        self.mass = 1000 | units.MSun                                    #Change this for different mass simulations
+        self.mass = 1000 | units.MSun
 
     def N_count(self):
         """
@@ -67,22 +67,37 @@ class IMBH_init(object):
         Function to give a velocity for an initialised particle
         """
 
-        vrange = np.linspace(0, 700) # in kms
         np.random.seed(vseed)
-        r=[-1,1]
+
+        vrange = np.linspace(0, 700) # in kms
+        r = [-1,1]
         w = self.ProbFunc(vrange)
         scale = [np.random.choice(r), [np.random.choice(r)], [np.random.choice(r)]]
+
         vx = np.array(choices(vrange, weights=w, k = 1))*scale[0]
         vy = np.array(choices(vrange, weights=w, k = 1))*scale[1]
         vz = np.array(choices(vrange, weights=w, k = 1))*scale[2]
  
         return np.concatenate((vx,vy,vz))
 
-    def kroupa_mass(self):
-        return new_kroupa_mass_distribution(1, 50 | units.MSun, 10**5 | units.MSun)
+    def kroupa_mass(self, pset, vseed):
+        """
+        Function to set particle masses based on the Kroupa function
+        """
+        np.random.seed(vseed)
 
-    def plummer_distr(self, N, seed):
-        np.random.seed(seed)
+        return new_kroupa_mass_distribution(pset, 50 | units.MSun, 10**5 | units.MSun)
+
+    def plummer_distr(self, N, vseed):
+        """
+        Function to initialise the particles position based on the Plummer model
+        
+        Inputs:
+        N:      The number of particles wished to simulate
+        vseed:  The random seed to constrain simulation differences
+        """
+
+        np.random.seed(vseed)
         distr = new_plummer_model(N, convert_nbody = self.code_conv)
         rhmass = LagrangianRadii(distr)[6].in_(units.parsec)
         return distr, rhmass
@@ -94,7 +109,7 @@ class IMBH_init(object):
 
         Inputs:
         init_parti: The (2+N) number of IMBH particles you wish to simulate
-        seed:       Seed for which initialises the system
+        seed:       Seed which defines the initial configuration of the system
         """
         
         SMBH_parti = MW_SMBH()
@@ -111,15 +126,17 @@ class IMBH_init(object):
         particles.coll_events = 0
         particles.z *= 0.1
         particles.key_tracker = particles.key
+        particles[0].position = SMBH_parti.position
+        particles[0].velocity = SMBH_parti.velocity
         particles[1:].mass = self.mass
+        #particles[1:round(self.N/3)].mass = self.mass
+        #particles[round(self.N/3):].mass = self.kroupa_mass(len(particles[round(self.N/3):]), seed)
         particles.radius = self.IMBH_radius(particles.mass)
         particles.collision_radius = self.coll_radius(particles.radius)
 
         min_dist = 0.15 | units.parsec
         max_dist = 0.25 | units.parsec
         
-        particles[0].position = [0, 0, 0] | units.parsec
-        particles[0].velocity = [0, 0, 0] | units.ms
         for parti_ in particles[1:]:
             if parti_.position.length() < min_dist:
                 parti_.position *= min_dist/parti_.position.length()
@@ -136,11 +153,11 @@ class IMBH_init(object):
                 parti_.vx = (constants.G*SMBH_parti.mass * (abs(parti_.y)/parti_.position.length()**2)).sqrt()
                 parti_.vy = (constants.G*SMBH_parti.mass * (abs(parti_.x)/parti_.position.length()**2)).sqrt()
 
+        #particles[1:round(self.N/3)].mass = self.mass
+        #particles[round(self.N/3):].mass = self.kroupa_mass(len(particles[round(self.N/3):]), seed)
         particles[1:].mass = self.mass
         particles[0].mass = SMBH_parti.mass
         particles.radius = self.IMBH_radius(particles.mass)
         particles.collision_radius = self.coll_radius(particles.radius)
-
-        print(particles.kinetic_energy(), particles.potential_energy())
         
         return particles, rhmass

@@ -1,6 +1,6 @@
-from amuse.ext.galactic_potentials import MWpotentialBovy2015
 from file_logistics import *
 from spatial_plotters import *
+from amuse.ext.galactic_potentials import MWpotentialBovy2015
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
@@ -70,24 +70,21 @@ class KE_PE_plotters(object):
 
         for i in range(len(file_IMBH)):
             ext[i], eyt[i], ezt[i], vesc[i], ejec_KEt[i], ejec_PEt[i], Nclose[i], \
-            ejected[i] = ejected_extract_final(file_IMBH[i], file_ejec[i], 'E') #Change S to E
+            ejected[i] = ejected_extract_final(file_IMBH[i], file_ejec[i], 'E')
         ejec_PEt = np.asarray(ejec_PEt)
         #ejec_PE = np.asarray([PE_ + ((1000*1|units.MSun) * MW_code.get_potential_at_point(0, x * 1 | units.pc, y * 1 | units.pc, z * 1 | units.pc)).value_in(units.J) for PE_, x, y, z in zip(ejec_PE, ex, ey, ez)])
-        ejec_KE = ejec_KEt[np.isfinite(ejec_KEt)]
-        ejec_PE = ejec_PEt[np.isfinite(ejec_KEt)]
+        ejec_KE = np.asarray(ejec_KEt[np.isfinite(ejec_KEt)])
+        ejec_PE = np.asarray(ejec_PEt[np.isfinite(ejec_KEt)])
         ex = ext[np.isfinite(ext)] ; ey = eyt[np.isfinite(eyt)] ; ez = ezt[np.isfinite(ezt)]
         PE_MW = ((1e3 | units.MSun) * MW_code.get_potential_at_point(0, 1 | units.pc, 1 | units.pc, 1 | units.pc)).value_in(units.J) / max(ejec_KE)
 
         if filter == 'B':
-            idx = np.where(ejec_KE < 1e46)                   # Change to 1e45 when more data
-            ejected_KE1 = np.asarray([i for i in ejec_KE[idx]])
-            ejected_PE1 = np.asarray([i for i in ejec_PE[idx]])
-            final_pos = np.asarray([(i**2+j**2+z**2)**0.5 for i, j, z in zip(ex, ey, ez)])[idx]
+            ejected_KE = np.asarray(ejec_KE[(ejec_KE < 1e46) & (abs(ejec_PE) < 1e46)])
+            ejected_PE = np.asarray(ejec_PE[(ejec_KE < 1e46) & (abs(ejec_PE) < 1e46)])
+            final_pos = np.asarray([(i**2+j**2+z**2)**0.5 for i, j, z in zip(ex, ey, ez)])[(ejec_KE < 1e46) & (abs(ejec_PE) < 1e46)]
 
-            idx = np.where(abs(ejected_PE1) < 1e46)
-            ejected_KE = np.asarray([i/max(ejected_KE1[idx]) for i in ejected_KE1[idx]])
-            ejected_PE = np.asarray([i/max(ejected_KE1[idx]) for i in ejected_PE1[idx]])
-            final_pos = np.asarray(final_pos[idx])
+            ejected_KE /= max(ejected_KE)
+            ejected_PE /= max(ejected_KE)
 
         else:
             ejected_KE = np.asarray([i/np.nanmax(ejec_KE) for i in ejec_KE])
@@ -133,14 +130,11 @@ class KE_PE_plotters(object):
 
                 ax.set_title(r'Ejected Particle $K_E$ vs. $P_E$')
                 contours = ax2.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-                #ax2.scatter(KE, PE, s = 15, color = 'red', edgecolors = 'black')
-                #ax2.set_ylim(m(PE),0)
                 ax2.set_xlim(0,max(KE))
                 bin2d_sim, xedges_s, yedges_s, image = ax1.hist2d(KE, PE, bins=(80, 80), range=([0,0.35],[-0.35,0]))
                 bin2d_sim /= np.max(bin2d_sim)
                 extent = [0, 0.3, -0.3,0]
                 contours = ax1.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-                #ax1.scatter(KE, PE, s = 15, color = 'red', edgecolors = 'black')
                 cbar = plt.colorbar(contours, ax=ax2)
                 cbar.set_label(label = r'$\log_{10}(N/N_{max})$',rotation=270,labelpad=15)
 
@@ -192,11 +186,8 @@ class KE_PE_plotters(object):
                 ax.set_ylim(-1, -10**-6)
                 ax.set_xlabel(r'$E_K/E_{{K, {}}}$'.format(str('max')))
                 ax.set_ylabel(r'$E_P/E_{{K, {}}}$'.format(str('max')))
-                #ax.set_yscale('symlog')
-                #ax.set_xscale('log')
                 contours = ax.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
                 ax.plot(linex, liney, color = 'black', linestyle = '-.')
-                #ax.scatter(KE, PE, s=15, color = 'red', edgecolors ='black')
                 cbar = plt.colorbar(contours, ax=ax)
                 cbar.set_label(r"$\log_{10}(N/N_{max})$", labelpad=15)
                 
@@ -214,14 +205,12 @@ class KE_PE_plotters(object):
             data = data_ext_files()
 
             save_file = ['fpos', 'fpos_crop']
-            save_file_hist = ['histogram', 'histogram_crop']
             data_filt = [None, 'B']
 
             for i in range(2):
                 axis = i+1
                 ejected_KE, ejected_PE, final_pos, unbounded_x, unbounded_y, line_MW = self.energy_data_extract(data_filt[i], data.IMBH_data, data.ejec_data)
-                self.energy_plot_setup(ejected_KE, ejected_PE, unbounded_x, unbounded_y, line_MW, final_pos, 'Final Distance to Core [pc]', axis, save_file[i], 'N')  
-                #self.finalpos_energy_plotter(ejected_KE, ejected_PE, unbounded_x, unbounded_y, final_pos, r'$\log_{10}n$', i, save_file_hist[i], 'Y')  
+                self.energy_plot_setup(ejected_KE, ejected_PE, unbounded_x, unbounded_y, line_MW, final_pos, 'Final Distance to Core [pc]', axis, save_file[i], 'N')
 
 class vejection(object):
     """

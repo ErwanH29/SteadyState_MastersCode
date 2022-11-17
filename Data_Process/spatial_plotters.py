@@ -74,7 +74,7 @@ class plotter_setup(object):
         Function which removes the excessive terms
         """
         
-        arr[:][abs(arr[:]) > 10**5] = np.NaN
+        arr[:][abs(arr[:]) > 10**7] = np.NaN
         return arr
 
 def colour_picker():
@@ -304,9 +304,7 @@ def energy_plotter(int_string):
     merger_mass = np.empty((col_len - 1))
 
     for i in range(col_len):
-        if i == 0:
-            pass
-        else:
+        if i != 0:
             vals = energy_tracker.iloc[i]
             IMBHapp_array[i-1] = vals[0].value_in(units.Myr)
             merger_mass[i-1] = vals[1].value_in(units.MSun)
@@ -437,7 +435,7 @@ def spatial_plotter(int_string):
     ax4.set_xlabel(r'$y$ [pc]')
     ax4.set_ylabel(r'$z$ [pc]')
     iter = -1
-    print(line_x[0])
+    
     for i in range(len(IMBH_tracker)):
         iter += 1
         if iter > len(colours):
@@ -787,6 +785,6 @@ def direct_comparison(int_string):
     plt.savefig('figures/system_evolution/herm_GRX_trajdiff_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
 
 #direct_comparison('Hermite')
-spatial_plotter('GRX')
+#spatial_plotter('GRX')
 #energy_plotter('Hermite')
 #ejected_evolution('Hermite')

@@ -1,34 +1,8 @@
 from amuse.lab import *
 from amuse.units import units
-from amuse.ext.orbital_elements import orbital_elements_from_binary
 from parti_initialiser import *
 from evol_func import *
 import numpy as np
-
-def bin_global(parti1, parti2):
-    """
-    Function which computes the Kepler elements for a specific binary.
-    
-    Inputs:
-    parti1: The first particle in the binary
-    parti2: The second particle in the binary
-    """
-
-    bin_sys =  Particles()
-    bin_sys.add_particle(parti1)
-    bin_sys.add_particle(parti2)
-
-    kepler_elements = orbital_elements_from_binary(bin_sys, G=constants.G)    
-    mass1 = kepler_elements[0]
-    mass2 = kepler_elements[1]
-    semimajor = kepler_elements[2]
-    eccentric = kepler_elements[3]
-    inclinate = kepler_elements[4]
-    arg_peri  = kepler_elements[5]
-    asc_node  = kepler_elements[6]
-    true_anom = kepler_elements[7]
-
-    return  mass1, mass2, semimajor, eccentric, inclinate, arg_peri, asc_node, true_anom
 
 def calc_momentum(indivp):
     """
@@ -37,8 +11,7 @@ def calc_momentum(indivp):
     indivp: The colliding particles
     """
 
-    mom_value = (indivp.mass * indivp.velocity).sum()
-    return mom_value
+    return (indivp.mass * indivp.velocity).sum()
 
 def find_nearest(array, value):
     """
@@ -67,11 +40,8 @@ def indiv_PE_all(indivp, set):
             pass
         else:
             distance = (indivp.position-comp_.position).length()
-            if distance == 0 | units.m:
-               pass
-            else:
-                temp_PE = (-constants.G*indivp.mass*comp_.mass)/abs(distance)
-                array.append(temp_PE)
+            temp_PE = (-constants.G*indivp.mass*comp_.mass)/abs(distance)
+            array.append(temp_PE)
 
     return array
 
@@ -93,11 +63,8 @@ def merge_IMBH(parti, parti_in_enc, tcoll, int_string, code):
     new_particle  = Particles(1)
     if calc_momentum(parti_in_enc[0]) > calc_momentum(parti_in_enc[1]):
         new_particle.key_tracker = parti_in_enc[0].key
-        idx = 0
     else: 
         new_particle.key_tracker = parti_in_enc[1].key
-        idx = 1
-    
     new_particle.mass = parti_in_enc.total_mass()
     new_particle.collision_time = tcoll
     new_particle.position = com_pos
@@ -108,7 +75,6 @@ def merge_IMBH(parti, parti_in_enc, tcoll, int_string, code):
 
     if int_string != 'Hermite':
         if new_particle.mass > 1e6 | units.MSun:
-            print('code particles', code.particles)
             code.particles.remove_particles(parti_in_enc)
             code.large_particles.add_particles(new_particle)
         else:
@@ -136,6 +102,7 @@ def nearest_neighbour(indivp, pset):
         else:
             rel_pos = indivp.position - pset[i].position
             min_dist.append(rel_pos.length().value_in(units.parsec))
+            
     temp = np.sort(min_dist)
     index = np.where(min_dist == temp[0])[0]
     index2 = np.where(min_dist == temp[1])[0]

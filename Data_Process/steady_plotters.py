@@ -171,12 +171,9 @@ class stability_plotters(object):
             red_slope = str('{:.2f}'.format(slope))
             xtemp = np.linspace(8, 105, 1000)
             ytemp = [log_fit(i, slope, intercept) for i in xtemp]
-            #ytemp2 = [913.74*(i*np.log(i))**-1 for i in xtemp]
             
             ax.plot(xtemp, ytemp, zorder = 1, color = 'black', ls = '-.')
-            #ax.plot(xtemp, ytemp2, zorder = 4, color = 'blue', ls = '-.')
             ax.text(8, 4, r'$t_{{surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')
-
             ax.legend()
             ax.xaxis.labelpad = 30
             plt.savefig('figures/steady_time/const_population_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')

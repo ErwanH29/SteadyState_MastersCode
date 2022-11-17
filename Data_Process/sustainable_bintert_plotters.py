@@ -43,7 +43,7 @@ class sustainable_sys(object):
                     avg_mass +=  data.iloc[parti_+1][0][1].value_in(units.kg)
                 avg_mass /= (np.shape(data)[0])
 
-                for parti_ in range(np.shape(data)[0]): #Iterate over all particles present
+                for parti_ in range(np.shape(data)[0]):
                     bin_val = 0
                     ter_val = 0
                     if parti_ == 0:
@@ -51,68 +51,35 @@ class sustainable_sys(object):
                     else:
                         temp_dedt.append((data.iloc[parti_][-2][8][0] - data.iloc[parti_][2][8][0])/(np.shape(data)[1]-3))
                         temp_dadt.append((data.iloc[parti_][-2][7][0]**-1 - data.iloc[parti_][2][7][0]**-1).value_in((units.pc)**-1)/(np.shape(data)[1]-3))
-                        if isinstance(data.iloc[parti_][-1][0], np.uint64):
-                            for col_ in range(np.shape(data)[1]): #Iterate over the data time-steps
-                                if abs(data.iloc[parti_][col_][8][1]) < 1 \
-                                    and data.iloc[parti_][col_][7][1] < 0.02 | units.parsec:
-                                    mass1 = data.iloc[parti_][0][1]
-                                    for part_ in range(np.shape(data)[0]):
-                                        if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
-                                            mass2 = data.iloc[part_][0][1]
-                                            bin_BE = ((constants.G*mass1*mass2)/(2*data.iloc[parti_][col_][7][1])).value_in(units.J) 
-                                            if bin_BE > avg_mass * 150000:   #Hard binary conditions based on Quinlan 1996b
-                                                bin_val += 1
-                                                bin_key.append(data.iloc[parti_][col_][6][1])
+                        for col_ in range(np.shape(data)[1]-1):
+                            if abs(data.iloc[parti_][col_][8][1]) < 1 \
+                                and data.iloc[parti_][col_][7][1] < 0.02 | units.parsec:
+                                mass1 = data.iloc[parti_][0][1]
+                                for part_ in range(np.shape(data)[0]):
+                                    if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
+                                        mass2 = data.iloc[part_][0][1]
+                                        bin_BE = ((constants.G*mass1*mass2)/(data.iloc[parti_][col_][7][1])).value_in(units.J) 
+                                        if bin_BE > (150000)**2*(1+mass1/mass2):   #Hard binary conditions based on Quinlan 1996b
+                                            bin_val += 1
+                                            bin_key.append(data.iloc[parti_][col_][6][1])
 
-                                                #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
-                                                if data.iloc[parti_][col_][8][2] < 1 \
-                                                    and data.iloc[parti_][col_][7][2] < 0.1 | units.parsec:
-                                                    semi_inner = data.iloc[parti_][col_][7][1]
-                                                    semi_outer = data.iloc[parti_][col_][7][2]
-                                                    for part_ in range(np.shape(data)[0]):
-                                                        if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
-                                                            mass_outer = data.iloc[part_][0][1]
-                                                    ecc_outer = data.iloc[parti_][col_][8][2]
-                                                    semi_ratio = semi_outer / semi_inner
-                                                    equality = 2.8 * ((1+mass_outer/(mass1+mass2))*(1+ecc_outer)/(1-ecc_outer**2)**0.5)**0.4
-                                                    if semi_ratio > equality:
-                                                        ter_val += 1
-                                                        ter_key.append(data.iloc[parti_][col_][6][2])
+                                            #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
+                                            if data.iloc[parti_][col_][8][2] < 1 \
+                                                and data.iloc[parti_][col_][7][2] < 0.1 | units.parsec:
+                                                semi_inner = data.iloc[parti_][col_][7][1]
+                                                semi_outer = data.iloc[parti_][col_][7][2]
+                                                for part_ in range(np.shape(data)[0]):
+                                                    if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
+                                                        mass_outer = data.iloc[part_][0][1]
+                                                ecc_outer = data.iloc[parti_][col_][8][2]
+                                                semi_ratio = semi_outer / semi_inner
+                                                equality = 2.8 * ((1+mass_outer/(mass1+mass2))*(1+ecc_outer)/(1-ecc_outer**2)**0.5)**0.4
+                                                if semi_ratio > equality:
+                                                    ter_val += 1
+                                                    ter_key.append(data.iloc[parti_][col_][6][2])
 
-                                    else:
-                                            pass
-                                    
-                        else:
-                            for col_ in range(np.shape(data)[1]):
-                                if col_ < 3 or col_ == np.shape(data)[1]-1:
-                                    pass
                                 else:
-                                    if abs(data.iloc[parti_][col_][8][1]) < 1 \
-                                        and data.iloc[parti_][col_][7][1] < 0.02 | units.parsec:
-                                        mass1 = data.iloc[parti_][0][1]
-                                        for part_ in range(np.shape(data)[0]):
-                                            if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
-                                                mass2 = data.iloc[part_][0][1]
-                                                bin_BE = ((constants.G*mass1*mass2)/(2*data.iloc[parti_][col_][7][1])).value_in(units.J)
-                                                if bin_BE > avg_mass * 150000:
-                                                    bin_val += 1
-                                                    bin_key.append(data.iloc[parti_][col_][6][1])
-
-                                                    if data.iloc[parti_][col_][8][2] < 1 \
-                                                        and data.iloc[parti_][col_][7][2] < 0.1 | units.parsec:
-                                                        semi_inner = data.iloc[parti_][col_][7][1]
-                                                        semi_outer = data.iloc[parti_][col_][7][2]
-                                                        for part_ in range(np.shape(data)[0]):
-                                                            if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
-                                                                mass_outer = data.iloc[part_][0][1]
-                                                        ecc_outer = data.iloc[parti_][col_][8][2]
-                                                        semi_ratio = semi_outer / semi_inner
-                                                        equality = 2.8 * ((1+mass_outer/(mass1+mass2))*(1+ecc_outer)/(1-ecc_outer**2)**0.5)**0.4
-                                                        if semi_ratio > equality:
-                                                            ter_val += 1
-                                                            ter_key.append(data.iloc[parti_][col_][6][2])
-                                            else:
-                                                pass
+                                        pass
 
                     bin_formed.append(len(np.unique(bin_key)))
                     ter_formed.append(len(np.unique(ter_key)))
@@ -141,7 +108,6 @@ class sustainable_sys(object):
         self.pop[self.pop %10 != 0] -= 1
         self.pop = np.asarray(self.pop)
 
-
     def system_formation(self):
         """
         Function to plot various 'sustainable system' plots
@@ -162,7 +128,6 @@ class sustainable_sys(object):
             idx = np.where(self.pop == pop_)[0]
             bin_formed[iter] = np.mean(self.sys_bin[idx])
             ter_formed[iter] = np.mean(self.sys_ter[idx])
-            print(self.bin_life)
             bin_life[iter] = np.mean(self.bin_life[idx])
             ter_life[iter] = np.mean(self.ter_life[idx])
         bin_formed = np.asarray(bin_formed)

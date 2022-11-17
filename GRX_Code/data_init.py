@@ -1,6 +1,7 @@
 from evol_func import *
 from file_logistics import file_counter
 from amuse.ext.LagrangianRadii import LagrangianRadii
+from amuse.ext.orbital_elements import orbital_elements_from_binary
 import pandas as pd
 import os
 
@@ -66,7 +67,10 @@ class data_initialiser(object):
         """
 
         path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/GRX/'
-        file_names = 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(init_IMBH)+'_sim'+str(count)+'_init_dist'+str('{:.3f}'.format(init_dist.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(pset[2].mass.value_in(units.MSun)))+'.pkl'
+        file_names = 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(init_IMBH)+'_sim'+str(count) \
+                     +'_init_dist'+str('{:.3f}'.format(init_dist.value_in(units.parsec)))+'_equal_mass_' \
+                     +str('{:.3f}'.format(pset[2].mass.value_in(units.MSun)))+'.pkl'
+
         coll_tracker = pd.DataFrame()
         df_coll_tracker = pd.Series({'Collision Time': coll_time.in_(units.kyr),
                                      'Collided Particles': [enc_particles[0].key, enc_particles[1].key],
@@ -125,55 +129,29 @@ class data_initialiser(object):
 
             if i == 0 :
                 df_IMBH_vals = pd.Series({#'key_tracker': pset[i].key_tracker, 
-                                          '{}'.format(time): [pset[i].key_tracker, pset[i].mass, pset[i].position, pset[i].velocity, 
-                                                              0 | units.J, 0 | units.J, [0,0,0], [0,0,0], [0,0,0], [0,0,0],
-                                                             [0,0,0], [0,0,0], [0,0,0]]})
+                                          '{}'.format(time): [pset[i].key_tracker, pset[i].mass, pset[i].position, 
+                                                              pset[i].velocity, 0 | units.J, 0 | units.J, [0,0,0], 
+                                                              [0,0,0], [0,0,0], [0,0,0],
+                                                              [0,0,0], [0,0,0], [0,0,0]]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
 
             if i != 0:
-                bin_sys = Particles()
-                bin_sys.add_particle(pset[i])
-                bin_sys.add_particle(pset[0])
-                kepler_elements = orbital_elements_from_binary(bin_sys, G=constants.G)
-                semimajor.append(kepler_elements[2].value_in(units.parsec))
-                eccentric.append(kepler_elements[3])
-                inclinate.append(kepler_elements[4])
-                arg_peri.append(kepler_elements[5])
-                asc_node.append(kepler_elements[6])
-                true_anom.append(kepler_elements[7])
-                neigh_key.append(pset[0].key_tracker)
-                
                 neighbour_dist, nearest_parti, second_nearest = nearest_neighbour(pset[i], pset)
-                neigh_key.append(nearest_parti.key_tracker)
-                bin_sys = Particles()
-                bin_sys.add_particle(pset[i])
-                bin_sys.add_particle(nearest_parti)
-                kepler_elements = orbital_elements_from_binary(bin_sys, G=constants.G)
-                semimajor.append(kepler_elements[2].value_in(units.parsec))
-                eccentric.append(kepler_elements[3])
-                inclinate.append(kepler_elements[4])
-                arg_peri.append(kepler_elements[5])
-                asc_node.append(kepler_elements[6])
-                true_anom.append(kepler_elements[7])
-                neigh_key.append(nearest_parti.key_tracker)
-
-                hier_sys = Particles(1)
-                hier_sys[0].mass = bin_sys.mass.sum()
-                hier_sys[0].position = bin_sys.center_of_mass()
-                hier_sys[0].velocity = bin_sys.center_of_mass_velocity()
-                hier_sys.add_particle(second_nearest)
-                kepler_elements = orbital_elements_from_binary(hier_sys, G=constants.G)
-                semimajor.append(kepler_elements[2].value_in(units.parsec))
-                eccentric.append(kepler_elements[3])
-                inclinate.append(kepler_elements[4])
-                arg_peri.append(kepler_elements[5])
-                asc_node.append(kepler_elements[6])
-                true_anom.append(kepler_elements[7])
-                neigh_key.append(second_nearest.key_tracker)
+                for part_ in [pset[0], nearest_parti, second_nearest]:
+                    bin_sys = Particles()
+                    bin_sys.add_particle(pset[i])
+                    bin_sys.add_particle(part_)
+                    kepler_elements = orbital_elements_from_binary(bin_sys, G=constants.G)
+                    semimajor.append(kepler_elements[2].value_in(units.parsec))
+                    eccentric.append(kepler_elements[3])
+                    inclinate.append(kepler_elements[4])
+                    arg_peri.append(kepler_elements[5])
+                    asc_node.append(kepler_elements[6])
+                    true_anom.append(kepler_elements[7])
+                    neigh_key.append(part_.key_tracker)
 
                 parti_KE = 0.5*pset[i].mass*pset[i].velocity.length()**2
-                temp_PE = indiv_PE_all(pset[i], pset)
-                parti_PE = np.sum(temp_PE)
+                parti_PE = np.sum(indiv_PE_all(pset[i], pset))
                 df_IMBH_vals = pd.Series({'{}'.format(time): [pset[i].key_tracker, pset[i].mass, pset[i].position, pset[i].velocity, 
                                                               parti_KE, parti_PE, neigh_key, semimajor * 1 | units.parsec, 
                                                               eccentric, inclinate, arg_peri, asc_node, true_anom, neighbour_dist]})
@@ -182,14 +160,11 @@ class data_initialiser(object):
        
         return IMBH_array
 
-    def LG_tracker(self, clust_rad, clust_mass, no_stars, pset, time, gravity):
+    def LG_tracker(self, pset, time, gravity):
         """
         Data set which tracks the Lagrangian radius and tidal radius of the cluster.
         
         Inputs:
-        clust_rad:  The cluster radius
-        clust_mass: The cluster mass
-        no_stars:   The number of stars in the cluster
         pset:       The particle set
         time:       The initial time of the simulation
         gravity:    The integrator used for the simulation
@@ -200,8 +175,7 @@ class data_initialiser(object):
                                    'LG25': LagrangianRadii(gravity.particles[1:])[5].in_(units.parsec),
                                    'LG50': LagrangianRadii(gravity.particles[1:])[6].in_(units.parsec),
                                    'LG75': LagrangianRadii(gravity.particles[1:])[7].in_(units.parsec),
-                                   'Tidal Radius': tidal_radius(pset).in_(units.parsec),
-                                   'Relaxation Time': relax_timescale(clust_rad, clust_mass, no_stars).in_(units.yr)})
+                                   'Tidal Radius': tidal_radius(pset).in_(units.parsec)})
         LG_array = LG_array.append(df_LG_tracker , ignore_index=True)
 
         return LG_array
@@ -234,4 +208,6 @@ class data_initialiser(object):
                                   'Initial Particle Mass': pset[2:].mass.in_(units.MSun),
                                   'Change in Energy': deltaE})
         stable_sim_tracker = stable_sim_tracker.append(df_stablesim, ignore_index = True)
-        stable_sim_tracker.to_pickle(os.path.join(path+str('/stable_simulation'), 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(len(pset)-1)+'_sim'+str(count)+'_init_dist'+str('{:.3f}'.format(SMBH_code.distance.value_in(units.parsec)))+'_equal_mass_'+str('{:.3f}'.format(pset[2].mass.value_in(units.MSun)))+'.pkl'))
+        stable_sim_tracker.to_pickle(os.path.join(path+str('/stable_simulation'), 'IMBH_'+str(int_string)+'_' \
+                                     +str(pert)+'_'+str(len(pset)-1)+'_sim'+str(count)+'_init_dist'+str('{:.3f}'.format(SMBH_code.distance.value_in(units.parsec))) \
+                                     +'_equal_mass_'+str('{:.3f}'.format(pset[2].mass.value_in(units.MSun)))+'.pkl'))

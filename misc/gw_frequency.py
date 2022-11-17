@@ -9,6 +9,10 @@ def freqISCO(mass1,mass2):
 
 fISCO_SMBH = freqISCO(4*10**6, 10**3)
 print('IMBH-SMBH fISCO:', fISCO_SMBH.in_(units.Hz))
+LISAz = fISCO_SMBH/(10**-4 | units.Hz) - 1
+print('LISA will observe till z < :', LISAz)
 
 fISCO_IMBH = freqISCO(10**3, 10**3)
 print('IMBH-SMBH fISCO:', fISCO_IMBH.in_(units.Hz))
+LISAz = fISCO_IMBH/(10**-4 | units.Hz) - 1
+print('LISA will observe till z < :', LISAz)
