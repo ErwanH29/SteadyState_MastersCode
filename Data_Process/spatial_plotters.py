@@ -282,217 +282,151 @@ def animator(init_dist, int_string):
 
     return 
         
-def energy_plotter(int_string):
+def chaos_deviate():
     """
-    Function to plot the energy evolution of the system
-
-    output: Energy evolution plot of the system
+    Function to plot a comparison of two identical simulations where in one there is a 1e-15 
+    [pc] perturbation in the particles x coordinate.
     """
 
     plot_ini = plotter_setup()
-    count = file_counter(int_string)
-    energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
-    col_len = np.shape(energy_tracker)[0]
+    IMBH_tracker = file_opener('data/GRX/chaos_example/particle_trajectory/*')
+    energy_tracker = file_opener('data/GRX/chaos_example/energy/*')
+    IMBH_tracker_pert = file_opener('data/GRX/chaos_example/particle_trajectory/*')
+    
+    col_len = np.shape(IMBH_tracker)[1] - 1
+    col_len_pert = np.shape(IMBH_tracker_pert)[1] - 1
+    col_len = min(col_len, col_len_pert)
 
-    time = np.empty((col_len - 1))
-    Et_array = np.empty((col_len - 1))
-    dE_array = np.empty((col_len - 1))
-    KE_array = np.empty((col_len - 1))
-    PE_array = np.empty((col_len - 1))
-    IMBHapp_array = np.empty((col_len - 1))
-    colltime_array = np.empty((col_len - 1)) 
-    merger_mass = np.empty((col_len - 1))
+    focus_idx = 7
+    particle = IMBH_tracker.iloc[focus_idx]
+    SMBH_data = IMBH_tracker.iloc[0]
+    particle_pert = IMBH_tracker_pert.iloc[focus_idx]
+    SMBH_data_pert = IMBH_tracker_pert.iloc[0]
 
-    for i in range(col_len):
-        if i != 0:
-            vals = energy_tracker.iloc[i]
-            IMBHapp_array[i-1] = vals[0].value_in(units.Myr)
-            merger_mass[i-1] = vals[1].value_in(units.MSun)
-            colltime_array[i-1] = vals[2].value_in(units.Myr)
-            Et_array[i-1] = vals[3].value_in(units.J)
-            KE_array[i-1] = vals[4].value_in(units.J)
-            time[i-1] = vals[6].value_in(units.Myr)
-            dE_array[i-1] = vals[7]
-            PE_array[i-1] = vals[9].value_in(units.J)
+    time = np.empty(col_len)
+    neigh_key = np.empty((3, col_len))
+    nearest_neigh = np.empty(col_len)
+    SMBH_dist = np.empty(col_len)
+    neigh_key_pert = np.empty((3, col_len))
+    nearest_neigh_pert = np.empty(col_len)
+    SMBH_dist_pert = np.empty(col_len)
 
-    fig = plt.figure(figsize=(12.5, 8))
+    semi_SMBH = np.empty(col_len)
+    semi_SMBH_pert = np.empty(col_len)
+    
+    line_x = np.empty((col_len))
+    line_y = np.empty((col_len))
+    line_x_pert = np.empty((col_len))
+    line_y_pert = np.empty((col_len))
+    rel_phase = np.empty((col_len))
+    for j in range(col_len):
+        SMBH_coords = SMBH_data.iloc[j][2]
+        SMBH_coords_pert = SMBH_data_pert.iloc[j][2]
+        SMBH_vel = SMBH_data.iloc[j][3]
+        SMBH_vel_pert = SMBH_data_pert.iloc[j][3]
+        time_arr = energy_tracker.iloc[j]
+        time[j] = time_arr[6].value_in(units.Myr)
+
+        coords = particle.iloc[j][2]
+        vel = particle.iloc[j][3]
+        coords_pert = particle_pert.iloc[j][2]
+        vel_pert = particle_pert.iloc[j][3]
+        if len(coords) != 1:
+            line_x[j] = (coords[0]-SMBH_coords[0]).value_in(units.pc)
+            line_y[j] = (coords[1]-SMBH_coords[1]).value_in(units.pc)
+            line_z = (coords[2]-SMBH_coords[2]).value_in(units.pc)
+            SMBH_dist[j] = np.sqrt(line_x[j]**2+line_y[j]**2+line_z**2)
+            velx = (vel[0]-SMBH_vel[0]).value_in(units.kms)
+            vely = (vel[1]-SMBH_vel[1]).value_in(units.kms)
+            velz = (vel[2]-SMBH_vel[2]).value_in(units.kms)
+
+            line_x_pert[j] = (coords_pert[0]-SMBH_coords_pert[0]).value_in(units.pc)
+            line_y_pert[j] = (coords_pert[1]-SMBH_coords_pert[1]).value_in(units.pc)
+            line_z_pert = (coords_pert[2]-SMBH_coords_pert[2]).value_in(units.pc)
+            SMBH_dist_pert[j] = np.sqrt(line_x_pert[j]**2+line_y_pert[j]**2+line_z_pert**2)
+            velx_pert = (vel_pert[0]-SMBH_vel_pert[0]).value_in(units.kms)
+            vely_pert = (vel_pert[1]-SMBH_vel_pert[1]).value_in(units.kms)
+            velz_pert = (vel_pert[2]-SMBH_vel_pert[2]).value_in(units.kms)
+
+            rel_x = (line_x_pert[j]-line_x[j])**2
+            rel_y = (line_y_pert[j]-line_y[j])**2
+            rel_z = (line_z_pert-line_z)**2
+            rel_dist = np.sqrt(rel_x+rel_y+rel_z)
+
+            rel_vx = (velx_pert-velx)**2
+            rel_vy = (vely_pert-vely)**2
+            rel_vz = (velz_pert-velz)**2
+            rel_vel = np.sqrt(rel_vx+rel_vy+rel_vz)
+
+            rel_phase[j] = 0.5 * np.log(rel_dist + rel_vel)
+
+        time_step = particle.iloc[j]
+        time_step_pert = particle_pert.iloc[j]
+        semi_SMBH[j] = time_step[7][0].value_in(units.parsec)
+        semi_SMBH_pert[j] = time_step_pert[7][0].value_in(units.parsec)
+        for i in range(3):
+            neigh_key[i][j] = time_step[6][i]
+            neigh_key_pert[i][j] = time_step_pert[6][i]
+        nearest_neigh[j] = abs(time_step[-1])
+        nearest_neigh_pert[j] = abs(time_step_pert[-1])
+
+    smoothing = round(0.05 * col_len)
+    normalise = semi_SMBH[0]
+    semi_SMBH /= (normalise)
+    semi_SMBH_pert /= (normalise)
+    semi_SMBH_smooth = plot_ini.moving_average(semi_SMBH, smoothing)
+    semi_SMBH_smooth_pert = plot_ini.moving_average(semi_SMBH_pert, smoothing)
+
+    time_smooth = plot_ini.moving_average(time, smoothing)
+    nearest_smooth = plot_ini.moving_average(nearest_neigh, smoothing)
+    nearest_smooth_pert = plot_ini.moving_average(nearest_neigh_pert, smoothing)
+    SMBH_dist_smooth = plot_ini.moving_average(SMBH_dist, smoothing)
+    SMBH_dist_smooth_pert = plot_ini.moving_average(SMBH_dist_pert, smoothing)
+    phase_smooth = plot_ini.moving_average(rel_phase, round(0.1*smoothing))
+
+    fig = plt.figure(figsize=(12.5, 10))
     ax1 = fig.add_subplot(221)
     ax2 = fig.add_subplot(222)
-    ax1.set_title('Energy Evolution in Time')
-    ax2.set_title('Energy Error')
+    ax3 = fig.add_subplot(223)
+    ax4 = fig.add_subplot(224)
 
-    for ax_ in [ax1, ax2]:
-        plot_ini.tickers(ax_, 'plot')  
-        ax_.set_xlabel(r'Time [Myr]')
-        ax_.set_yscale('log')
-    ax1.set_ylabel(r'Energy [J]')
-    ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
-
-    ax1.plot(time, abs(Et_array), color = 'black', label = r'$|E_{tot}|$', zorder = 3)
-    ax1.plot(time, KE_array, color = 'red', label = r'$K_E$', zorder = 1)
-    ax1.plot(time, abs(PE_array), color = 'blue', label = r'$|P_E|$', zorder = 2)
-    ax2.plot(time[:-5], dE_array[:-5], color = 'black')
-
-    ax1.set_ylim(0.5*min(abs(KE_array)), 5*max(abs(PE_array)))
-    ax1.legend()
-
-    plt.savefig('figures/system_evolution/energy_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
-    plt.clf()
-    plt.close()
-
-    return
-
-def spatial_plotter(int_string):
-    """
-    Function to plot the evolution of the system
-
-    output: The spatial evolution of the system
-    """
-
-    plot_ini = plotter_setup()
-    count = file_counter(int_string)
-
-    IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
-    energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
-    col_len = round(np.shape(IMBH_tracker)[1])
-    col_len_time = np.shape(IMBH_tracker)[1]
-    parti_size = 20+len(IMBH_tracker)**-0.5
-
-    line_x = np.empty((len(IMBH_tracker), col_len))
-    line_y = np.empty((len(IMBH_tracker), col_len))
-    line_z = np.empty((len(IMBH_tracker), col_len))
-
-    for i in range(len(IMBH_tracker)):
-        tIMBH_tracker = IMBH_tracker.iloc[i]
-        for j in range(col_len):
-            coords = tIMBH_tracker.iloc[j][2]
-            if len(coords) == 1:
-                pass
-            else:
-                line_x[i][j] = coords[0].value_in(units.pc)
-                line_y[i][j] = coords[1].value_in(units.pc)
-                line_z[i][j] = coords[2].value_in(units.pc)
-
-    focus_idx = plot_ini.ejected_idx(int_string)
-    focus_particle = IMBH_tracker.iloc[focus_idx]
-
-    focus_x = np.empty((col_len))
-    focus_y = np.empty((col_len))
-    focus_z = np.empty((col_len))
-
-    for j in range(col_len):
-        coords = focus_particle.iloc[j][2]
-        focus_x[j] = coords[0].value_in(units.pc)
-        focus_y[j] = coords[1].value_in(units.pc)
-        focus_z[j] = coords[2].value_in(units.pc)
-
-    for arr_ in [focus_x, focus_y, focus_z, line_x, line_y, line_z]:
-        plot_ini.val_filter(arr_)
-
-    time = np.empty((col_len_time - 1))
-    dE_array = np.empty((col_len_time - 1))
-
-    for i in range(col_len_time):
-        if i == 0:
-            pass
-        else:
-            vals = energy_tracker.iloc[i]
-            time[i-1] = vals[6].value_in(units.Myr)
-            dE_array[i-1] = vals[7]
-
-    colours = colour_picker()
-    fig = plt.figure(figsize=(12.5, 15))
-    ax1 = fig.add_subplot(321)
-    ax2 = fig.add_subplot(322)
-    ax3 = fig.add_subplot(323)
-    ax4 = fig.add_subplot(324)
-    
-    ax1.set_title('Overall System')
-    ax2.set_title('Energy Error vs. Time')
-    ax1.xaxis.set_major_locator(plt.MaxNLocator(3))
-    ax1.yaxis.set_major_locator(plt.MaxNLocator(3))
-    for ax_ in [ax1, ax2, ax3, ax4]:
-        plot_ini.tickers(ax_, 'plot') 
-
-    xaxis_lim = 1.05*np.nanmax(abs(line_x-line_x[0]))
-    yaxis_lim = 1.05*np.nanmax(abs(line_y-line_y[0]))
-    zaxis_lim = 1.05*np.nanmax(abs(line_z-line_z[0]))
-
-    ax1.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
-    ax1.set_ylim(-abs(yaxis_lim), yaxis_lim)
-    ax3.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
-    ax3.set_ylim(-abs(zaxis_lim), zaxis_lim)
-    ax4.set_xlim(-abs(yaxis_lim), abs(yaxis_lim))
-    ax4.set_ylim(-abs(zaxis_lim), zaxis_lim)
-    ax2.set_yscale('log')
-
+    plot_ini.tickers(ax1, 'plot')
+    ax2.set_title(r'Time vs. $\ln [\delta w(\vec r,\vec v)]$')
+    ax3.set_title(r'Time vs. $a_{SMBH}$')
+    ax4.set_title('Time vs. Distance to Nearest Neighbour')
     ax1.set_xlabel(r'$x$ [pc]')
     ax1.set_ylabel(r'$y$ [pc]')
-    ax2.set_xlabel(r'Time [Myr]')
-    ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
-    ax3.set_xlabel(r'$x$ [pc]')
-    ax3.set_ylabel(r'$z$ [pc]')
-    ax4.set_xlabel(r'$y$ [pc]')
-    ax4.set_ylabel(r'$z$ [pc]')
-    iter = -1
+    ax2.set_ylabel(r'$\ln [\delta w(\vec r,\vec v)]$')
+    ax3.set_ylabel(r'$a(t)/a_{\rm{SMBH},0}^{\rm{Hermite}}$')
+    ax4.set_ylabel(r'$r_{\rm {nn}}$ [pc]')
+    for ax_ in [ax2, ax3, ax4]:
+        ax_.set_xlabel('Time [Myr]')
+        plot_ini.tickers(ax_, 'plot') 
+        ax_.set_xlim(0,max(time_smooth))
+    ax1.set_xlim(-0.5,0.5)
+    ax1.set_ylim(-0.5,0.5)
+    ax2.set_ylim(0,1.05*max(phase_smooth))
+
+    steps = round(0.1*col_len)
+    ax1.scatter(line_x[:steps], line_y[:steps], s = 5, color = 'red', label = r'$\delta x = 0$')
+    ax1.scatter(line_x_pert[:steps], line_y_pert[:steps], s = 5, color = 'blue', label = r'$\delta x = 10^{-13}$ [pc]')
+    ax1.scatter(0, 0, s = 250, color = 'black')
+
+    ax2.plot(time[:len(phase_smooth)], phase_smooth, color = 'black')
     
-    for i in range(len(IMBH_tracker)):
-        iter += 1
-        if iter > len(colours):
-            iter = 0
+    ax3.plot(time_smooth, semi_SMBH_smooth, color = 'red')
+    ax3.plot(time_smooth, semi_SMBH_smooth_pert, color = 'blue')
 
-        if i == 0:
-            adapt_c = 'black'
-            ax1.scatter((line_x[i]-line_x[0]), (line_y[i]-line_y[0]), 
-                         c = adapt_c, zorder = 1, s = 250)
-            ax3.scatter((line_x[i]-line_x[0]), (line_z[i]-line_z[0]), 
-                         c = adapt_c, zorder = 1, s = 250)
-            ax4.scatter((line_z[i]-line_z[0]), (line_y[i]-line_y[0]), 
-                         c = adapt_c, zorder = 1, s = 250)
-        else:
-            ax1.scatter(line_x[i][-1]-line_x[0][-1], line_y[i][-1]-line_y[0][-1], 
-                        c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
-            ax1.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], 
-                        c = colours[iter-2], s = 1, zorder = 1) 
-            ax1.scatter(focus_x[-1]-line_x[0][-1], focus_y[-1]-line_y[0][-1], s = 250, color = 'red')
+    ax4.plot(time_smooth, SMBH_dist_smooth, color = 'red', label = r'$r_{\rm{SMBH}}$')
+    ax4.plot(time_smooth, SMBH_dist_smooth_pert, color = 'blue', )
+    ax4.plot(time_smooth, nearest_smooth, color = 'red', linestyle = ':', label = r'$r_{\rm{NN}}$')
+    ax4.plot(time_smooth, nearest_smooth_pert, color = 'blue', linestyle = ':')
 
-            ax3.scatter(line_x[i][-1]-line_x[0][-1], line_z[i][-1]-line_z[0][-1], 
-                        c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
-            ax3.scatter(line_x[i]-line_x[0], line_z[i]-line_z[0], 
-                        c = colours[iter-2], s = 1, zorder = 1) 
+    ax1.legend()
+    ax4.legend()
 
-            ax4.scatter(line_y[i][-1]-line_y[0][-1], line_z[i][-1]-line_z[0][-1], 
-                        c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
-            ax4.scatter(line_y[i]-line_y[0], line_z[i]-line_z[0], 
-                        c = colours[iter-2], s = 1, zorder = 1) 
-    ax2.plot(time[:-5], dE_array[:-5], color = 'black')
-    plt.savefig('figures/system_evolution/simulation_evolution_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
-    plt.clf()
-    plt.close()     
-
-    fig = plt.figure(figsize=(8, 8))
-    ax3D = fig.add_subplot(121, projection="3d")
-    iter = -1
-    for i in range(len(IMBH_tracker)):
-        iter += 1
-        if iter > len(colours):
-            iter = 0
-        if i == 0:
-            pass
-        else:
-            ax3D.scatter(line_x[i]-line_x[0], 
-                         line_y[i]-line_y[0], 
-                         line_z[i]-line_z[0], 
-                         c = colours[iter-2], s = 1, zorder = 1)
-    ax3D.scatter(0, 0, 0, color = 'black', s = 150, zorder = 2)
-    ax3D.set_xlabel(r'$x$ [pc]')
-    ax3D.set_ylabel(r'$y$ [pc]')
-    ax3D.set_zlabel(r'$z$ [pc]')
-    ax3D.view_init(30, 160)
-    plt.savefig('figures/system_evolution/simulation_evolution_3D_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
-
-    return
-
+    plt.savefig('figures/system_evolution/GRX_vs_Hermite_sys_evol.pdf', dpi=300, bbox_inches='tight')
+    
 def ejected_evolution(int_string):
     """
     Function which plots various Kepler elements of the IMBH particle stopping the simulation
@@ -503,11 +437,10 @@ def ejected_evolution(int_string):
     
     plot_ini = plotter_setup()
     count = file_counter(int_string)
-
     IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
     energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
 
-    col_len = np.shape(IMBH_tracker)[1] - 1 # -1 to remove the NaN entry
+    col_len = np.shape(IMBH_tracker)[1] - 1
     smoothing = round(0.1 * col_len)
     
     focus_idx = plot_ini.ejected_idx(int_string)
@@ -617,174 +550,222 @@ def ejected_evolution(int_string):
 
     ax1.legend()
     plt.savefig('figures/system_evolution/bin_trip_evol_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
-    
+    plt.clf()
 
-def direct_comparison(int_string):
+def energy_plotter(int_string):
     """
-    Function which plots various Kepler elements of a specific IMBH particle to compare their trajectories between
-    Hermite and GRX.
-    
-    output: Plots of the inclination,semi-major axis, nearest neighbour and eccentricity of the 
-            merged/ejected particle relative to the SMBH, nearest neighbour and second-nearest neighbour
+    Function to plot the energy evolution of the system
+
+    output: Energy evolution plot of the system
     """
-    
+
+    plot_ini = plotter_setup()
+    count = file_counter(int_string)
+    energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
+    col_len = np.shape(energy_tracker)[0]
+
+    time = np.empty((col_len - 1))
+    Et_array = np.empty((col_len - 1))
+    dE_array = np.empty((col_len - 1))
+    KE_array = np.empty((col_len - 1))
+    PE_array = np.empty((col_len - 1))
+    IMBHapp_array = np.empty((col_len - 1))
+    colltime_array = np.empty((col_len - 1)) 
+    merger_mass = np.empty((col_len - 1))
+
+    for i in range(col_len):
+        if i != 0:
+            vals = energy_tracker.iloc[i]
+            IMBHapp_array[i-1] = vals[0].value_in(units.Myr)
+            merger_mass[i-1] = vals[1].value_in(units.MSun)
+            colltime_array[i-1] = vals[2].value_in(units.Myr)
+            Et_array[i-1] = vals[3].value_in(units.J)
+            KE_array[i-1] = vals[4].value_in(units.J)
+            time[i-1] = vals[6].value_in(units.Myr)
+            dE_array[i-1] = vals[7]
+            PE_array[i-1] = vals[9].value_in(units.J)
+
+    fig = plt.figure(figsize=(12.5, 8))
+    ax1 = fig.add_subplot(221)
+    ax2 = fig.add_subplot(222)
+    ax1.set_title('Energy Evolution in Time')
+    ax2.set_title('Energy Error')
+
+    for ax_ in [ax1, ax2]:
+        plot_ini.tickers(ax_, 'plot')  
+        ax_.set_xlabel(r'Time [Myr]')
+        ax_.set_yscale('log')
+    ax1.set_ylabel(r'Energy [J]')
+    ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
+
+    ax1.plot(time, abs(Et_array), color = 'black', label = r'$|E_{tot}|$', zorder = 3)
+    ax1.plot(time, KE_array, color = 'red', label = r'$K_E$', zorder = 1)
+    ax1.plot(time, abs(PE_array), color = 'blue', label = r'$|P_E|$', zorder = 2)
+    ax2.plot(time[:-5], dE_array[:-5], color = 'black')
+
+    ax1.set_ylim(0.5*min(abs(KE_array)), 5*max(abs(PE_array)))
+    ax1.legend()
+
+    plt.savefig('figures/system_evolution/energy_tracker'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+    plt.clf()
+    plt.close()
+
+    return
+
+def spatial_plotter(int_string):
+    """
+    Function to plot the evolution of the system
+
+    output: The spatial evolution of the system
+    """
+
     plot_ini = plotter_setup()
     count = file_counter(int_string)
 
-    IMBH_tracker = file_opener('data/Hermite/spatial_plotters/particle_trajectory/*')
-    #IMBH_tracker_GRX = file_opener('data/GRX/spatial_plotters/particle_trajectory/*')
-    energy_tracker = file_opener('data/Hermite/spatial_plotters/energy/*')
-    #energy_tracker_GRX = file_opener('data/GRX/spatial_plotters/energy/*')
+    IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
+    energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
+    col_len_raw = np.shape(IMBH_tracker)[1]
+    col_len = col_len_raw**0.5
+    parti_size = 20+len(IMBH_tracker)**-0.5
 
-    col_len = np.shape(IMBH_tracker)[1] - 1 # -1 to remove the NaN entry
-    #col_len_GRX = np.shape(IMBH_tracker_GRX)[1]
-    smoothing = round(0.1 * col_len)
-    
-    focus_idx = 7
+    line_x = np.empty((len(IMBH_tracker), col_len))
+    line_y = np.empty((len(IMBH_tracker), col_len))
+    line_z = np.empty((len(IMBH_tracker), col_len))
+
+    for i in range(len(IMBH_tracker)):
+        tIMBH_tracker = IMBH_tracker.iloc[i]
+        for j in range(col_len):
+            coords = tIMBH_tracker.iloc[j][2]
+            if len(coords) == 1:
+                pass
+            else:
+                line_x[i][j] = coords[0].value_in(units.pc)
+                line_y[i][j] = coords[1].value_in(units.pc)
+                line_z[i][j] = coords[2].value_in(units.pc)
+
+    focus_idx = plot_ini.ejected_idx(int_string)
     focus_particle = IMBH_tracker.iloc[focus_idx]
-    #focus_particle_GRX = IMBH_tracker_GRX.iloc[focus_idx]
-    SMBH_data = IMBH_tracker.iloc[0]
-    #SMBH_data_GRX = IMBH_tracker_GRX.iloc[0]
 
-    #Extracting Hermite terms
-    time = np.empty(col_len)
-    neigh_key = np.empty((3, col_len))
-    nearest_neigh = np.empty(col_len)
-    SMBH_dist = np.empty(col_len)
-    focus_semi_SMBH = np.empty(col_len)
-    focus_ecc_SMBH = np.empty(col_len)
-    focus_ecc_bin = np.empty(col_len)
-    focus_ecc_ter = np.empty(col_len)
-    
-    line_x = np.empty((col_len))
-    line_y = np.empty((col_len))
+    focus_x = np.empty((col_len))
+    focus_y = np.empty((col_len))
+    focus_z = np.empty((col_len))
+
     for j in range(col_len):
-        SMBH_coords = SMBH_data.iloc[j][2]
         coords = focus_particle.iloc[j][2]
-        if len(coords) == 1:
+        focus_x[j] = coords[0].value_in(units.pc)
+        focus_y[j] = coords[1].value_in(units.pc)
+        focus_z[j] = coords[2].value_in(units.pc)
+
+    for arr_ in [focus_x, focus_y, focus_z, line_x, line_y, line_z]:
+        plot_ini.val_filter(arr_)
+
+    time = np.empty((col_len_raw - 1))
+    dE_array = np.empty((col_len_raw - 1))
+
+    for i in range(col_len_raw):
+        if i == 0:
             pass
         else:
-            line_x[j] = (coords[0]-SMBH_coords[0]).value_in(units.pc)
-            line_y[j] = (coords[1]-SMBH_coords[1]).value_in(units.pc)
-            line_z = coords[2].value_in(units.pc)
-            SMBH_dist[j] = np.sqrt(line_x[j]**2+line_y[j]**2+line_z**2)
+            vals = energy_tracker.iloc[i]
+            time[i-1] = vals[6].value_in(units.Myr)
+            dE_array[i-1] = vals[7]
 
-    for j in range(col_len):
-        time_step = focus_particle.iloc[j]
-        time_arr = energy_tracker.iloc[j]
-
-        focus_semi_SMBH[j] = time_step[7][0].value_in(units.parsec)
-        focus_ecc_SMBH[j] = (1-time_step[8][0])
-        focus_ecc_bin[j]  = (1-time_step[8][1])
-        focus_ecc_ter[j]  = (1-time_step[8][2])
-
-        for i in range(3):
-            neigh_key[i][j] = time_step[6][i]
-
-        nearest_neigh[j] = abs(time_step[-1])
-        time[j] = time_arr[6].value_in(units.Myr)
-
-    normalise = focus_semi_SMBH[0]
-    focus_semi_SMBH /= (normalise)
-    focus_semi_SMBH_smooth = plot_ini.moving_average(focus_semi_SMBH, smoothing)
-
-    focus_ecc_SMBH_smooth = plot_ini.moving_average(focus_ecc_SMBH, smoothing)
-    focus_ecc_bin_smooth = plot_ini.moving_average(focus_ecc_bin, smoothing)
-
-    time_smooth = plot_ini.moving_average(time, smoothing)
-    nearest_smooth = plot_ini.moving_average(nearest_neigh, smoothing)
-    SMBH_dist_smooth = plot_ini.moving_average(SMBH_dist, smoothing)
-
-    """#Extracting GRX terms
-    time_GRX = np.empty(col_len_GRX)
-    neigh_key_GRX = np.empty((3, col_len_GRX))
-    nearest_neigh_GRX = np.empty(col_len_GRX)
-    SMBH_dist_GRX = np.empty(col_len_GRX)
-    focus_semi_SMBH_GRX = np.empty(col_len_GRX)
-    focus_ecc_SMBH_GRX = np.empty(col_len_GRX)
-    focus_ecc_bin_GRX = np.empty(col_len_GRX)
-    focus_ecc_ter_GRX = np.empty(col_len_GRX)
+    colours = colour_picker()
+    fig = plt.figure(figsize=(12.5, 15))
+    ax1 = fig.add_subplot(321)
+    ax2 = fig.add_subplot(322)
+    ax3 = fig.add_subplot(323)
+    ax4 = fig.add_subplot(324)
     
-    line_x_GRX = np.empty((col_len_GRX))
-    line_y_GRX = np.empty((col_len_GRX))
-    for j in range(col_len_GRX):
-        SMBH_coords = SMBH_data_GRX.iloc[j][2]
-        coords = focus_particle_GRX.iloc[j][2]
-        if len(coords) == 1:
+    ax1.set_title('Overall System')
+    ax2.set_title('Energy Error vs. Time')
+    ax1.xaxis.set_major_locator(plt.MaxNLocator(3))
+    ax1.yaxis.set_major_locator(plt.MaxNLocator(3))
+    for ax_ in [ax1, ax2, ax3, ax4]:
+        plot_ini.tickers(ax_, 'plot') 
+
+    xaxis_lim = 1.05*np.nanmax(abs(line_x-line_x[0]))
+    yaxis_lim = 1.05*np.nanmax(abs(line_y-line_y[0]))
+    zaxis_lim = 1.05*np.nanmax(abs(line_z-line_z[0]))
+
+    ax1.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
+    ax1.set_ylim(-abs(yaxis_lim), yaxis_lim)
+    ax3.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
+    ax3.set_ylim(-abs(zaxis_lim), zaxis_lim)
+    ax4.set_xlim(-abs(yaxis_lim), abs(yaxis_lim))
+    ax4.set_ylim(-abs(zaxis_lim), zaxis_lim)
+    ax2.set_yscale('log')
+
+    ax1.set_xlabel(r'$x$ [pc]')
+    ax1.set_ylabel(r'$y$ [pc]')
+    ax2.set_xlabel(r'Time [Myr]')
+    ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
+    ax3.set_xlabel(r'$x$ [pc]')
+    ax3.set_ylabel(r'$z$ [pc]')
+    ax4.set_xlabel(r'$y$ [pc]')
+    ax4.set_ylabel(r'$z$ [pc]')
+    iter = -1
+    
+    for i in range(len(IMBH_tracker)):
+        iter += 1
+        if iter > len(colours):
+            iter = 0
+
+        if i == 0:
+            adapt_c = 'black'
+            ax1.scatter((line_x[i]-line_x[0]), (line_y[i]-line_y[0]), 
+                         c = adapt_c, zorder = 1, s = 250)
+            ax3.scatter((line_x[i]-line_x[0]), (line_z[i]-line_z[0]), 
+                         c = adapt_c, zorder = 1, s = 250)
+            ax4.scatter((line_z[i]-line_z[0]), (line_y[i]-line_y[0]), 
+                         c = adapt_c, zorder = 1, s = 250)
+        else:
+            ax1.scatter(line_x[i][-1]-line_x[0][-1], line_y[i][-1]-line_y[0][-1], 
+                        c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+            ax1.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], 
+                        c = colours[iter-2], s = 1, zorder = 1) 
+            ax1.scatter(focus_x[-1]-line_x[0][-1], focus_y[-1]-line_y[0][-1], s = 250, color = 'red')
+
+            ax3.scatter(line_x[i][-1]-line_x[0][-1], line_z[i][-1]-line_z[0][-1], 
+                        c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+            ax3.scatter(line_x[i]-line_x[0], line_z[i]-line_z[0], 
+                        c = colours[iter-2], s = 1, zorder = 1) 
+
+            ax4.scatter(line_y[i][-1]-line_y[0][-1], line_z[i][-1]-line_z[0][-1], 
+                        c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+            ax4.scatter(line_y[i]-line_y[0], line_z[i]-line_z[0], 
+                        c = colours[iter-2], s = 1, zorder = 1) 
+    ax2.plot(time[:-5], dE_array[:-5], color = 'black')
+    plt.savefig('figures/system_evolution/simulation_evolution_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+    plt.clf()
+    plt.close()     
+
+    fig = plt.figure(figsize=(8, 8))
+    ax3D = fig.add_subplot(121, projection="3d")
+    iter = -1
+    for i in range(len(IMBH_tracker)):
+        iter += 1
+        if iter > len(colours):
+            iter = 0
+        if i == 0:
             pass
         else:
-            line_x_GRX[j] = (coords[0]-SMBH_coords[0]).value_in(units.pc)
-            line_y_GRX[j] = (coords[1]-SMBH_coords[1]).value_in(units.pc)
-            line_z = coords[2].value_in(units.pc)
-            SMBH_dist_GRX[j] = np.sqrt(line_x[j]**2+line_y[j]**2+line_z**2)
+            ax3D.scatter(line_x[i]-line_x[0], 
+                         line_y[i]-line_y[0], 
+                         line_z[i]-line_z[0], 
+                         c = colours[iter-2], s = 1, zorder = 1)
+    ax3D.scatter(0, 0, 0, color = 'black', s = 150, zorder = 2)
+    ax3D.set_xlabel(r'$x$ [pc]')
+    ax3D.set_ylabel(r'$y$ [pc]')
+    ax3D.set_zlabel(r'$z$ [pc]')
+    ax3D.view_init(30, 160)
+    plt.savefig('figures/system_evolution/simulation_evolution_3D_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
 
-    for j in range(col_len_GRX):
-        time_step = focus_particle_GRX.iloc[j]
-        time_arr = energy_tracker_GRX.iloc[j]
+    return
 
-        focus_semi_SMBH_GRX[j] = time_step[7][0].value_in(units.parsec)
-        focus_ecc_SMBH_GRX[j] = (1-time_step[8][0])
-        focus_ecc_bin_GRX[j]  = (1-time_step[8][1])
-        focus_ecc_ter_GRX[j]  = (1-time_step[8][2])
-
-        for i in range(3):
-            neigh_key_GRX[i][j] = time_step[6][i]
-
-        nearest_neigh_GRX[j] = abs(time_step[-1])
-        time_GRX[j] = time_arr[6].value_in(units.Myr)
-
-    normalise = focus_semi_SMBH_GRX[0]
-    focus_semi_SMBH_GRX /= (normalise)
-    focus_semi_SMBH_smooth_GRX = plot_ini.moving_average(focus_semi_SMBH_GRX, smoothing)
-
-    focus_ecc_SMBH_smooth_GRX = plot_ini.moving_average(focus_ecc_SMBH, smoothing)
-    focus_ecc_bin_smooth_GRX = plot_ini.moving_average(focus_ecc_bin_GRX, smoothing)
-
-    time_smooth_GRX = plot_ini.moving_average(time_GRX, smoothing)
-    nearest_smooth_GRX = plot_ini.moving_average(nearest_neigh_GRX, smoothing)
-    SMBH_dist_smooth_GRX = plot_ini.moving_average(SMBH_dist_GRX, smoothing)"""
-
-    fig = plt.figure(figsize=(12.5, 10))
-    ax1 = fig.add_subplot(221)
-    ax2 = fig.add_subplot(222)
-    ax3 = fig.add_subplot(223)
-    ax4 = fig.add_subplot(224)
-
-    ax1.set_title('Trajectory of Equivalent Particle')
-    ax2.set_title('Time vs. Eccentricity')
-    ax3.set_title('Time vs. Semi-Major Axis')
-    ax4.set_title('Time vs. Distance to Nearest Neighbour')
-    ax2.set_ylabel(r'$(1-e)$')
-    ax3.set_ylabel(r'$a(t)/a_{SMBH,0}$')
-    ax4.set_ylabel(r'$r_{nn}$ [pc]')
-    for ax_ in [ax2, ax3, ax4]:
-        ax_.set_xlabel('Time [Myr]')
-        plot_ini.tickers(ax_, 'plot') 
-        ax_.set_xlim(0,max(time_smooth))
-    plot_ini.tickers(ax1, 'plot')
-
-    ax1.scatter(0,0, color = 'black', s=250)
-    ax1.scatter(line_x, line_y, color = 'red', s = 1, label = 'Hermite')
-    #ax1.scatter(line_x_GRX, line_y_GRX, color = 'blue', s = 1, label = 'GRX')
-
-    ax2.plot(time_smooth, focus_ecc_SMBH_smooth, color = 'red', label = 'w.r.t SMBH')
-    ax2.plot(time_smooth, focus_ecc_bin_smooth, color = 'red', linestyle = ':', label = 'w.r.t Binary')
-    #ax2.plot(time_smooth_GRX, focus_ecc_SMBH_smooth_GRX, color = 'blue')
-    #ax2.plot(time_smooth_GRX, focus_ecc_bin_smooth_GRX, color = 'blue',  linestyle = ':')
-
-    ax3.plot(time_smooth, focus_semi_SMBH_smooth, color = 'red')
-    #ax3.plot(time_smooth_GRX, focus_semi_SMBH_smooth_GRX, color = 'blue')
-
-    ax4.plot(time_smooth, nearest_smooth, color = 'red',  linestyle = ':')
-    ax4.plot(time_smooth, SMBH_dist_smooth, color = 'red')
-    #ax4.plot(time_smooth_GRX, nearest_smooth_GRX, color = 'blue',  linestyle = ':')
-    #ax4.plot(time_smooth_GRX, SMBH_dist_smooth_GRX, color = 'blue')
-
-    ax1.legend()
-    ax2.legend()
-    plt.savefig('figures/system_evolution/herm_GRX_trajdiff_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
 
 #direct_comparison('Hermite')
 #spatial_plotter('GRX')
 #energy_plotter('Hermite')
 #ejected_evolution('Hermite')
+chaos_deviate()

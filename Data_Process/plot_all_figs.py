@@ -26,10 +26,9 @@ cst = sustainable_sys()
 cst.system_formation()
 
 print('...spatial_plotters...')
-ejected_evolution('Hermite')
+ejected_evolution('Hermite', False)
 spatial_plotter('Hermite')
 energy_plotter('Hermite')
-direct_comparison('Hermite')
 
 print('...tGW_plotters...')
 cst = bin_tert_systems()
