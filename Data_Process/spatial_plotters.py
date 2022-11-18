@@ -768,4 +768,4 @@ def spatial_plotter(int_string):
 #spatial_plotter('GRX')
 #energy_plotter('Hermite')
 #ejected_evolution('Hermite')
-chaos_deviate()
+#chaos_deviate()
