@@ -537,6 +537,7 @@ def ejected_evolution(int_string):
     ax1.plot(time_smooth, ejec_ecc_bin_smooth, color = 'red', label = 'w.r.t Binary')
     ax1.plot(time_smooth, ejec_ecc_ter_smooth, color = 'blue', label = 'w.r.t Tertiary')
 
+    ax2.plot(time, ejec_semi_SMBH, color = 'black', alpha = 0.3, linestyle = ':')
     ax2.plot(time_smooth, ejec_semi_SMBH_smooth, color = 'black')
 
     ax3.plot(time_smooth, ejec_incl_SMBH_smooth, color = 'black')
@@ -549,7 +550,7 @@ def ejected_evolution(int_string):
     ax4.plot(time_smooth, SMBH_dist_smooth, color = 'black')
 
     ax1.legend()
-    plt.savefig('figures/system_evolution/bin_trip_evol_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/system_evolution/ejec_bin_trip_evol_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
     plt.clf()
 
 def energy_plotter(int_string):
@@ -625,7 +626,7 @@ def spatial_plotter(int_string):
     IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
     energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
     col_len_raw = np.shape(IMBH_tracker)[1]
-    col_len = col_len_raw**0.5
+    col_len = round(col_len_raw**0.7)
     parti_size = 20+len(IMBH_tracker)**-0.5
 
     line_x = np.empty((len(IMBH_tracker), col_len))
@@ -724,7 +725,6 @@ def spatial_plotter(int_string):
                         c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
             ax1.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], 
                         c = colours[iter-2], s = 1, zorder = 1) 
-            ax1.scatter(focus_x[-1]-line_x[0][-1], focus_y[-1]-line_y[0][-1], s = 250, color = 'red')
 
             ax3.scatter(line_x[i][-1]-line_x[0][-1], line_z[i][-1]-line_z[0][-1], 
                         c = colours[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
@@ -755,6 +755,9 @@ def spatial_plotter(int_string):
                          line_z[i]-line_z[0], 
                          c = colours[iter-2], s = 1, zorder = 1)
     ax3D.scatter(0, 0, 0, color = 'black', s = 150, zorder = 2)
+    ax3D.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+    ax3D.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+    ax3D.zaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
     ax3D.set_xlabel(r'$x$ [pc]')
     ax3D.set_ylabel(r'$y$ [pc]')
     ax3D.set_zlabel(r'$z$ [pc]')
@@ -762,7 +765,6 @@ def spatial_plotter(int_string):
     plt.savefig('figures/system_evolution/simulation_evolution_3D_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
 
     return
-
 
 #direct_comparison('Hermite')
 #spatial_plotter('GRX')

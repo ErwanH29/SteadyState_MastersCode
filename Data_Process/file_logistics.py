@@ -118,9 +118,13 @@ def ejected_extract_final(set, ejected, ejec_merge):
                 return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
     return np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN
 
-def ejected_stat_extractor(chaos_dir):
+def ejected_stat_extractor(chaos_dir, int):
     """
     Function to extract a cropped data set of any given simulation to analyse ejected particles
+
+    Inputs:
+    chaos_dir:  The directory to extract data from
+    int:        String dictating whether it is Hermite or GRX data
     """
 
     chaos_data = glob.glob(chaos_dir)
@@ -128,6 +132,13 @@ def ejected_stat_extractor(chaos_dir):
 
     filt_IMBH = []
     filt_Chaotic = []
+
+    if int == 'Hermite':
+        lbound = 95
+        ubound = 105
+    else:
+        lbound = 91
+        ubound = 101
 
     for file_ in range(len(chaos_data)):
             with open(chaos_data[file_], 'rb') as input_file:
@@ -137,7 +148,7 @@ def ejected_stat_extractor(chaos_dir):
                 else:
                     filt_Chaotic.append(data)
                     input_file = str(input_file)
-                    IMBH_data = glob.glob('data/Hermite/particle_trajectory/*'+str(input_file[95:105])+'*')
+                    IMBH_data = glob.glob('data/'+str(int)+'/particle_trajectory/*'+str(input_file[lbound:ubound])+'*')
                     with open(IMBH_data[0], 'rb') as input_file:
                         data = pkl.load(input_file)
                         data_pts = round((np.shape(data)[1])/15)
@@ -307,4 +318,5 @@ def simulation_stats_checker(int_string):
     print('IMBH merging events: ', IMBH_merger)
     print('Ejection events:     ', ejection)
 
+simulation_stats_checker('GRX')
 simulation_stats_checker('Hermite')

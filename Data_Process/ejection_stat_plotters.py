@@ -10,36 +10,8 @@ class data_ext_files(object):
     """
     def __init__(self):
 
-        self.IMBH_data, self.ejec_data = ejected_stat_extractor('data/Hermite/no_addition/chaotic_simulation/*')
-        #self.IMBH_data_GRX, ejec_data_GRX = ejected_stat_extractor('data/Hermite/no_addition/chaotic_simulation/*')
-
-        self.ex = np.empty((len(self.IMBH_data)))
-        self.ey = np.empty((len(self.IMBH_data)))
-        self.ez = np.empty((len(self.IMBH_data)))
-        self.vesc = np.empty((len(self.IMBH_data)))
-
-        self.ejec_KE = np.empty((len(self.IMBH_data)))
-        self.ejec_PE = np.empty((len(self.IMBH_data)))
-        self.Nclose = np.empty((len(self.IMBH_data)))
-
-        self.tot_mass = np.empty((len(self.IMBH_data)))
-        self.tot_pop = np.empty((len(self.IMBH_data)))
-        self.surv_time = np.empty((len(self.IMBH_data)))
-        self.ejected = np.empty(len(self.IMBH_data))
-
-        """self.ex_GRX = np.empty((len(self.IMBH_data)))
-        self.ey_GRX = np.empty((len(self.IMBH_data)))
-        self.ez_GRX = np.empty((len(self.IMBH_data)))
-        self.vesc_GRX = np.empty((len(self.IMBH_data)))
-
-        self.ejec_KE_GRX = np.empty((len(self.IMBH_data)))
-        self.ejec_PE_GRX = np.empty((len(self.IMBH_data)))
-        self.Nclose_GRX = np.empty((len(self.IMBH_data)))
-
-        self.tot_mass_GRX = np.empty((len(self.IMBH_data)))
-        self.tot_pop_GRX = np.empty((len(self.IMBH_data)))
-        self.surv_time_GRX = np.empty((len(self.IMBH_data)))
-        self.ejected_GRX = np.empty(len(self.IMBH_data))"""
+        self.IMBH_data, self.ejec_data = ejected_stat_extractor('data/Hermite/no_addition/chaotic_simulation/*', 'Hermite')
+        self.IMBH_data_GRX, self.ejec_data_GRX = ejected_stat_extractor('data/GRX/no_addition/chaotic_simulation/*', 'GRX')
 
 class KE_PE_plotters(object):
     """
@@ -72,7 +44,7 @@ class KE_PE_plotters(object):
             ext[i], eyt[i], ezt[i], vesc[i], ejec_KEt[i], ejec_PEt[i], Nclose[i], \
             ejected[i] = ejected_extract_final(file_IMBH[i], file_ejec[i], 'E')
         ejec_PEt = np.asarray(ejec_PEt)
-        #ejec_PE = np.asarray([PE_ + ((1000*1|units.MSun) * MW_code.get_potential_at_point(0, x * 1 | units.pc, y * 1 | units.pc, z * 1 | units.pc)).value_in(units.J) for PE_, x, y, z in zip(ejec_PE, ex, ey, ez)])
+        #ejec_PEt = np.asarray([PE_ + ((1000*1|units.MSun) * MW_code.get_potential_at_point(0, x * 1 | units.pc, y * 1 | units.pc, z * 1 | units.pc)).value_in(units.J) for PE_, x, y, z in zip(ejec_PEt, ext, eyt, ezt)])
         ejec_KE = np.asarray(ejec_KEt[np.isfinite(ejec_KEt)])
         ejec_PE = np.asarray(ejec_PEt[np.isfinite(ejec_KEt)])
         ex = ext[np.isfinite(ext)] ; ey = eyt[np.isfinite(eyt)] ; ez = ezt[np.isfinite(ezt)]
@@ -82,7 +54,6 @@ class KE_PE_plotters(object):
             ejected_KE = np.asarray(ejec_KE[(ejec_KE < 1e46) & (abs(ejec_PE) < 1e46)])
             ejected_PE = np.asarray(ejec_PE[(ejec_KE < 1e46) & (abs(ejec_PE) < 1e46)])
             final_pos = np.asarray([(i**2+j**2+z**2)**0.5 for i, j, z in zip(ex, ey, ez)])[(ejec_KE < 1e46) & (abs(ejec_PE) < 1e46)]
-
             ejected_KE /= max(ejected_KE)
             ejected_PE /= max(ejected_KE)
 
@@ -116,11 +87,11 @@ class KE_PE_plotters(object):
             gs = gridspec.GridSpec(1, 2)
             ax1 = plt.subplot(gs[0,0])
             ax2 = plt.subplot(gs[0,1])
-            ax1.set_ylabel(r'$E_P/E_{{K, {}}}$'.format(str('max')))
+            ax1.set_ylabel(r'$E_P/E_{{K, {\rm{max}}}}$')
            
             for ax_ in [ax1, ax2]:
                 ax_.plot(linex, liney, color = 'black', linestyle = '-.', zorder = 1)
-                ax_.set_xlabel(r'$E_K/E_{{K, {}}}$'.format(str('max')))
+                ax_.set_xlabel(r'$E_K/E_{{K, {\rm{max}}}}$')
                 plot_ini.tickers(ax_, 'plot')
                 
             if hist == 'Y':
@@ -136,7 +107,7 @@ class KE_PE_plotters(object):
                 extent = [0, 0.3, -0.3,0]
                 contours = ax1.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
                 cbar = plt.colorbar(contours, ax=ax2)
-                cbar.set_label(label = r'$\log_{10}(N/N_{max})$',rotation=270,labelpad=15)
+                cbar.set_label(label = r'$\log_{10}(N/N_{\rm{max}})$',rotation=270,labelpad=15)
 
                 ax1.set_xlim(0,0.3)
                 ax1.set_ylim(-0.3,0)
@@ -166,9 +137,9 @@ class KE_PE_plotters(object):
                 ax.set_xlim(0,1.05)
                 ax.set_ylim(-1.05,0)
                 ax.plot(MW_linex, MW_liney, linestyle = '--', color = 'black', zorder = 2)
-                plt.colorbar(colour_axes, ax = ax, label = r'Final Distance to Core [pc]')
-                ax.set_xlabel(r'$E_K/E_{{K, {}}}$'.format(str('max')))
-                ax.set_ylabel(r'$E_{{P, MW}}/E_{{K, {}}}$'.format(str('max')))
+                plt.colorbar(colour_axes, ax = ax, label = r'$r_{\rm{GC}}$ [pc]')
+                ax.set_xlabel(r'$E_K/E_{{K, \rm{max}}}$')
+                ax.set_ylabel(r'$E_{{P}}/E_{{K, \rm{max}}}$')
                 plot_ini.tickers(ax, 'hist')
                 plt.savefig('figures/ejection_stats/KEPE_histogram_'+str(save_file)+'.pdf', dpi=300, bbox_inches='tight')
                 plt.clf()
@@ -209,7 +180,7 @@ class KE_PE_plotters(object):
 
             for i in range(2):
                 axis = i+1
-                ejected_KE, ejected_PE, final_pos, unbounded_x, unbounded_y, line_MW = self.energy_data_extract(data_filt[i], data.IMBH_data, data.ejec_data)
+                ejected_KE, ejected_PE, final_pos, unbounded_x, unbounded_y, line_MW = self.energy_data_extract(data_filt[i], data.IMBH_data_GRX, data.ejec_data_GRX)
                 self.energy_plot_setup(ejected_KE, ejected_PE, unbounded_x, unbounded_y, line_MW, final_pos, 'Final Distance to Core [pc]', axis, save_file[i], 'N')
 
 class vejection(object):
@@ -223,56 +194,104 @@ class vejection(object):
         """
         plot_ini = plotter_setup()
         data = data_ext_files()
-
-        for i in range(len(data.ejec_data)):
-            data.ex[i], data.ey[i], data.ez[i], data.vesc[i], data.ejec_KE[i], data.ejec_PE[i], data.Nclose[i], \
-            data.ejected[i] = ejected_extract_final(data.IMBH_data[i], data.ejec_data[i], 'E')
-            vals_df = data.ejec_data[i].iloc[0]
-            data.tot_pop[i] = vals_df[6]
-            data.surv_time[i] = vals_df[-2].value_in(units.Myr)
-
-        in_pop = np.unique(data.tot_pop)
-        avg_vel = np.empty(len(in_pop))
-        avg_surv = np.empty((len(in_pop)))
-
-        iter = -1
-        for pop_ in in_pop:
-            iter += 1
-            indices = np.where((data.tot_pop == pop_))[0]
-            temp_escv = [data.vesc[i] for i in indices]
-            temp_surv = [data.surv_time[i] for i in indices]
-
-            avg_vel[iter] = np.mean(temp_escv)
-            avg_surv[iter] = np.mean(temp_surv)
-
-        avg_vel = np.asarray(avg_vel)
-
         plot_ini = plotter_setup()
-        fig, ax = plt.subplots()
-        colour_axes = ax.scatter(in_pop, avg_vel, edgecolors='black', c = np.log10(avg_surv), zorder = 3)
-        plt.colorbar(colour_axes, ax=ax, label = r'$\log_{10}\langle t_{ej}\rangle$ [Myr]')
-        ax.set_ylabel(r'$\langle v_{ej} \rangle$ [km/s]')
-        ax.axhline(676, color = 'black', linestyle = ':')
-        ax.text(15, 690, r'$v_{esc, MW}$')
-        ax.set_ylim(0, 1600)
-        plot_ini.tickers_pop(ax, in_pop)
+        MW_code = MWpotentialBovy2015()
+
+        ex = [[ ], [ ]]
+        ey = [[ ], [ ]]
+        ez = [[ ], [ ]]
+        vesc = [[ ], [ ]]
+
+        ejec_KE = [[ ], [ ]]
+        ejec_PE = [[ ], [ ]]
+        Nclose = [[ ], [ ]]
+
+        tot_mass = [[ ], [ ]]
+        tot_pop = [[ ], [ ]]
+        ejected = [[ ], [ ]]
+        surv_time = [[ ], [ ]]
+        avg_surv = [[ ], [ ]]
+        avg_vel = [[ ], [ ]]
+
+
+        pops = [[ ], [ ]]
+        IMBH_data = [data.IMBH_data, data.IMBH_data_GRX]
+        ejec_data = [data.ejec_data, data.ejec_data_GRX]
+
+        for int_ in range(2):
+            for i in range(len(IMBH_data[int_])):
+                ex_val, ey_val, ez_val, vesc_val, ejec_KE_val, ejec_PE_val, Nclose_val, \
+                ejected_val = ejected_extract_final(IMBH_data[int_][i], ejec_data[int_][i], 'E')
+
+                ex[int_].append(ex_val)
+                ey[int_].append(ey_val)
+                ez[int_].append(ez_val)
+                vesc[int_].append(vesc_val)
+                ejec_KE[int_].append(ejec_KE_val)
+                ejec_PE[int_].append(ejec_PE_val)
+                Nclose[int_].append(Nclose_val)
+                ejected[int_].append(ejected_val)
+
+                vals_df = ejec_data[int_][i].iloc[0]
+                tot_pop[int_].append(vals_df[6])
+                surv_time[int_].append(vals_df[-2].value_in(units.Myr))
+            vesc[int_] = np.asarray([i for i in vesc[int_]])
+
+            in_pop = np.unique(tot_pop[int_])
+            avg_vel_t = np.empty(len(in_pop))
+            avg_surv_t = np.empty(len(in_pop))
+
+            iter = -1
+            for pop_ in in_pop:
+                iter += 1
+                pops[int_].append(pop_)
+                indices = np.where((tot_pop[int_] == pop_))[0]
+                avg_vel_t[iter] = np.mean([vesc[int_][i] for i in indices])
+                avg_surv_t[iter] = np.mean([surv_time[int_][i] for i in indices])
+            avg_vel[int_] = [i for i in avg_vel_t]
+            avg_surv[int_] = [i for i in avg_surv_t]
+        vesc_MW = (np.sqrt(2)*MW_code.circular_velocity(0.1 | units.parsec) + np.sqrt(2*constants.G*(4e6 | units.MSun)/(0.1 | units.parsec))).value_in(units.kms)
+        
+        fig = plt.figure(figsize=(15, 6))
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        ax_ = [ax1, ax2]
+        ax_title = ['Hermite', 'GRX']        
+        norm_min = np.log10(min(min(avg_surv[0]), min(avg_surv[1])))
+        norm_max = np.log10(max(max(avg_surv[0]), max(avg_surv[1])))
+        normalise = plt.Normalize(norm_min, norm_max)
+        ymax = max(max(avg_vel[0]), max(avg_vel[1]))
+        for int_ in range(2):
+            colour_axes = ax_[int_].scatter(pops[int_], avg_vel[int_], edgecolors='black', c = np.log10(avg_surv[int_]), norm = normalise, zorder = 3)
+            ax_[int_].set_ylabel(r'$\langle v_{ej} \rangle$ [km/s]')
+            ax_[int_].axhline(vesc_MW, color = 'black', linestyle = ':')
+            ax_[int_].text(15, 690, r'$v_{\rm{esc, MW}}$')
+            ax_[int_].set_ylim(0, 1.1*ymax)
+            ax_[int_].set_title(ax_title[int_])
+            plot_ini.tickers_pop(ax_[int_], pops[int_])
+        plt.colorbar(colour_axes, ax=ax2, label = r'$\log_{10}\langle t_{ej}\rangle$ [Myr]')
         plt.savefig('figures/ejection_stats/mean_vej.pdf', dpi=300, bbox_inches='tight')
 
-        MW_code = MWpotentialBovy2015()
-        vesc = (np.sqrt(2)*MW_code.circular_velocity(0.1 | units.parsec) + np.sqrt(2*constants.G*(4e6 | units.MSun)/(0.1 | units.parsec))).value_in(units.kms)
         
-        fig, ax = plt.subplots()
-        ax.set_title('Ejection Velocity Histogram')
-        n, bins, patches = ax.hist(data.vesc, 20, histtype = 'step', color='black')
-        n, bins, patches = ax.hist(data.vesc, 20, color='black', alpha = 0.3)
-        
-        ax.axvline(vesc, linestyle = ':', color = 'black')
-        ax.text(vesc*(1+0.05), 0.9*max(n), r'$v_{esc, MW}$', horizontalalignment = 'center', rotation = 270)
-        ax.set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
-        ax.set_ylabel(r'Occurence')
-        ax.set_title('Ejection Velocity Histogram for All Simulations')
-        plot_ini.tickers(ax, 'plot')
+        fig = plt.figure(figsize=(15, 6))
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        ax_ = [ax1, ax2]
+        ax_title = ['Ejection Velocity Histogram \n Hermite', '\n GRX']
+        colours = ['red', 'blue']
+        xmax =max(max(vesc[0]), max(vesc[1]))
+        for int_ in range(2):
+            n, bins, patches = ax_[int_].hist(vesc[int_], 20, histtype = 'step', color=colours[int_])
+            n, bins, patches = ax_[int_].hist(vesc[int_], 20, color=colours[int_], alpha = 0.4)
+            
+            ax_[int_].axvline(vesc_MW, linestyle = ':', color = 'black')
+            ax_[int_].text(vesc_MW*(1+0.05), 0.9*max(n), r'$v_{esc, MW}$', horizontalalignment = 'center', rotation = 270)
+            ax_[int_].set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
+            ax_[int_].set_ylabel(r'Frequency')
+            ax_[int_].set_xlim(0,1.01*xmax)
+            plot_ini.tickers(ax_[int_], 'plot')
         plt.savefig('figures/ejection_stats/vejection_histogram.pdf', dpi = 300, bbox_inches='tight')
+
 
 class event_tracker(object):
     """
@@ -282,57 +301,42 @@ class event_tracker(object):
 
         plot_ini = plotter_setup()
         chaos_data = glob.glob('data/Hermite/no_addition/chaotic_simulation/*')
-        chaos_data = natsort.natsorted(chaos_data)
+        chaos_data_GRX = glob.glob('data/GRX/no_addition/chaotic_simulation/*')
+        chaos_data = [natsort.natsorted(chaos_data), natsort.natsorted(chaos_data_GRX)]
 
-        init_pop = []
-        merger = []
-        for file_ in range(len(chaos_data)):
-            with open(chaos_data[file_], 'rb') as input_file:
-                data = pkl.load(input_file)
-                init_pop.append(len(data.iloc[0][8])+1)
-                merger.append(data.iloc[0][10])
-
-        in_pop = np.unique(init_pop)
-        frac_merge = np.empty(len(in_pop))
-        iter = -1
-        for pop_ in in_pop:
-            iter +=1
-            indices = np.where((init_pop == pop_))[0]
-            temp_frac = [merger[i] for i in indices]
-            frac_merge[iter] = np.mean(temp_frac)
-
-        chaos_data_GRX = glob.glob('data/Hermite/no_addition/chaotic_simulation/*')
-        chaos_data_GRX = natsort.natsorted(chaos_data)
-
-        init_pop_GRX = []
-        merger_GRX = []
-        for file_ in range(len(chaos_data_GRX)):
-            with open(chaos_data_GRX[file_], 'rb') as input_file:
-                data = pkl.load(input_file)
-                init_pop_GRX.append(len(data.iloc[0][8])+1)
-                merger_GRX.append(data.iloc[0][10])
-
-        in_pop_GRX = np.unique(init_pop_GRX)
-        frac_merge_GRX = np.empty(len(in_pop_GRX))
-        iter = -1
-        for pop_ in in_pop_GRX:
-            iter +=1
-            indices = np.where((init_pop_GRX == pop_))[0]
-            temp_frac = [merger_GRX[i] for i in indices]
-            frac_merge_GRX[iter] = np.mean(temp_frac)
+        init_pop = [[ ], [ ]]
+        merger = [[ ], [ ]]
+        in_pop = [[ ], [ ]]
+        frac_merge = [[ ], [ ]]
+        colours = ['red', 'blue']
+        labels = ['Hermite', 'GRX']
 
         fig, ax = plt.subplots()
-        ax.set_ylabel(r'$N_{merge}/N_{sim}$')
+        ax.set_ylabel(r'$N_{\rm{merge}}/N_{\rm{sim}}$')
         ax.set_ylim(0,1.05)
-        ax.scatter(in_pop, frac_merge, color = 'red', edgecolors = 'black', label = 'Hermite')
-        ax.scatter(in_pop_GRX, frac_merge_GRX, color = 'red', edgecolors = 'black', label = 'GRX')
-        plot_ini.tickers_pop(ax, in_pop)
+        for int_ in range(2):
+            for file_ in range(len(chaos_data[int_])):
+                with open(chaos_data[int_][file_], 'rb') as input_file:
+                    data = pkl.load(input_file)
+                    init_pop[int_].append(len(data.iloc[0][8])+1)
+                    merger[int_].append(data.iloc[0][10])
+
+            in_pop[int_] = np.unique(init_pop[int_])
+            iter = -1
+            for pop_ in in_pop[int_]:
+                iter +=1
+                indices = np.where((init_pop[int_] == pop_))[0]
+                temp_frac = [merger[int_][i] for i in indices]
+                frac_merge[int_].append(np.mean(temp_frac))
+
+            ax.scatter(in_pop[int_], frac_merge[int_], color = colours[int_], edgecolors = 'black', label = labels[int_])
+        plot_ini.tickers_pop(ax, in_pop[0])
+        plt.legend()
         plt.savefig('figures/ejection_stats/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')
 
-#cst = KE_PE_plotters()
-#cst.KEPE_plotter()
+"""cst = vejection()
+cst.vejec_plotter()
 
-#cst = vejection()
-#cst.vejec_histogram()
-#cst.vejec_mean_plotter()
-#cst = event_tracker()
+cst = event_tracker()
+cst = KE_PE_plotters()
+cst.KEPE_plotter()"""

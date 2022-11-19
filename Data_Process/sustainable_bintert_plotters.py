@@ -165,6 +165,6 @@ class sustainable_sys(object):
         colour_axes = ax2.scatter((10**6*self.dadt), (10**6*self.dedt), edgecolors = 'black', c = self.pop)
         plt.colorbar(colour_axes, ax = ax2, label = r'Initial Population')
         plt.savefig('figures/binary_hierarchical/dadt_dedt_plot.pdf', dpi=300, bbox_inches='tight')
-"""
+
 cst = sustainable_sys()
-cst.system_formation()"""
+cst.system_formation()

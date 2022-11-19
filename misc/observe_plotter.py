@@ -1,10 +1,9 @@
-from spatial_plotters import *
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 
 # Data is taken from 2022MNRAS.509.1587 [Walton et al. 2022] and provided by VizieR
-
-data = np.loadtxt('data/observational_data/asu.tsv', dtype = str, delimiter='|')
+data = np.loadtxt('observational_data/asu.tsv', dtype = str, delimiter='|')
 
 rasc = []       #In deg
 decl = []       #In deg
@@ -67,13 +66,17 @@ avg_lum = np.asarray([float(i) for i in avg_lum])[peak_lum > 10**40]
 peak_lum = peak_lum[peak_lum > 10**40]
 print(np.shape(gal_sep), np.shape(peak_lum))
 
-plot_ini = plotter_setup()
 
 fig, ax = plt.subplots()
+ax.yaxis.set_ticks_position('both')
+ax.xaxis.set_ticks_position('both')
+ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+ax.tick_params(axis="y", which = 'both', direction="in")
+ax.tick_params(axis="x", which = 'both', direction="in")
 colour_axes = ax.scatter(np.log10(gal_sep), np.log10(peak_lum), c = np.log10(avg_flux), edgecolors = 'black')
-plot_ini.tickers(ax, 'plot')
-ax.set_xlabel('Galactic Separation [pc]')
-ax.set_ylabel(r'Peak Luminosity [erg s$^{-1}$]')
+ax.set_xlabel(r'$\log_{10} r_{\rm{GC}}$ [pc]')
+ax.set_ylabel(r'$\log_{10} L_{\rm{max}}$ [erg s$^{-1}$]')
 ax.set_xlim(0, 1.05*max(np.log10(gal_sep)))
 plt.colorbar(colour_axes, ax = ax, label = r'$\log_{10}\langle f\rangle$ [mW m$^{-2}$]')
-plt.show()
+plt.savefig('ULX_detections.pdf', dpi=300, bbox_inches='tight')
