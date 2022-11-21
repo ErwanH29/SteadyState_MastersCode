@@ -64,8 +64,6 @@ gal_sep = np.asarray([float(i) * 4.84814*10**-6 for i in gal_sep])[peak_lum > 10
 gal_sep = np.asarray([dist_*10**6 * np.arctan(ang_) for dist_, ang_ in zip(gal_dist, gal_sep)])
 avg_lum = np.asarray([float(i) for i in avg_lum])[peak_lum > 10**40]
 peak_lum = peak_lum[peak_lum > 10**40]
-print(np.shape(gal_sep), np.shape(peak_lum))
-
 
 fig, ax = plt.subplots()
 ax.yaxis.set_ticks_position('both')
@@ -74,9 +72,8 @@ ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
 ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
 ax.tick_params(axis="y", which = 'both', direction="in")
 ax.tick_params(axis="x", which = 'both', direction="in")
-colour_axes = ax.scatter(np.log10(gal_sep), np.log10(peak_lum), c = np.log10(avg_flux), edgecolors = 'black')
+colour_axes = ax.scatter(np.log10(gal_sep), np.log10(peak_lum), s = 10, color = 'black', edgecolors = 'black')
 ax.set_xlabel(r'$\log_{10} r_{\rm{GC}}$ [pc]')
 ax.set_ylabel(r'$\log_{10} L_{\rm{max}}$ [erg s$^{-1}$]')
 ax.set_xlim(0, 1.05*max(np.log10(gal_sep)))
-plt.colorbar(colour_axes, ax = ax, label = r'$\log_{10}\langle f\rangle$ [mW m$^{-2}$]')
 plt.savefig('ULX_detections.pdf', dpi=300, bbox_inches='tight')

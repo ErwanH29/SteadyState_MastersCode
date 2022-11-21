@@ -363,10 +363,10 @@ class bin_tert_systems(object):
             tgw_SMBH_iratio[int_] = np.asarray([i / self.tH for i in tgw_SMBH_ini_arr])
             tgw_ratio[int_] = np.asarray([i / j for i, j in zip(tgw_SMBH_fin_arr, tgw_SMBH_ini_arr)])
 
-            xmin_evol.append(min(np.log10(tgw_SMBH_iratio[int_])))
-            xmax_evol.append(max(np.log10(tgw_SMBH_iratio[int_])))
-            ymin_evol.append(min(np.log10(tgw_SMBH_fratio[int_])))
-            ymax_evol.append(max(np.log10(tgw_SMBH_fratio[int_])))
+            xmin_evol.append(np.nanmin(np.log10(tgw_SMBH_iratio[int_])))
+            xmax_evol.append(np.nanmax(np.log10(tgw_SMBH_iratio[int_])))
+            ymin_evol.append(np.nanmin(np.log10(tgw_SMBH_fratio[int_])))
+            ymax_evol.append(np.nanmax(np.log10(tgw_SMBH_fratio[int_])))
 
             xmin_ecc_sem.append(np.nanmin(semi_SMBH_min[int_]))
             xmax_ecc_sem.append(np.nanmax(semi_SMBH_min[int_]))
@@ -399,7 +399,7 @@ class bin_tert_systems(object):
                 ax_.set_ylabel(r'$\log_{10}(1-e)$')
                 ax_.set_xlabel(r'$\log_{10} a$ [pc]')
                 ax_.set_ylim(1.1*min(ymin_ecc_sem), 0)
-                ax_.set_xlim(1.1*min(xmin_ecc_sem), 1.1*max(xmax_ecc_sem))
+                ax_.set_xlim(-8, 1.1*max(xmax_ecc_sem))
             bin2d_sim, xedg, xedg, image = ax2.hist2d(sem_SMBH_conc[int_], ecc_SMBH_conc[int_], bins=(100,100), 
                                                       range=([1.1*min(xmin_ecc_sem), 1.1*max(xmax_ecc_sem)], [1.1*min(ymin_ecc_sem), 0]))
             bin2d_sim /= np.max(bin2d_sim)
@@ -423,8 +423,8 @@ class bin_tert_systems(object):
         ax2.set_title('GRX')
         ax_ = [ax1, ax2]
         ymin = [ ] ; ymax = [ ]
-        norm_min = min(min(self.close_enc[0]), min(self.close_enc[1]))
-        norm_max = max(max(self.close_enc[1]), max(self.close_enc[1]))
+        norm_min = min(np.nanmin(self.close_enc[0]), np.nanmin(self.close_enc[1]))
+        norm_max = max(np.nanmax(self.close_enc[1]), np.nanmax(self.close_enc[1]))
         normalise = plt.Normalize(norm_min, norm_max)
         for int_ in range(2):   
             ini_pop = np.unique(self.pop[int_])
@@ -440,8 +440,9 @@ class bin_tert_systems(object):
             ax_[int_].set_xlabel(r'IMBH Population [$N$]')
             ax_[int_].set_ylabel(r'$\log_{10}\langle t_{\rm{GW},f}/t_{\rm{GW},0} \rangle$')
             plot_init.tickers_pop(ax_[int_], ini_pop)
-            ymin.append(min(np.log10(avg_tgw)))
-            ymax.append(max(np.log10(avg_tgw)))
+            ymin.append(np.nanmin(np.log10(avg_tgw)))
+            ymax.append(np.nanmax(np.log10(avg_tgw)))
+            print(np.log10(avg_tgw))
         for axis in ax_:
             axis.set_ylim(1.05*min(ymin), 1.05*max(ymax))
         plt.colorbar(colour_axes, ax = ax2, label = r'# Close Encounters')
@@ -453,9 +454,9 @@ class bin_tert_systems(object):
         ax1.set_title('Hermite')
         ax2.set_title('GRX')
 
-        xmax = max(max(np.log10(self.close_enc[0])), max(np.log10(self.close_enc[1])))
-        ymin = min(min(np.log10(tgw_ratio[0])), min(np.log10(tgw_ratio[0])))
-        ymax = max(max(np.log10(tgw_ratio[0])), max(np.log10(tgw_ratio[0])))
+        xmax = max(np.nanmax(np.log10(self.close_enc[0])), np.nanmax(np.log10(self.close_enc[1])))
+        ymin = min(np.nanmin(np.log10(tgw_ratio[0])), np.nanmin(np.log10(tgw_ratio[0])))
+        ymax = max(np.nanmax(np.log10(tgw_ratio[0])), np.nanmax(np.log10(tgw_ratio[0])))
         iter = -1
         for ax_ in [ax1, ax2]:
             iter += 1
@@ -576,7 +577,7 @@ class bin_tert_systems(object):
                 ax_.set_ylabel(r'$\log_{10}(1-e)$')
                 ax_.set_xlabel(r'$\log_{10} a$ [pc]')
                 ax_.set_ylim(1.1*ymin, 0)
-                ax_.set_xlim(1.1*xmin, 1.1*xmax)
+                ax_.set_xlim(-10, 1.1*xmax)
                 
             plot_init.tickers(ax2, 'hist')
             plot_init.tickers(ax1, 'plot')
@@ -591,8 +592,3 @@ class bin_tert_systems(object):
             ax1.text(-8.5, -5, r'$f = 200$ Hz', verticalalignment = 'center', fontsize ='xx-small', rotation=self.text_angle-3, color = 'black')
             ax1.text(-5.6, -5, r'$f = 10^{-2}$ Hz', verticalalignment = 'center', fontsize ='xx-small', rotation=self.text_angle-3, color = 'black')
             plt.savefig('figures/gravitational_waves/ecc_semi_bin_histogram'+str(integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
-
-cst = bin_tert_systems()
-cst.SMBH_tgw_plotter()
-cst.bin_tgw_plotter()
-cst.amp_tgw_plotter()

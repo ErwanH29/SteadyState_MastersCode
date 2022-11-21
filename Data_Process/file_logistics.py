@@ -22,14 +22,20 @@ def bulk_stat_extractor(file_string, rewrite):
     if rewrite == 'N':
         for file_ in range(len(filename)):
             with open(filename[file_], 'rb') as input_file:
+                print('Reading file: ', input_file)
                 data.append(pkl.load(input_file))
                 
     else:
         for file_ in range(len(filename)):
             with open(filename[file_], 'rb') as input_file:
+                print('Reading file: ', input_file)
                 rewrite_file = pkl.load(input_file)
-            if np.shape(rewrite_file)[1] > 50:
-                data_pts = round((np.shape(rewrite_file)[1])/15)
+            if np.shape(rewrite_file)[1] > 50 and np.shape(rewrite_file)[1] < 50:
+                data_pts = round((np.shape(rewrite_file)[1])/25)
+            elif np.shape(rewrite_file)[1] > 500 and np.shape(rewrite_file)[1] < 5000:
+                data_pts = round((np.shape(rewrite_file)[1])/250)
+            elif np.shape(rewrite_file)[1] > 5000:
+                data_pts = round((np.shape(rewrite_file)[1])/2500)
             else:
                 data_pts = np.shape(rewrite_file)[1]
             rewrite_file = rewrite_file.drop(rewrite_file.iloc[:, data_pts:-1*data_pts], axis = 1) 
@@ -157,34 +163,34 @@ def ejected_stat_extractor(chaos_dir, int):
 
     return filt_IMBH, filt_Chaotic
 
-def ejected_index(set, ejected):
+def ejected_index(pset, ejected):
     """
     Extracts index of the ejected particle
     
     Inputs:
-    set:     The complete particle set plotting
+    pset:     The complete particle pset plotting
     ejected: The ejected particle
     """
 
     merger = False
     eject = False
     
-    for i in range(len(set)): #Loop for particle that is merged
-        if isinstance(set.iloc[i][-1][0], float): #Will detect NAN if merger occurs
+    for i in range(len(pset)): #Loop for particle that is merged
+        if isinstance(pset.iloc[i][-1][0], float): #Will detect NAN if merger occurs
             print('Simulation ended in merger')
             merger = True
             ejec_idx = i
 
     if not (merger) and ejected.iloc[0][-2] != 1e8 | units.yr: 
-        for i in range(len(set)):   
-            if set.iloc[i][-1][0] == ejected.iloc[0][4]: #Loop for particle ejected but NOT bound
+        for i in range(len(pset)):   
+            if pset.iloc[i][-1][0] == ejected.iloc[0][4]: #Loop for particle ejected but NOT bound
                 print('Simulation ended with ejection')
                 eject = True
                 ejec_idx = i
     
     if not (eject) and not (merger):
         print('Simulation ended over the time limit')
-        for i in range(len(set)):
+        for i in range(len(pset)):
             ejec_idx = 5       #Replace this with the most sustaining binary
 
     return ejec_idx
@@ -299,24 +305,32 @@ def simulation_stats_checker(int_string):
     IMBH_merger = 0
     ejection = 0
     tot_sims = 0
+    complete = 0
 
     print('Simulation outcomes for', str(int_string))
     for file_ in range(len(filename)):
         tot_sims += 1
         with open(filename[file_]) as f:
-            line = f.readlines()[-9][:-7]
-            data = line.split()
+            line = f.readlines()
+            line1 = line[-9][:-7]
+            line2 = line[3][17:]
+            data = line1.split()
+            data2 = line2.split()
             data = [float(i) for i in data]
             if 4001000 in data:
                 SMBH_merger += 1
             if 2000 in data:
                 IMBH_merger += 1
-            if 4001000 not in data and 2000 not in data:
+            if 4001000 not in data and 2000 not in data and '100000000.0' not in data2:
                 ejection += 1
+            if '100000000.0' in data2:
+                complete += 1
+
     print('Total simulations:   ', tot_sims)
     print('SMBH merging events: ', SMBH_merger)
     print('IMBH merging events: ', IMBH_merger)
     print('Ejection events:     ', ejection)
+    print('Completed sims:      ', complete)
 
 simulation_stats_checker('GRX')
 simulation_stats_checker('Hermite')

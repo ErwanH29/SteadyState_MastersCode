@@ -16,11 +16,11 @@ class stability_plotters(object):
         """
         Function to extract data from simulations who end in ejection
         """
-        self.chaos_ini_parti_data, self.chaos_fin_parti_data, self.chaos_number_mergers, self.chaos_cumulative_mm, self.chaos_simulated_end, \
+        self.chaos_ini_parti_data, self.chaos_fparti_data, self.chaos_number_mergers, self.chaos_cumulative_mm, self.chaos_simulated_end, \
         self.chaos_ejected_parti, self.chaos_stab_time_data, self.chaos_init_dist_data, self.chaos_init_mass_data, \
         self.chaos_inj_mass_data, self.chaos_eje_mass_data = stats_chaos_extractor(dirC)  
 
-        return self.chaos_ini_parti_data, self.chaos_fin_parti_data, self.chaos_number_mergers, self.chaos_cumulative_mm, \
+        return self.chaos_ini_parti_data, self.chaos_fparti_data, self.chaos_number_mergers, self.chaos_cumulative_mm, \
                self.chaos_simulated_end, self.chaos_ejected_parti, self.chaos_stab_time_data, self.chaos_init_dist_data, \
                self.chaos_init_mass_data, self.chaos_inj_mass_data, self.chaos_eje_mass_data
 
@@ -43,11 +43,11 @@ class stability_plotters(object):
         filtered_m = np.where((mass_array == vals).all(1))[0]
         filt_finparti = final_part[filtered_m]
         filt_stabtime = stab_time[filtered_m]
-        pop_size, pop_samples = np.unique(filt_finparti, return_counts = True)
+        pop, psamples = np.unique(filt_finparti, return_counts = True)
 
-        return pop_size, pop_samples, filt_finparti, filt_stabtime
+        return pop, psamples, filt_finparti, filt_stabtime
 
-    def mean_plots(self, axis, ydata, pops):
+    def mean_plots(self, ax, ydata, pops):
         """
         Function to set up the various stability time plotters
         
@@ -60,10 +60,10 @@ class stability_plotters(object):
         mtick_formatter = [mtick.FormatStrFormatter('%0.1f'), mtick.FormatStrFormatter('%0.0f')]
         ylims = [[0, 1.2*(ydata)], [0, 105]]
     
-        for i in range(len(axis)):
-            plot_ini.tickers_pop(axis[i], pops)
-            axis[i].yaxis.set_major_formatter(mtick_formatter[i])
-            axis[i].set_ylim(ylims[i])
+        for i in range(len(ax)):
+            plot_ini.tickers_pop(ax[i], pops)
+            ax[i].yaxis.set_major_formatter(mtick_formatter[i])
+            ax[i].set_ylim(ylims[i])
 
     def stable_extract(self, dirS):
         """
@@ -88,20 +88,20 @@ class stability_plotters(object):
         dirH = 'data/Hermite/no_addition/chaotic_simulation/*'
         dirG = 'data/GRX/no_addition/chaotic_simulation/*'
 
-        chaos_ini_parti_data, chaos_fin_parti_data, chaos_number_mergers, chaos_cumulative_mm, chaos_simulated_end, \
+        chaos_ini_parti_data, chaos_fparti_data, chaos_number_mergers, chaos_cumulative_mm, chaos_simulated_end, \
         chaos_ejected_parti, chaos_stab_time_data, chaos_init_dist_data, chaos_init_mass_data, \
         chaos_inj_mass_data, chaos_eje_mass_data = self.chaos_extract(dirH)
 
-        chaos_ini_parti_data_GRX, chaos_fin_parti_data_GRX, chaos_number_mergers_GRX, chaos_cumulative_mm_GRX, chaos_simulated_end_GRX, \
-        chaos_ejected_parti_GRX, chaos_stab_time_data_GRX, chaos_init_dist_data_GRX, chaos_init_mass_data_GRX, \
-        chaos_inj_mass_data_GRX, chaos_eje_mass_data_GRX = self.chaos_extract(dirG)
+        chaos_ini_parti_dataG, chaos_fparti_dataG, chaos_number_mergersG, chaos_cumulative_mmG, chaos_simulated_endG, \
+        chaos_ejected_partiG, chaos_stab_time_dataG, chaos_init_dist_dataG, chaos_init_mass_dataG, \
+        chaos_inj_mass_dataG, chaos_eje_mass_dataG = self.chaos_extract(dirG)
 
         in_dist = np.unique(chaos_init_dist_data)
         in_mass = np.unique(chaos_init_mass_data, axis=0)
 
         for dist_ in in_dist:
             init_dist_idx_chaos = np.where((np.asarray(chaos_init_dist_data) == dist_))
-            init_dist_idx_chaos_GRX = np.where((np.asarray(chaos_init_dist_data_GRX) == dist_))
+            init_dist_idx_chaosG = np.where((np.asarray(chaos_init_dist_dataG) == dist_))
 
             fig = plt.figure(figsize=(8, 6))
             ax = fig.add_subplot(111)
@@ -111,62 +111,62 @@ class stability_plotters(object):
             coloursycler = cycle(colour_picker())
             for mass_ in in_mass:
                 iter += 1
-                pop_size, pop_samples, fin_parti, stab_time = self.index_extractor(chaos_init_mass_data, chaos_fin_parti_data, 
-                                                                                   chaos_stab_time_data, init_dist_idx_chaos, mass_)
-                pop_size_GRX, pop_samples_GRX, fin_parti_GRX, stab_time_GRX = self.index_extractor(chaos_init_mass_data_GRX, chaos_fin_parti_data_GRX, 
-                                                                                                   chaos_stab_time_data_GRX, init_dist_idx_chaos_GRX, mass_)
+                pop, psamples, fparti, stab_time = self.index_extractor(chaos_init_mass_data, chaos_fparti_data, 
+                                                                        chaos_stab_time_data, init_dist_idx_chaos, mass_)
+                popG, psamplesG, fpartiG, stab_timeG = self.index_extractor(chaos_init_mass_dataG, chaos_fparti_dataG, 
+                                                                            chaos_stab_time_dataG, init_dist_idx_chaosG, mass_)
 
                 N_parti_avg = [ ]
-                pop_id = np.argwhere(pop_size > 2)
-                pop_size = pop_size[pop_id]
-                pop_samples = pop_samples[pop_id]
+                pop_id = np.argwhere(pop > 2)
+                pop = pop[pop_id]
+                psamples = psamples[pop_id]
 
-                N_parti_avg_GRX = [ ]
-                pop_id_GRX = np.argwhere(pop_size_GRX > 2)
-                pop_size_GRX = pop_size_GRX[pop_id_GRX]
-                pop_samples_GRX = pop_samples_GRX[pop_id_GRX]
+                N_parti_avgG = [ ]
+                pop_idG = np.argwhere(popG > 2)
+                popG = popG[pop_idG]
+                psamplesG = psamplesG[pop_idG]
 
-                tot_pop.append(max(pop_size))
+                tot_pop.append(max(pop))
 
                 full_simul = []
-                for pop_, samp_ in zip(pop_size, pop_samples):
-                    N_parti = np.argwhere(fin_parti == pop_)
+                for pop_, samp_ in zip(pop, psamples):
+                    N_parti = np.argwhere(fparti == pop_)
                     N_parti_avg.append(np.mean(stab_time[N_parti]))
                     idx = np.where(stab_time[N_parti] == 100)[0]
                     ratio = len(idx)/len(stab_time[N_parti])
                     full_simul.append(ratio)
                 N_parti_avg = np.asarray(N_parti_avg)
-                print('For Hermite, # of full simulations per population: ', pop_size.flatten(), full_simul)
+                print('For Hermite, # of full simulations per population: ', pop.flatten(), full_simul)
 
                 full_simul = []
-                for pop_, samp_ in zip(pop_size_GRX, pop_samples_GRX):
-                    N_parti = np.argwhere(fin_parti_GRX == pop_)
-                    N_parti_avg_GRX.append(np.mean(stab_time_GRX[N_parti]))
-                    idx = np.where(stab_time_GRX[N_parti] == 100)[0]
-                    ratio = len(idx)/len(stab_time_GRX[N_parti])
+                for pop_, samp_ in zip(popG, psamplesG):
+                    N_parti = np.argwhere(fpartiG == pop_)
+                    N_parti_avgG.append(np.mean(stab_timeG[N_parti]))
+                    idx = np.where(stab_timeG[N_parti] == 100)[0]
+                    ratio = len(idx)/len(stab_timeG[N_parti])
                     full_simul.append(ratio)
-                N_parti_avg_GRX = np.asarray(N_parti_avg_GRX)
-                print('For GRX, # of full simulations per population: ', pop_size_GRX.flatten(), full_simul)
+                N_parti_avgG = np.asarray(N_parti_avgG)
+                print('For GRX, # of full simulations per population: ', popG.flatten(), full_simul)
                 
-                ax.scatter(pop_size, N_parti_avg, color = 'red', edgecolor = 'black', zorder = 3,
+                ax.scatter(pop, N_parti_avg, color = 'red', edgecolor = 'black', zorder = 3,
                            label = r'Hermite')                
-                ax.scatter(pop_size_GRX, N_parti_avg_GRX, edgecolor = 'black', color = 'blue', 
+                ax.scatter(popG, N_parti_avgG, edgecolor = 'black', color = 'blue', 
                            zorder = 3, label = r'Hermite GRX')    
                 ax.set_ylabel(r'$t_{surv}$ [Myr]')   
 
-            for j, xpos in enumerate(pop_size):
-                ax.text(pop_size[j][0], -0.1*max(N_parti_avg), '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(pop_samples[j][0])), fontsize = 'xx-small', ha = 'center' )
-            for j, xpos in enumerate(pop_size_GRX):
-                ax.text(pop_size_GRX[j][0], -0.1*max(N_parti_avg_GRX), '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(pop_samples_GRX[j][0])), fontsize = 'xx-small', ha = 'center' )
+            for j, xpos in enumerate(pop):
+                ax.text(pop[j][0], -0.1*max(N_parti_avg), '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
+            for j, xpos in enumerate(popG):
+                ax.text(popG[j][0], -0.15*max(N_parti_avg), '# Ejec.\n'+'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
 
-            pop_size = np.array([float(i) for i in pop_size])
+            pop = np.array([float(i) for i in pop])
             N_parti_avg = np.array([ float(i) for i in N_parti_avg])   
              
-            self.mean_plots([ax], max(N_parti_avg), pop_size)
+            self.mean_plots([ax], max(N_parti_avg), pop)
             ax.set_xlim(5,105)
 
             p0 = (6,  0.50)
-            params, cv = scipy.optimize.curve_fit(log_fit, pop_size, N_parti_avg, p0)
+            params, cv = scipy.optimize.curve_fit(log_fit, pop, N_parti_avg, p0)
             slope, intercept = params
             red_slope = str('{:.2f}'.format(slope))
             xtemp = np.linspace(8, 105, 1000)
@@ -187,7 +187,7 @@ class stability_plotters(object):
 
                 init_dist_idx = np.where((chaos_init_dist_data == dist_))
                 init_mass = chaos_init_mass_data[init_dist_idx]
-                fin_parti = chaos_fin_parti_data[init_dist_idx]
+                fparti = chaos_fparti_data[init_dist_idx]
                 stab_time = chaos_stab_time_data[init_dist_idx]
 
                 tot_pop = [ ]
@@ -195,28 +195,28 @@ class stability_plotters(object):
                 std = [ ]
                 mass_arrays = np.where((init_mass == mass_).all(1))[0]  #Indices with the correct mass column
 
-                fin_parti = fin_parti[mass_arrays]
+                fparti = fparti[mass_arrays]
                 stab_time = stab_time[mass_arrays]
-                pop_size, pop_samples = np.unique(fin_parti, return_counts=True)
-                pop_id = np.argwhere(pop_size > 2)
-                pop_size = pop_size[pop_id]
+                pop, psamples = np.unique(fparti, return_counts=True)
+                pop_id = np.argwhere(pop > 2)
+                pop = pop[pop_id]
 
-                if len(pop_size) == 0:
+                if len(pop) == 0:
                     pass
                 else:
-                    pop_samples = pop_samples[pop_id]
-                    tot_pop.append(max(pop_size))
+                    psamples = psamples[pop_id]
+                    tot_pop.append(max(pop))
 
-                    for pop_, samp_ in zip(pop_size, pop_samples):
-                        N_parti = np.argwhere(fin_parti == pop_)
+                    for pop_, samp_ in zip(pop, psamples):
+                        N_parti = np.argwhere(fparti == pop_)
                         N_parti_avg.append(np.mean(stab_time[N_parti]))
                         std.append(np.std(stab_time[N_parti]))
                     y_max.append(max(np.add(N_parti_avg, std)))
 
-                    ax.errorbar(pop_size, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
-                    ax.scatter(pop_size, np.add(N_parti_avg, std), marker = '_', color = 'black')
-                    ax.scatter(pop_size, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
-                    ax.scatter(pop_size, N_parti_avg, color = 'black')
+                    ax.errorbar(pop, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
+                    ax.scatter(pop, np.add(N_parti_avg, std), marker = '_', color = 'black')
+                    ax.scatter(pop, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
+                    ax.scatter(pop, N_parti_avg, color = 'black')
                     
                     ax.text(85, 0.96*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
                     ax.set_xlim(5, 105)

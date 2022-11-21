@@ -626,7 +626,7 @@ def spatial_plotter(int_string):
     IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
     energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
     col_len_raw = np.shape(IMBH_tracker)[1]
-    col_len = round(col_len_raw**0.7)
+    col_len = round(col_len_raw**0.6)
     parti_size = 20+len(IMBH_tracker)**-0.5
 
     line_x = np.empty((len(IMBH_tracker), col_len))
