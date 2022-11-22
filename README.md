@@ -3,7 +3,7 @@ Code using [AMUSE](https://amuse.readthedocs.io/en/latest/) which looks at simul
 
 To run the code, run interface.py while being in the SteadyState_BH/Code directory.
 
-- Local_Code/ is for local computer run and testing script. 
-- ALICE_Codes/ is code manipulated to fit ALICE requirements
-- Data\_Process/ helps plot ALICE results, whose output is a different configuration than those run under local device.
-- misc/ is various codes used to make random plots to gain intuition
+- GRX_Code/ is for local computer run and adopts the GRX formulation. To run, have your environment in the directory and run interface.py
+- ALICE_Codes/ is code manipulated to fit ALICE requirements. It is here as a back up.
+- Data\_Process/ helps plot results.
+- misc/ is various codes used to make plots of observations, initial conditions or general intuition.

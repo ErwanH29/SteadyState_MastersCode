@@ -15,8 +15,8 @@ eta  = 1e-5
 tend = 100 | units.Myr
 int_string = 'GRX'
 
-pops = [20]
-seeds = [943218, 8320021, 1010, 4206988666,  3583, 
+pops = [10]
+seeds = [8320021, 1010, 4206988666,  3583, 
          5911, 5767, 2312, 54314, 30125, 65863, 5812, 
          32131, 882988]
 
@@ -42,4 +42,3 @@ for ipop_ in pops:
             IMBH_parti[1].x += 10**-14 * IMBH_parti[1].x
             failed_simul = evolve_system(IMBH_parti, tend, eta, SMBH_code.distance, 
                                         code_conv, int_string, SMBH)
-            STOP

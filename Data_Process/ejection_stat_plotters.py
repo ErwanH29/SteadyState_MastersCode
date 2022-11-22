@@ -265,7 +265,7 @@ class vejection(object):
             colour_axes = ax_[int_].scatter(pops[int_], avg_vel[int_], edgecolors='black', c = np.log10(avg_surv[int_]), norm = normalise, zorder = 3)
             ax_[int_].set_ylabel(r'$\langle v_{ej} \rangle$ [km/s]')
             ax_[int_].axhline(vesc_MW, color = 'black', linestyle = ':')
-            ax_[int_].text(15, 690, r'$v_{\rm{esc, MW}}$')
+            ax_[int_].text(15, 660, r'$v_{\rm{esc, MW}}$')
             ax_[int_].set_ylim(0, 1.1*ymax)
             ax_[int_].set_title(ax_title[int_])
             plot_ini.tickers_pop(ax_[int_], pops[int_])

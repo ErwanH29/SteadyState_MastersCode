@@ -157,7 +157,7 @@ class stability_plotters(object):
             for j, xpos in enumerate(pop):
                 ax.text(pop[j][0], -0.1*max(N_parti_avg), '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
             for j, xpos in enumerate(popG):
-                ax.text(popG[j][0], -0.15*max(N_parti_avg), '# Ejec.\n'+'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
+                ax.text(popG[j][0], -0.11*max(N_parti_avg), 'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
 
             pop = np.array([float(i) for i in pop])
             N_parti_avg = np.array([ float(i) for i in N_parti_avg])   

@@ -30,7 +30,10 @@ class sustainable_sys(object):
                     print('Reading file', file_, ':', input_file)
                     data = pkl.load(input_file)
 
-                    self.pop[int_].append(np.shape(data)[0])
+                    pop = np.shape(data)[0]
+                    if pop %10 != 0:
+                        pop -=1
+                    self.pop[int_].append(pop)
                     bin_key = []
                     ter_key = []
                     bin_life = []
@@ -107,8 +110,9 @@ class sustainable_sys(object):
         self.dedt = np.asarray(self.dedt)
         self.dadt = np.asarray(self.dadt)
         self.pop = np.asarray(self.pop)
-        self.pop[self.pop %10 != 0] -= 1
-        self.pop = np.asarray(self.pop)
+        for int_ in range(2):
+            self.pop[int_][self.pop[int_] %10 != 0] -= 1
+            self.pop = np.asarray(self.pop)
 
     def system_formation(self):
         """
@@ -185,8 +189,3 @@ class sustainable_sys(object):
 
             plt.colorbar(colour_axes, ax = ax2, label = r'Initial Population')
             plt.savefig('figures/binary_hierarchical/dadt_dedt_plot'+str(integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
-
-######### PLOT ALL NN yr vs. DISTANCE
-
-cst = sustainable_sys()
-cst.system_formation()

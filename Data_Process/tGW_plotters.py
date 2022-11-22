@@ -186,7 +186,7 @@ class bin_tert_systems(object):
         self.LISA_semimaj_max = self.peak_frequency_GW(self.ecc_range[1:], 1 | units.Hz, mass_arr[0][0], mass_arr[0][1])
 
         self.ecc_range = [np.log(1-i) for i in self.ecc_range[1:]]
-        self.text_angle = np.degrees(np.arctan((self.ecc_range[-4]-self.ecc_range[-3])/(self.LIGO_semimaj[-4]-self.LIGO_semimaj[-3]))) - 9
+        self.text_angle = np.degrees(np.arctan((self.ecc_range[-4]-self.ecc_range[-3])/(self.LIGO_semimaj[-4]-self.LIGO_semimaj[-3]))) - 4
 
         ax.plot(self.LIGO_semimaj_min, self.ecc_range, linestyle = ':', color = 'black')
         ax.plot(self.LIGO_semimaj, self.ecc_range, linestyle = '-.', color = 'black')

@@ -289,15 +289,15 @@ def chaos_deviate():
     """
 
     plot_ini = plotter_setup()
-    IMBH_tracker = file_opener('data/GRX/chaos_example/particle_trajectory/*')
+    IMBH_tracker = file_opener('data/GRX/chaos_example/system/particle_trajectory/*')
     energy_tracker = file_opener('data/GRX/chaos_example/energy/*')
-    IMBH_tracker_pert = file_opener('data/GRX/chaos_example/particle_trajectory/*')
+    IMBH_tracker_pert = file_opener('data/GRX/chaos_example/pert_system/particle_trajectory/*')
     
     col_len = np.shape(IMBH_tracker)[1] - 1
     col_len_pert = np.shape(IMBH_tracker_pert)[1] - 1
     col_len = min(col_len, col_len_pert)
 
-    focus_idx = 7
+    focus_idx = 1
     particle = IMBH_tracker.iloc[focus_idx]
     SMBH_data = IMBH_tracker.iloc[0]
     particle_pert = IMBH_tracker_pert.iloc[focus_idx]
@@ -403,13 +403,13 @@ def chaos_deviate():
         ax_.set_xlabel('Time [Myr]')
         plot_ini.tickers(ax_, 'plot') 
         ax_.set_xlim(0,max(time_smooth))
-    ax1.set_xlim(-0.5,0.5)
+    ax1.set_xlim(-0.5,0.55)
     ax1.set_ylim(-0.5,0.5)
     ax2.set_ylim(0,1.05*max(phase_smooth))
 
-    steps = round(0.1*col_len)
-    ax1.scatter(line_x[:steps], line_y[:steps], s = 5, color = 'red', label = r'$\delta x = 0$')
-    ax1.scatter(line_x_pert[:steps], line_y_pert[:steps], s = 5, color = 'blue', label = r'$\delta x = 10^{-13}$ [pc]')
+    steps = round(0.35*col_len)
+    ax1.scatter(line_x[:steps], line_y[:steps], s = 5, color = 'red', label = r'$\delta = 0$')
+    ax1.scatter(line_x_pert[:steps], line_y_pert[:steps], s = 5, color = 'blue', label = r'$\delta = 10^{-13}$ ')
     ax1.scatter(0, 0, s = 250, color = 'black')
 
     ax2.plot(time[:len(phase_smooth)], phase_smooth, color = 'black')
