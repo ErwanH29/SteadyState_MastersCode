@@ -613,6 +613,50 @@ def energy_plotter(int_string):
 
     return
 
+def nearest_neigh(int_string):
+    """
+    Function which plots the evolution of all nearest neighbour distances in a specific simulation.
+    """
+    
+    plot_ini = plotter_setup()
+    count = file_counter(int_string)
+    IMBH_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
+    energy_tracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
+
+    col_len = np.shape(IMBH_tracker)[1] - 1
+    no_parti = np.shape(IMBH_tracker)[0] - 1
+    smoothing = round(10**-2 * col_len)
+    
+
+    time = np.empty(col_len)
+    nn_dist = np.empty((no_parti, col_len))
+    nn_dist_smooth = np.empty((no_parti, (col_len-smoothing+1)))
+
+    for parti_ in range(no_parti):
+        time_step = IMBH_tracker.iloc[parti_+1]
+        for j in range(col_len):
+            nn_dist[parti_][j] = time_step.iloc[j][-1]
+        nn_dist_smooth[parti_] = plot_ini.moving_average(nn_dist[parti_], smoothing)
+        nn_dist_smooth[parti_] = np.asarray(nn_dist_smooth[parti_])
+
+    for i in range(col_len):
+        time_arr = energy_tracker.iloc[i]
+        time[i] = time_arr[6].value_in(units.Myr)
+    time_smooth = plot_ini.moving_average(time, smoothing)
+    time = np.asarray(time)
+
+    fig, ax = plt.subplots()
+    ax.set_title('Time vs. Distance')
+    ax.set_ylabel(r'$r_{NN}$')
+    ax.set_xlabel(r'$t$ [Myr]')
+    plot_ini.tickers(ax, 'plot') 
+    
+    for parti_ in range(no_parti):
+        ax.plot(time_smooth, np.log10(nn_dist_smooth[parti_]), color = 'black', alpha = 0.5)
+        #ax.plot(time, np.log10(nn_dist[parti_]), color = 'black')
+    plt.savefig('figures/system_evolution/NN_dist_Evolution'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+    plt.clf()
+
 def spatial_plotter(int_string):
     """
     Function to plot the evolution of the system

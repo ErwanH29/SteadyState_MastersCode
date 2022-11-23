@@ -39,6 +39,5 @@ for ipop_ in pops:
             SMBH.radius = IMBH_parti[0].radius
             SMBH.ejection = 0
             SMBH.collision_events = 0
-            IMBH_parti[1].x += 10**-14 * IMBH_parti[1].x
             failed_simul = evolve_system(IMBH_parti, tend, eta, SMBH_code.distance, 
                                         code_conv, int_string, SMBH)

@@ -12,8 +12,8 @@ class sustainable_sys(object):
     """
 
     def __init__(self):
-        filenameH = glob.glob('data/Hermite/particle_trajectory/*')
-        filenameGRX = glob.glob('data/GRX/particle_trajectory/*')
+        filenameH = glob.glob('data/Hermite/particle_trajectory_temp/*')
+        filenameGRX = glob.glob('data/GRX/particle_trajectory_temp/*')
         filename = [natsort.natsorted(filenameH), natsort.natsorted(filenameGRX)]
 
         self.pop = [[ ], [ ]]
@@ -23,6 +23,7 @@ class sustainable_sys(object):
         self.sys_bin = [[ ], [ ]]
         self.ter_life = [[ ], [ ]]
         self.sys_ter = [[ ], [ ]]
+        self.form_time = [[ ], [ ]]
         
         for int_ in range(2):
             for file_ in range(len(filename[int_])):
@@ -42,6 +43,7 @@ class sustainable_sys(object):
                     ter_formed = []
                     temp_dedt = []
                     temp_dadt = []
+                    bin_time = []
 
                     avg_mass = 0
                     for parti_ in range(np.shape(data)[0]-1):
@@ -51,6 +53,7 @@ class sustainable_sys(object):
                     for parti_ in range(np.shape(data)[0]):
                         bin_val = 0
                         ter_val = 0
+                        form_time = 0
                         if parti_ == 0:
                             pass
                         else:
@@ -62,6 +65,10 @@ class sustainable_sys(object):
                                     mass1 = data.iloc[parti_][0][1]
                                     for part_ in range(np.shape(data)[0]):
                                         if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
+                                            if form_time == 0:
+                                                formation_time = col_*1000
+                                                bin_time.append(formation_time) 
+                                            form_time += 1
                                             mass2 = data.iloc[part_][0][1]
                                             bin_BE = ((constants.G*mass1*mass2)/(data.iloc[parti_][col_][7][1])).value_in(units.J) 
                                             if bin_BE > (150000)**2*(1+mass1/mass2):   #Hard binary conditions based on Quinlan 1996b
@@ -103,16 +110,21 @@ class sustainable_sys(object):
                     self.dedt[int_].append(np.mean(temp_dedt))
                     self.dadt[int_].append(np.mean(temp_dadt))
 
-        self.bin_life = np.asarray(self.bin_life)
-        self.ter_life = np.asarray(self.ter_life)
-        self.sys_bin = np.asarray(self.sys_bin)
-        self.sys_ter = np.asarray(self.sys_ter)
-        self.dedt = np.asarray(self.dedt)
-        self.dadt = np.asarray(self.dadt)
-        self.pop = np.asarray(self.pop)
+                    self.form_time[int_].append(bin_time)
+
         for int_ in range(2):
-            self.pop[int_][self.pop[int_] %10 != 0] -= 1
-            self.pop = np.asarray(self.pop)
+            self.bin_life[int_] = np.asarray(self.bin_life[int_])
+            self.ter_life[int_] = np.asarray(self.ter_life[int_])
+            self.sys_bin[int_] = np.asarray(self.sys_bin[int_])
+            self.sys_ter[int_] = np.asarray(self.sys_ter[int_])
+            self.dedt[int_] = np.asarray(self.dedt[int_])
+            self.dadt[int_] = np.asarray(self.dadt[int_])
+            self.pop[int_] = np.asarray(self.pop[int_])
+            self.form_time[int_] = np.asarray(self.form_time[int_])
+        print('Hermite binary avg. formation time: ', np.mean(self.form_time[0]))
+        print('Hermite binary all formation time: ', (self.form_time[0]))
+        print('GRX binary avg. formation time: ', np.mean(self.form_time[1]))
+        print('GRX binary all formation time: ', (self.form_time[1]))
 
     def system_formation(self):
         """
@@ -128,14 +140,14 @@ class sustainable_sys(object):
                         np.nanmax(self.bin_life[1]), np.nanmax(self.ter_life[1])))
         normalise_p1 = plt.Normalize((norm_min), (norm_max))
         p1ymax = np.log10(norm_max)
+        print(norm_min, norm_max)
 
-        p2ymin = np.log10(10**6*min(np.nanmin(self.dedt[0]), np.nanmin(self.dedt[1])))
-        p2ymax = np.log10(10**6*max(np.nanmax(self.dedt[0]), np.nanmax(self.dedt[1])))
-        p2xmin = np.log10(10**6*min(np.nanmin(self.dadt[0]), np.nanmin(self.dadt[1])))
-        p2xmax = np.log10(10**6*max(np.nanmax(self.dadt[0]), np.nanmax(self.dadt[1])))
+        p21ymin = min(np.nanmin(np.log10(10**6*(self.dedt[0]))), np.nanmin(np.log10(10**6*(self.dedt[1]))))
+        p21ymax = max(np.nanmax(np.log10(10**6*(self.dedt[0]))), np.nanmax(np.log10(10**6*(self.dedt[1]))))
+        p21xmin = min(np.nanmin(np.log10(10**6*(self.dadt[0]))), np.nanmin(np.log10(10**6*(self.dadt[1]))))
+        p21xmax = max(np.nanmax(np.log10(10**6*(self.dadt[0]))), np.nanmax(np.log10(10**6*(self.dadt[1]))))
 
         integrator = ['Hermite', 'GRX']
-
         for int_ in range(2):
             ini_pop = np.unique(self.pop[int_])
             bin_formed = np.empty(len(ini_pop))
@@ -151,6 +163,10 @@ class sustainable_sys(object):
                 ter_formed[iter] = np.mean(self.sys_ter[int_][idx])
                 bin_life[iter] = np.mean(self.bin_life[int_][idx])
                 ter_life[iter] = np.mean(self.ter_life[int_][idx])
+                self.sys_bin = np.asarray(self.sys_bin)
+                self.sys_ter = np.asarray(self.sys_ter)
+                self.bin_life = np.asarray(self.bin_life)
+                self.ter_life = np.asarray(self.ter_life)
             bin_formed = np.asarray(bin_formed)
             ter_formed = np.asarray(ter_formed)
             bin_life = np.asarray(bin_life)
@@ -175,10 +191,10 @@ class sustainable_sys(object):
             for ax_ in [ax1, ax2]:
                 plot_ini.tickers(ax_, 'plot')
                 ax_.yaxis.set_major_formatter(mtick_formatter)            
-            ax1.set_xlim(0.9*p2xmin, 1.1*p2xmax)
-            ax1.set_ylim(0.9*p2ymin, 1.1*p2ymax)        
-            ax2.set_xlim(-1.1*10**(p2xmin), 1.1*10**(p2xmax))
-            ax2.set_ylim(0.9*10**(p2ymin), 1.1*10**(p2ymax))
+            ax1.set_xlim(0.9*p21xmin, 1.1*p21xmax)
+            ax1.set_ylim(0.9*p21ymin, 1.1*p21ymax)        
+            #ax2.set_xlim(-1.1*10**(p22xmin), 1.1*10**(p22xmax))
+            #ax2.set_ylim(0.9*10**(p22ymin), 1.1*10**(p22ymax))
             ax1.set_ylabel(r'$\log_{10}\langle \dot{(1-e)} \rangle_{SMBH}$ [Gyr$^{-1}$]')
             ax2.set_ylabel(r'$\langle \dot{(1-e)} \rangle_{SMBH}$ [Gyr$^{-1}$]')
             ax1.set_xlabel(r'$\log_{10}\langle \dot{a}^{-1} \rangle_{SMBH}$ [pc$^{-1}$Gyr$^{-1}$]')

@@ -47,24 +47,6 @@ class stability_plotters(object):
 
         return pop, psamples, filt_finparti, filt_stabtime
 
-    def mean_plots(self, ax, ydata, pops):
-        """
-        Function to set up the various stability time plotters
-        
-        Inputs:
-        ax:     Array containing axes in plots
-        ydata:  The y-values for the plot
-        """
-
-        plot_ini = plotter_setup()
-        mtick_formatter = [mtick.FormatStrFormatter('%0.1f'), mtick.FormatStrFormatter('%0.0f')]
-        ylims = [[0, 1.2*(ydata)], [0, 105]]
-    
-        for i in range(len(ax)):
-            plot_ini.tickers_pop(ax[i], pops)
-            ax[i].yaxis.set_major_formatter(mtick_formatter[i])
-            ax[i].set_ylim(ylims[i])
-
     def stable_extract(self, dirS):
         """
         Function to extract data  from simulations who end with stable state
@@ -74,8 +56,72 @@ class stability_plotters(object):
 
         return self.ini_parti_data, self.inj_event_data, self.merge_no_data, self.mergerm_data, self.simulated_end, \
                self.initial_dist, self.cluster_rad, self.init_parti_m, self.trelax_data
+    
 
-    def massdep_plotter(self):
+    def spread_steady_plotter(self, in_dist, in_mass, idist_data, imass_data, fparti_data, stab_time_data, integrator):
+        """
+        Function to plot the spread in the stability time
+        
+        Inputs:
+        in_dist:         The initial distance of the cluster from the central SMBH
+        in_mass:         The mass of the IMBH
+        idist_data:      The initial distance of the cluster (array)
+        imass_data:      The mass of the IMBH (array)
+        fparti_data:     Data of the particles present at end time
+        stab_time_data:  Array consisting of total simulation time
+        integrator:      Integrator (Hermite or GRX) used
+        """
+        plot_ini = plotter_setup()
+
+        for dist_ in in_dist:
+            for mass_ in in_mass: 
+                y_max = []
+
+                plt.clf()
+                fig, ax = plt.subplots(figsize=(8,6))
+
+                init_dist_idx = np.where((idist_data == dist_))
+                init_mass = imass_data[init_dist_idx]
+                fparti = fparti_data[init_dist_idx]
+                stab_time = stab_time_data[init_dist_idx]
+
+                tot_pop = [ ]
+                N_parti_avg = [ ]
+                std = [ ]
+                mass_arrays = np.where((init_mass == mass_).all(1))[0]  #Indices with the correct mass column
+
+                fparti = fparti[mass_arrays]
+                stab_time = stab_time[mass_arrays]
+                pop, psamples = np.unique(fparti, return_counts=True)
+                pop_id = np.argwhere(pop > 2)
+                pop = pop[pop_id]
+
+                if len(pop) == 0:
+                    pass
+                else:
+                    psamples = psamples[pop_id]
+                    tot_pop.append(max(pop))
+
+                    for pop_, samp_ in zip(pop, psamples):
+                        N_parti = np.argwhere(fparti == pop_)
+                        N_parti_avg.append(np.mean(stab_time[N_parti]))
+                        std.append(np.std(stab_time[N_parti]))
+                    y_max.append(max(np.add(N_parti_avg, std)))
+
+                    ax.errorbar(pop, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
+                    ax.scatter(pop, np.add(N_parti_avg, std), marker = '_', color = 'black')
+                    ax.scatter(pop, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
+                    ax.scatter(pop, N_parti_avg, color = 'black')
+                    
+                    ax.text(85, 0.96*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
+                    ax.set_xlim(5, 105)
+                    ax.set_ylim(0, 100)
+                    ax.set_ylabel(r'$t_{eject}$ [Myr]')
+                    ax.set_title(r'Spread in Stability Time')
+                    plot_ini.tickers_pop(ax, pop)
+                    plt.savefig('figures/steady_time/spread_steady_time'+str(integrator)+'_dist_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
+
+    def overall_steady_plotter(self):
         """
         Function to plot stability time for constant distances
         """
@@ -161,8 +207,7 @@ class stability_plotters(object):
 
             pop = np.array([float(i) for i in pop])
             N_parti_avg = np.array([ float(i) for i in N_parti_avg])   
-             
-            self.mean_plots([ax], max(N_parti_avg), pop)
+            plot_ini.tickers_pop(ax, pop)
             ax.set_xlim(5,105)
 
             p0 = (6,  0.50)
@@ -178,50 +223,13 @@ class stability_plotters(object):
             ax.xaxis.labelpad = 30
             plt.savefig('figures/steady_time/const_population_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
 
-        for dist_ in in_dist:
-            for mass_ in in_mass: 
-                y_max = []
+        self.spread_steady_plotter(in_dist, in_mass, chaos_init_dist_data,
+                                   chaos_init_mass_data, chaos_fparti_data,
+                                   chaos_stab_time_data, 'Hermite')
+        self.spread_steady_plotter(in_dist, in_mass, chaos_init_dist_dataG,
+                                   chaos_init_mass_dataG, chaos_fparti_dataG,
+                                   chaos_stab_time_dataG, 'GRX')
 
-                plt.clf()
-                fig, ax = plt.subplots(figsize=(8,6))
-
-                init_dist_idx = np.where((chaos_init_dist_data == dist_))
-                init_mass = chaos_init_mass_data[init_dist_idx]
-                fparti = chaos_fparti_data[init_dist_idx]
-                stab_time = chaos_stab_time_data[init_dist_idx]
-
-                tot_pop = [ ]
-                N_parti_avg = [ ]
-                std = [ ]
-                mass_arrays = np.where((init_mass == mass_).all(1))[0]  #Indices with the correct mass column
-
-                fparti = fparti[mass_arrays]
-                stab_time = stab_time[mass_arrays]
-                pop, psamples = np.unique(fparti, return_counts=True)
-                pop_id = np.argwhere(pop > 2)
-                pop = pop[pop_id]
-
-                if len(pop) == 0:
-                    pass
-                else:
-                    psamples = psamples[pop_id]
-                    tot_pop.append(max(pop))
-
-                    for pop_, samp_ in zip(pop, psamples):
-                        N_parti = np.argwhere(fparti == pop_)
-                        N_parti_avg.append(np.mean(stab_time[N_parti]))
-                        std.append(np.std(stab_time[N_parti]))
-                    y_max.append(max(np.add(N_parti_avg, std)))
-
-                    ax.errorbar(pop, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
-                    ax.scatter(pop, np.add(N_parti_avg, std), marker = '_', color = 'black')
-                    ax.scatter(pop, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
-                    ax.scatter(pop, N_parti_avg, color = 'black')
-                    
-                    ax.text(85, 0.96*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
-                    ax.set_xlim(5, 105)
-                    ax.set_ylim(0, 1.1*max(np.add(N_parti_avg, std)))
-                    ax.set_ylabel(r'$t_{eject}$ [Myr]')
-                    ax.set_title(r'Spread in Stability Time')
-                    plot_ini.tickers(ax, 'plot')
-                    plt.savefig('figures/steady_time/const_pop_chaotic_stab_time_equal_dist_'+str(dist_)+'_err_mass_'+str(mass_)+'.pdf', dpi = 300, bbox_inches='tight')
+print('...steady_plotter...')
+cst = stability_plotters()
+cst.overall_steady_plotter()

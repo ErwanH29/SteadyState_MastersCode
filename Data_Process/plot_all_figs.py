@@ -9,6 +9,13 @@ from spatial_plotters import *
 start_time = cpu_time.time()
 
 
+print('...spatial_plotters...')
+nearest_neigh('Hermite')
+#chaos_deviate()
+ejected_evolution('Hermite')
+spatial_plotter('Hermite')
+energy_plotter('Hermite')
+
 print('...sustainable_bintert_plotters...')
 cst = sustainable_sys()
 cst.system_formation()
@@ -19,15 +26,10 @@ cst.SMBH_tgw_plotter()
 cst.bin_tgw_plotter()
 cst.amp_tgw_plotter()
 
-print('...spatial_plotters...')
-chaos_deviate()
-ejected_evolution('Hermite')
-spatial_plotter('Hermite')
-energy_plotter('Hermite')
-
 print('...steady_plotter...')
 cst = stability_plotters()
-cst.massdep_plotter()
+cst.overall_steady_plotter()
+cst.spread_steady_plotter()
 
 print('...loss_cone_plotters...')
 cst = loss_cone()

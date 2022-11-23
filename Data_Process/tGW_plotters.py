@@ -172,7 +172,7 @@ class bin_tert_systems(object):
 
     def forecast_interferometer(self, ax, mass_arr):
         """
-        Function to plot the LISA and aLIGO frequency range in the a vs. (1-e) plots
+        Function to plot the LISA and aLIGO frequency range in Ge a vs. (1-e) plots
         """
         
         self.ecc_range = np.linspace(0.0001, 0.9999999, 50)
@@ -402,12 +402,24 @@ class bin_tert_systems(object):
                 ax_.set_xlim(-8, 1.1*max(xmax_ecc_sem))
             bin2d_sim, xedg, xedg, image = ax2.hist2d(sem_SMBH_conc[int_], ecc_SMBH_conc[int_], bins=(100,100), 
                                                       range=([1.1*min(xmin_ecc_sem), 1.1*max(xmax_ecc_sem)], [1.1*min(ymin_ecc_sem), 0]))
+            idx_merge = np.where(tgw_SMBH_min[int_] <= (self.tH/10**6))
+            idx_stab = np.where(tgw_SMBH_min[int_] > (self.tH/10**6))
+            
+            norm_min = (min(np.nanmin(tgw_SMBH_min[0]), np.nanmin(tgw_SMBH_min[0]),
+                            np.nanmin(tgw_SMBH_min[1]), np.nanmin(tgw_SMBH_min[1])))
+            norm_max = (max(np.nanmax(tgw_SMBH_min[0]), np.nanmax(tgw_SMBH_min[0]),
+                            np.nanmax(tgw_SMBH_min[1]), np.nanmax(tgw_SMBH_min[1])))
+            normalise = plt.Normalize((norm_min), (norm_max))
+
             bin2d_sim /= np.max(bin2d_sim)
             extent = [1.1*min(xmin_ecc_sem), 1.1*max(xmax_ecc_sem), 1.1*min(ymin_ecc_sem), 0]
             contours = ax2.imshow(bin2d_sim, extent = extent, aspect='auto', origin = 'upper')
             plot_init.tickers(ax2, 'hist')
             plot_init.tickers(ax1, 'plot')
-            colour_axes = ax1.scatter(semi_SMBH_min[int_], ecc_SMBH_min[int_], c = np.log10(tgw_SMBH_min[int_]), edgecolors='black')
+            colour_axes = ax1.scatter(semi_SMBH_min[int_][idx_merge], ecc_SMBH_min[int_][idx_merge], norm = normalise,
+                                      c = np.log10(tgw_SMBH_min[int_][idx_merge]), marker = 'X', edgecolors='black')
+            colour_axes = ax1.scatter(semi_SMBH_min[int_][idx_stab], ecc_SMBH_min[int_][idx_stab], norm = normalise,
+                                      c = np.log10(tgw_SMBH_min[int_][idx_stab]), edgecolors='black')
             self.forecast_interferometer(ax1, self.mass_SMBH[int_])
             plt.colorbar(colour_axes, ax = ax1, label = r'$\log_{10} \langle t_{GW}\rangle$ [Myr]')
             ax1.text(-6.87, -6, r'$f = 200$ Hz', verticalalignment = 'center', fontsize ='xx-small', rotation=self.text_angle-2, color = 'black')
