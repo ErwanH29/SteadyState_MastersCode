@@ -9,16 +9,26 @@ from spatial_plotters import *
 start_time = cpu_time.time()
 
 
+print('...steady_plotter...')
+cst = stability_plotters()
+cst.overall_steady_plotter()
+
 print('...spatial_plotters...')
 nearest_neigh('Hermite')
-#chaos_deviate()
-ejected_evolution('Hermite')
+chaos_deviate()
+ejected_evolution()
 spatial_plotter('Hermite')
 energy_plotter('Hermite')
 
+print('...loss_cone_plotters...')
+cst = loss_cone()
+cst.lcone_plotter()
+cst.lcone_timescale()
+cst.lcone_fininit_plotter()
+
 print('...sustainable_bintert_plotters...')
 cst = sustainable_sys()
-cst.system_formation()
+cst.system_formation_plotter()
 
 print('...tGW_plotters...')
 cst = bin_tert_systems()
@@ -26,15 +36,6 @@ cst.SMBH_tgw_plotter()
 cst.bin_tgw_plotter()
 cst.amp_tgw_plotter()
 
-print('...steady_plotter...')
-cst = stability_plotters()
-cst.overall_steady_plotter()
-cst.spread_steady_plotter()
-
-print('...loss_cone_plotters...')
-cst = loss_cone()
-cst.lcone_timescale()
-cst.lcone_fininit_plotter()
 
 print('...ejection_stat_plotters...')
 cst = vejection()

@@ -5,7 +5,66 @@ import glob
 import fnmatch
 import natsort
 import os
+import matplotlib.ticker as mtick
 
+class plotter_setup(object):
+    def moving_average(self, array, smoothing):
+        """
+        Function to remove the large fluctuations in various properties by taking the average
+        
+        Inputs:
+        array:     Array consisting of variable for which to produce running average of
+        smoothing: Number of elements to average over
+        output:    Smoothened array
+        """
+
+        value = np.cumsum(array, dtype=float)
+        value[smoothing:] = value[smoothing:] - value[:-smoothing]
+
+        return value[smoothing-1:]/smoothing
+         
+    def tickers(self, ax, plot_type):
+        """
+        Function to setup axis
+        """
+
+        ax.yaxis.set_ticks_position('both')
+        ax.xaxis.set_ticks_position('both')
+        ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        if plot_type == 'plot':
+            ax.tick_params(axis="y", which = 'both', direction="in")
+            ax.tick_params(axis="x", which = 'both', direction="in")
+
+        return ax
+
+    def tickers_pop(self, ax, pop):
+        """
+        Function to setup axis for population plots
+        """
+
+        xints = [i for i in range(1+int(max(pop))) if i % 10 == 0]
+
+        ax.set_xlabel(r'IMBH Population [$N$]')
+        ax.yaxis.set_ticks_position('both')
+        ax.xaxis.set_ticks_position('both')
+        ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.tick_params(axis="y", which = 'both', direction="in")
+        ax.tick_params(axis="x", which = 'both', direction="in")     
+        ax.set_xticks(xints)
+        ax.set_xlim(min(xints)-5, max(xints)+5)
+        ax.set_xlim(5, 105)
+
+        return ax
+        
+    def val_filter(self, arr):
+        """
+        Function which removes the excessive terms
+        """
+        
+        arr[:][abs(arr[:]) > 10**7] = np.NaN
+        return arr
+    
 def bulk_stat_extractor(file_string, rewrite):
     """
     Function which extracts all files in a given dir.
@@ -163,37 +222,65 @@ def ejected_stat_extractor(chaos_dir, int):
 
     return filt_IMBH, filt_Chaotic
 
-def ejected_index(pset, ejected):
+def ejected_index(pset, ejected, int):
     """
     Extracts index of the ejected particle
     
     Inputs:
     pset:     The complete particle pset plotting
-    ejected: The ejected particle
+    ejected:  The ejected particle
+    int:      The integrator used
     """
 
     merger = False
     eject = False
-    
-    for i in range(len(pset)): #Loop for particle that is merged
-        if isinstance(pset.iloc[i][-1][0], float): #Will detect NAN if merger occurs
-            print('Simulation ended in merger')
-            merger = True
-            ejec_idx = i
+    end = False
 
-    if not (merger) and ejected.iloc[0][-2] != 1e8 | units.yr: 
-        for i in range(len(pset)):   
-            if pset.iloc[i][-1][0] == ejected.iloc[0][4]: #Loop for particle ejected but NOT bound
-                print('Simulation ended with ejection')
-                eject = True
+    
+    if int == 'Hermite':
+        for i in range(len(pset)): #Loop for particle that is merged
+            if isinstance(pset.iloc[i][-1][0], float): #Will detect NAN if merger occurs
                 ejec_idx = i
-    
-    if not (eject) and not (merger):
-        print('Simulation ended over the time limit')
-        for i in range(len(pset)):
-            ejec_idx = 5       #Replace this with the most sustaining binary
+                merger = True
+                string = 'merger'
 
-    return ejec_idx
+        if not (merger) and ejected.iloc[0][-2] < 1e8 | units.yr: 
+            for i in range(len(pset)):   
+                if pset.iloc[i][-1][0] == ejected.iloc[0][4]: #Loop for particle ejected but NOT bound
+                    ejec_idx = i
+                    eject = True
+                    string = 'ejected'
+        
+        if not (eject) and not (merger):
+            ejec_idx = 5       #Replace this with the most sustaining binary
+            string = 'over time'
+    else:
+        if ejected.iloc[0][-2] >= 1e8 | units.yr:
+            ejec_idx = 5       #Replace this with the most sustaining binary
+            string = 'over time'
+            end = True
+
+        if not (end):
+            for i in range(len(pset)): #Loop for particle that is merged
+                if isinstance(pset.iloc[i][-1][0], float): #Will detect NAN if merger occurs
+                    ejec_idx = i
+                    merger = True
+                    string = 'merger'
+            if (merger) and ejec_idx == 0:
+                for i in range(len(pset)):
+                    if pset.iloc[i][-1][1] > 4*10**6 | units.MSun:
+                        ejec_idx = i
+
+        if not (merger) and not (end): 
+            for i in range(len(pset)): 
+                if i == 0:
+                    pass
+                else:
+                    if pset.iloc[i][-1][0] == ejected.iloc[0][4]: #Loop for particle ejected but NOT bound
+                        ejec_idx = i
+                        eject = True
+                        string = 'ejected'
+    return ejec_idx, string
 
 def file_counter(int_string):
     """
@@ -307,7 +394,6 @@ def simulation_stats_checker(int_string):
     tot_sims = 0
     complete = 0
 
-    print('Simulation outcomes for', str(int_string))
     for file_ in range(len(filename)):
         tot_sims += 1
         with open(filename[file_]) as f:
@@ -326,11 +412,14 @@ def simulation_stats_checker(int_string):
             if '100000000.0' in data2:
                 complete += 1
 
-    print('Total simulations:   ', tot_sims)
-    print('SMBH merging events: ', SMBH_merger)
-    print('IMBH merging events: ', IMBH_merger)
-    print('Ejection events:     ', ejection)
-    print('Completed sims:      ', complete)
+    with open('figures/'+str(int_string)+'summary.txt', 'w') as file:
+        file.write('\nSimulation outcomes for '+str(int_string))
+        file.write('\nTotal simulations:   '+str(tot_sims))
+        file.write('\nSMBH merging events: '+str(SMBH_merger))
+        file.write('\nIMBH merging events: '+str(IMBH_merger))
+        file.write('\nEjection events:     '+str(ejection))
+        file.write('\nCompleted sims:      '+str(complete))
+        file.write('\n========================================')
 
 simulation_stats_checker('GRX')
 simulation_stats_checker('Hermite')

@@ -289,10 +289,9 @@ class bin_tert_systems(object):
             ax.legend()
             plt.savefig('figures/gravitational_waves/GWstrain_IMBH_histogram'+str(integrator[int_])+'.pdf', dpi = 300, bbox_inches='tight')
 
-            print('=====================================')
-            print(integrator[int_], ' Data Set')
-            print('For z ~ 2.5, IMBH-IMBH strain which is inversely proportional to distance becomes: ', np.mean(tgw_amp_avg_IMBH[int_]) * (8000/6025) * 10**-6)
-            print('For z ~ 2.5, SMBH-IMBH strain which is inversely proportional to distance becomes: ', np.mean(tgw_amp_avg_SMBH[int_]) * (8000/6025) * 10**-6)
+            with open('figures/gravitational_waves/'+str(integrator[int_])+'redshift_strain.txt', 'w') as file:
+                file.write('\nFor z ~ 3.5, IMBH-IMBH strain which is inversely proportional to distance becomes: ' + str(np.mean(tgw_amp_avg_IMBH[int_]) * (8000/6025) * 10**-6))
+                file.write('\nFor z ~ 3.5, SMBH-IMBH strain which is inversely proportional to distance becomes: ' + str(np.mean(tgw_amp_avg_SMBH[int_]) * (8000/6025) * 10**-6))
 
     def SMBH_tgw_plotter(self):
         """
@@ -454,7 +453,7 @@ class bin_tert_systems(object):
             plot_init.tickers_pop(ax_[int_], ini_pop)
             ymin.append(np.nanmin(np.log10(avg_tgw)))
             ymax.append(np.nanmax(np.log10(avg_tgw)))
-            print(np.log10(avg_tgw))
+            
         for axis in ax_:
             axis.set_ylim(1.05*min(ymin), 1.05*max(ymax))
         plt.colorbar(colour_axes, ax = ax2, label = r'# Close Encounters')
@@ -485,27 +484,29 @@ class bin_tert_systems(object):
         plt.clf()
 
         for int_ in range(2):
-            print('=====================================')
-            print(integrator[int_], ' Data Set')
             rISCO = 6*constants.G*self.mass_SMBH[int_][0][1] * constants.c**-2
             freqGW = 2*np.sqrt(constants.G*self.mass_SMBH[int_][0][1]/(4*np.pi**2*rISCO**3))
             redshift2 = freqGW/(10**-4 | units.Hz) - 1
-            print('At r ~ rISCO the frequency takes a different expression.')
-            print('Typical frequency becomes: ', freqGW.in_(units.Hz))
-            print('Making them observable up to z < ', redshift2)
 
             avg_SMBH_freq = np.sqrt(constants.G*(self.mass_SMBH[int_][0][0]+self.mass_SMBH[int_][0][1])/np.mean(self.semi_SMBH_avg[int_][self.semi_SMBH_avg[int_] > 0 | units.m])**3) \
                                     * (1+np.mean(self.ecc_SMBH_avg[int_][self.ecc_SMBH_avg[int_]<1]))**1.1954 * (np.pi*(1-np.mean(self.ecc_SMBH_avg[int_][self.ecc_SMBH_avg[int_] < 1])**2)**1.5)**-1
             avg_strain = self.gw_amplitude(np.mean(self.semi_SMBH_avg[int_]), np.mean(self.ecc_SMBH_avg[int_]), self.mass_SMBH[int_][0][0], self.mass_SMBH[int_][0][1])
             redshift_avg = avg_SMBH_freq / (10**-4 | units.Hz)  - 1
-            print('Given the avg. SMBH frequency', avg_SMBH_freq.in_(units.Hz), ' and the minimum LISA frequency 1e-4 Hz.')
-            print('Then to detect SMBH - IMBH merger with a supposed avg. GW amplitude ', avg_strain)
-            print('the cluster needs to be at a distance z < ', redshift_avg)
 
             avg_SMBH_freq = np.sqrt(constants.G*(self.mass_SMBH[int_][0][0]+self.mass_SMBH[int_][0][1])/np.mean(self.semi_SMBH_min[int_][self.semi_SMBH_min[int_] >0 | units.m])**3) \
                                     * (1+np.mean(self.ecc_SMBH_min[int_][self.ecc_SMBH_min[int_] < 1]))**1.1954 * (np.pi*(1-np.mean(self.ecc_SMBH_min[int_][self.ecc_SMBH_min[int_] < 1])**2)**1.5)**-1
             redshift_min = avg_SMBH_freq / (10**-4 | units.Hz)  - 1
-            print('or in the best case scenario z < ', redshift_min)
+
+            with open('figures/gravitational_waves/'+str(integrator[int_])+'redshift_frequency.txt', 'w') as file:
+                file.write('\nFrequency outcomes for '+str(integrator[int_]))
+                file.write('\nAt r ~ rISCO the frequency takes a different expression.')
+                file.write('\nTypical frequency becomes: '+str(freqGW.in_(units.Hz)))
+                file.write('\nMaking them observable up to z < '+str(redshift2))
+                file.write('\nGiven the avg. SMBH frequency '+str(avg_SMBH_freq.in_(units.Hz))+' and the minimum LISA frequency 1e-4 Hz.')
+                file.write('\nThen to detect SMBH - IMBH merger with a supposed avg. GW amplitude '+str(avg_strain))
+                file.write('\nthe cluster needs to be at a distance z < '+str(redshift_avg))
+                file.write('\nor in the best case scenario z < '+str(redshift_min))
+                file.write('\n========================================')
 
     def bin_tgw_plotter(self):
         """
@@ -564,7 +565,7 @@ class bin_tert_systems(object):
         #################### DO THE SAME FOR GRX #####################
 
         integrator = ['Hermite', 'GRX']
-        print(tgw_bin_min[1], tgw_bin_min[0])
+        
         xmin = min(np.nanmin(semi_bin_conc[0]), np.nanmin(semi_bin_conc[1]))
         xmax = max(np.nanmax(semi_bin_conc[0]), np.nanmax(semi_bin_conc[1]))
         ymin = min(np.nanmin(ecc_bin_conc[0]), np.nanmin(ecc_bin_conc[1]))
@@ -574,8 +575,6 @@ class bin_tert_systems(object):
         norm_max = np.log10(cmax)
         normalise = plt.Normalize(norm_min, norm_max)
 
-        print(semi_bin_min)
-        print(ecc_bin_min)
         for int_ in range(2):
             fig = plt.figure(figsize=(15, 6))
             ax1 = fig.add_subplot(121)

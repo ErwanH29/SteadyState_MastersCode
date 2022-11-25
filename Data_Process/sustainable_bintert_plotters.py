@@ -1,5 +1,4 @@
 from amuse.lab import *
-from spatial_plotters import *
 from file_logistics import *
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -12,18 +11,20 @@ class sustainable_sys(object):
     """
 
     def __init__(self):
-        filenameH = glob.glob('data/Hermite/particle_trajectory_temp/*')
-        filenameGRX = glob.glob('data/GRX/particle_trajectory_temp/*')
+        filenameH = glob.glob('data/Hermite/particle_trajectory/*')
+        filenameGRX = glob.glob('data/GRX/particle_trajectory/*')
         filename = [natsort.natsorted(filenameH), natsort.natsorted(filenameGRX)]
 
         self.pop = [[ ], [ ]]
         self.dedt = [[ ], [ ]]
         self.dadt = [[ ], [ ]]
-        self.bin_life = [[ ], [ ]]
         self.sys_bin = [[ ], [ ]]
-        self.ter_life = [[ ], [ ]]
         self.sys_ter = [[ ], [ ]]
-        self.form_time = [[ ], [ ]]
+        self.bform_time = [[ ], [ ]]
+        self.tform_time = [[ ], [ ]]
+        self.bsys_time = [[ ], [ ]]
+        self.tsys_time = [[ ], [ ]]
+        self.pop_tracker = [[ ], [ ]]
         
         for int_ in range(2):
             for file_ in range(len(filename[int_])):
@@ -35,15 +36,12 @@ class sustainable_sys(object):
                     if pop %10 != 0:
                         pop -=1
                     self.pop[int_].append(pop)
-                    bin_key = []
-                    ter_key = []
-                    bin_life = []
-                    bin_formed = []
-                    ter_life = []
-                    ter_formed = []
-                    temp_dedt = []
-                    temp_dadt = []
-                    bin_time = []
+                    bin_key = [] ; ter_key = []
+                    temp_dedt = [] ; temp_dadt = []
+                    bin_val = 0 ; ter_val = 0
+                    bin_sys = 0 ; ter_sys = 0
+                    bsys_time = []
+                    tsys_time = []
 
                     avg_mass = 0
                     for parti_ in range(np.shape(data)[0]-1):
@@ -51,12 +49,12 @@ class sustainable_sys(object):
                     avg_mass /= (np.shape(data)[0])
 
                     for parti_ in range(np.shape(data)[0]):
-                        bin_val = 0
-                        ter_val = 0
-                        form_time = 0
-                        if parti_ == 0:
-                            pass
-                        else:
+                        bin_sys = False
+                        ter_sys = False
+                        self.bform_time[int_].append(-5)
+                        self.tform_time[int_].append(-5)
+                        self.pop_tracker[int_].append(10*round(0.1*np.shape(data)[0]))
+                        if parti_ != 0:
                             temp_dedt.append((data.iloc[parti_][-2][8][0] - data.iloc[parti_][2][8][0])/(np.shape(data)[1]-3))
                             temp_dadt.append((data.iloc[parti_][-2][7][0]**-1 - data.iloc[parti_][2][7][0]**-1).value_in((units.pc)**-1)/(np.shape(data)[1]-3))
                             for col_ in range(np.shape(data)[1]-1):
@@ -65,15 +63,17 @@ class sustainable_sys(object):
                                     mass1 = data.iloc[parti_][0][1]
                                     for part_ in range(np.shape(data)[0]):
                                         if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
-                                            if form_time == 0:
-                                                formation_time = col_*1000
-                                                bin_time.append(formation_time) 
-                                            form_time += 1
                                             mass2 = data.iloc[part_][0][1]
                                             bin_BE = ((constants.G*mass1*mass2)/(data.iloc[parti_][col_][7][1])).value_in(units.J) 
                                             if bin_BE > (150000)**2*(1+mass1/mass2):   #Hard binary conditions based on Quinlan 1996b
+                                                if not (bin_sys):                     #First formation time
+                                                    formation_time = col_*1000
+                                                    self.bform_time[int_][-1] = formation_time
+                                                    bin_sys = True
                                                 bin_val += 1
-                                                bin_key.append(data.iloc[parti_][col_][6][1])
+                                                bin_key.append([i for i in data.iloc[parti_][col_][6][1]][0])
+                                                if col_ != 0:
+                                                    bsys_time.append(col_)
 
                                                 #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
                                                 if data.iloc[parti_][col_][8][2] < 1 \
@@ -87,114 +87,125 @@ class sustainable_sys(object):
                                                     semi_ratio = semi_outer / semi_inner
                                                     equality = 2.8 * ((1+mass_outer/(mass1+mass2))*(1+ecc_outer)/(1-ecc_outer**2)**0.5)**0.4
                                                     if semi_ratio > equality:
+                                                        if not (ter_sys):
+                                                            formation_time = col_*1000
+                                                            self.tform_time[int_][-1] = formation_time
+                                                            ter_sys = True
+
                                                         ter_val += 1
-                                                        ter_key.append(data.iloc[parti_][col_][6][2])
-
-                                    else:
-                                            pass
-
-                        bin_formed.append(len(np.unique(bin_key)))
-                        ter_formed.append(len(np.unique(ter_key)))
-
-                        if len(bin_formed) > 0:
-                            bin_life.append(len(bin_key)/(max(1,bin_formed[-1])))
-                        if len(ter_formed) > 0:
-                            ter_life.append(len(ter_key)/(max(1,ter_formed[-1])))
-
-                    self.sys_bin[int_].append(np.sum(bin_formed))
-                    self.sys_ter[int_].append(np.sum(ter_formed))
-
-                    self.bin_life[int_].append(np.mean(bin_life))
-                    self.ter_life[int_].append(np.mean(ter_life))
-
+                                                        ter_key.append([i for i in data.iloc[parti_][col_][6][2]][0])
+                                                        if col_ != 0:
+                                                            tsys_time.append(col_)
+                        
+                        if parti_ == (np.shape(data)[0]-1):
+                            if len(bin_key) > 0:
+                                bin_formed = len(np.unique(bin_key))
+                                bin_sys += bin_formed
+                            if len(ter_key) > 0:
+                                ter_formed = len(np.unique(ter_key))
+                                ter_sys += ter_formed
+                    
+                    self.bsys_time[int_].append((len(np.unique(bsys_time)))/(col_))
+                    self.tsys_time[int_].append((len(np.unique(tsys_time)))/(col_))
+                    self.sys_bin[int_].append(bin_sys)
+                    self.sys_ter[int_].append(ter_sys)
                     self.dedt[int_].append(np.mean(temp_dedt))
                     self.dadt[int_].append(np.mean(temp_dadt))
 
-                    self.form_time[int_].append(bin_time)
-
         for int_ in range(2):
-            self.bin_life[int_] = np.asarray(self.bin_life[int_])
-            self.ter_life[int_] = np.asarray(self.ter_life[int_])
-            self.sys_bin[int_] = np.asarray(self.sys_bin[int_])
-            self.sys_ter[int_] = np.asarray(self.sys_ter[int_])
-            self.dedt[int_] = np.asarray(self.dedt[int_])
-            self.dadt[int_] = np.asarray(self.dadt[int_])
-            self.pop[int_] = np.asarray(self.pop[int_])
-            self.form_time[int_] = np.asarray(self.form_time[int_])
-        print('Hermite binary avg. formation time: ', np.mean(self.form_time[0]))
-        print('Hermite binary all formation time: ', (self.form_time[0]))
-        print('GRX binary avg. formation time: ', np.mean(self.form_time[1]))
-        print('GRX binary all formation time: ', (self.form_time[1]))
+            self.bsys_time[int_] = np.asarray([i for i in self.bsys_time[int_]])
+            self.tsys_time[int_] = np.asarray([i for i in self.tsys_time[int_]])
+            self.sys_bin[int_] = np.asarray([i for i in self.sys_bin[int_]])
+            self.sys_ter[int_] = np.asarray([i for i in self.sys_ter[int_]])
+            self.dedt[int_] = np.asarray([i for i in self.dedt[int_]])
+            self.dadt[int_] = np.asarray([i for i in self.dadt[int_]])
+            self.pop[int_] = np.asarray([i for i in self.pop[int_]])
+            self.bform_time[int_] = np.asarray([i for i in self.bform_time[int_]])
+            self.tform_time[int_] = np.asarray([i for i in self.tform_time[int_]])
+        print(self.pop_tracker)
 
-    def system_formation(self):
+    def system_formation_data(self, int_, ini_pop):
         """
         Function to plot various 'sustainable system' plots
         """
 
+        bin_formed = np.empty(len(ini_pop))
+        ter_formed = np.empty(len(ini_pop))
+        bsys_time = np.empty(len(ini_pop))
+        tsys_time = np.empty(len(ini_pop))
+        bform_time = np.empty(len(ini_pop))
+        tform_time = np.empty(len(ini_pop))
+
+        integrator = ['Hermite', 'GRX']
+        iter = -1
+        for pop_ in ini_pop:
+            iter += 1
+            idx = np.where(self.pop[int_] == pop_)[0]
+            idx2 = np.where(self.pop_tracker[int_] == pop_)[0]
+            
+            bin_formed[iter] = np.mean(self.sys_bin[int_][idx])
+            ter_formed[iter] = np.mean(self.sys_ter[int_][idx])
+            bsys_time[iter] = np.mean(self.bsys_time[int_][idx])
+            tsys_time[iter] = np.mean(self.tsys_time[int_][idx])
+            bform_time[iter] = np.mean(np.asarray(self.bform_time[int_][idx2])[(self.bform_time[int_][idx2]) >= 0])
+            tform_time[iter] = np.mean(np.asarray(self.tform_time[int_][idx2])[(self.tform_time[int_][idx2]) >= 0])
+            print(bform_time)
+            print(tform_time)
+
+        with open('figures/binary_hierarchical/'+str(integrator[int_])+'bin_ter_systems.txt', 'w') as file:
+            file.write(str(integrator[int_])+' first binary avg. formation time')
+            for pop_ in range(len(bform_time)):
+                file.write('\nPopulation: '+str(ini_pop[pop_])+': '+str(bform_time[pop_]/10**3)+' kyr')
+            file.write('\n\nfirst tertiary avg. formation time')
+            for pop_ in range(len(tform_time)):
+                file.write('\nPopulation: '+str(ini_pop[pop_])+': '+str(tform_time[pop_]/10**3)+' kyr')
+
+        return bin_formed, ter_formed, bsys_time, tsys_time
+    
+    def system_formation_plotter(self):
+
         plot_ini = plotter_setup()
         mtick_formatter = mtick.FormatStrFormatter('%0.2f')
-
-        norm_min = (min(np.nanmin(self.bin_life[0]), np.nanmin(self.ter_life[0]),
-                        np.nanmin(self.bin_life[1]), np.nanmin(self.ter_life[1])))
-        norm_max = (max(np.nanmax(self.bin_life[0]), np.nanmax(self.ter_life[0]),
-                        np.nanmax(self.bin_life[1]), np.nanmax(self.ter_life[1])))
+        integrator = ['Hermite', 'GRX']
+        norm_min = min(np.nanmin(np.mean(self.sys_bin[0])), np.nanmin(np.mean(self.sys_bin[1])),
+                       np.nanmin(np.mean(self.sys_ter[0])), np.nanmin(np.mean(self.sys_ter[1])))
+        norm_max = max(np.nanmax(np.mean(self.sys_bin[0])), np.nanmax(np.mean(self.sys_bin[1])),
+                       np.nanmax(np.mean(self.sys_ter[0])), np.nanmin(np.mean(self.sys_ter[1])))
         normalise_p1 = plt.Normalize((norm_min), (norm_max))
-        p1ymax = np.log10(norm_max)
-        print(norm_min, norm_max)
 
         p21ymin = min(np.nanmin(np.log10(10**6*(self.dedt[0]))), np.nanmin(np.log10(10**6*(self.dedt[1]))))
         p21ymax = max(np.nanmax(np.log10(10**6*(self.dedt[0]))), np.nanmax(np.log10(10**6*(self.dedt[1]))))
         p21xmin = min(np.nanmin(np.log10(10**6*(self.dadt[0]))), np.nanmin(np.log10(10**6*(self.dadt[1]))))
         p21xmax = max(np.nanmax(np.log10(10**6*(self.dadt[0]))), np.nanmax(np.log10(10**6*(self.dadt[1]))))
-
-        integrator = ['Hermite', 'GRX']
+    
+        fig = plt.figure(figsize=(14, 6))
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        ax_ = [ax1, ax2]
         for int_ in range(2):
             ini_pop = np.unique(self.pop[int_])
-            bin_formed = np.empty(len(ini_pop))
-            ter_formed = np.empty(len(ini_pop))
-            bin_life = np.empty(len(ini_pop))
-            ter_life = np.empty(len(ini_pop))
+            plot_ini.tickers_pop(ax_[int_], ini_pop)
+            ax_[int_].set_title(integrator[int_])
+            ax_[int_].set_xlabel(r'IMBH Population [$N$]')
+            ax_[int_].set_ylabel(r'$t_{\rm{sys}} / t_{\rm{sim}}$')
+            ax_[int_].set_ylim(0, 1.03)
+            bin_formed, ter_formed, bsys_time, tsys_time = self.system_formation_data(int_, ini_pop)
+            colour_axes = ax_[int_].scatter(ini_pop[bin_formed>0], (bsys_time[bin_formed>0]), edgecolors  = 'black', c = (bin_formed[bin_formed>0]), norm = (normalise_p1), label = 'Stable Binary')
+            ax_[int_].scatter(ini_pop[ter_formed>0], (tsys_time[ter_formed>0]), edgecolors  = 'black', c = (ter_formed[ter_formed>0]), norm = (normalise_p1), marker = 's', label = 'Stable Triple')
+        plt.colorbar(colour_axes, ax=ax2).set_label(r'$\langle N_{\rm{sys}} \rangle$ ')
+        ax2.legend()
+        plt.savefig('figures/binary_hierarchical/sys_formation_N_plot.pdf', dpi=300, bbox_inches='tight')
 
-            iter = -1
-            for pop_ in ini_pop:
-                iter += 1
-                idx = np.where(self.pop[int_] == pop_)[0]
-                bin_formed[iter] = np.mean(self.sys_bin[int_][idx])
-                ter_formed[iter] = np.mean(self.sys_ter[int_][idx])
-                bin_life[iter] = np.mean(self.bin_life[int_][idx])
-                ter_life[iter] = np.mean(self.ter_life[int_][idx])
-                self.sys_bin = np.asarray(self.sys_bin)
-                self.sys_ter = np.asarray(self.sys_ter)
-                self.bin_life = np.asarray(self.bin_life)
-                self.ter_life = np.asarray(self.ter_life)
-            bin_formed = np.asarray(bin_formed)
-            ter_formed = np.asarray(ter_formed)
-            bin_life = np.asarray(bin_life)
-            ter_life = np.asarray(ter_life)
-
-            fig, ax = plt.subplots()
-            plot_ini.tickers_pop(ax, ini_pop)
-            ax.set_title(integrator[int_])
-            ax.set_xlabel(r'IMBH Population [$N$]')
-            ax.set_ylabel(r'$\log_{10}\langle N_{sys} \rangle$')
-            plt.scatter(ini_pop[bin_formed>0], np.log10(bin_formed[bin_formed>0]), edgecolors  = 'black', c = (bin_life[bin_formed>0]), norm = (normalise_p1), label = 'Stable Binary')
-            plt.scatter(ini_pop[ter_formed>0], np.log10(ter_formed[ter_formed>0]), edgecolors  = 'black', c = (ter_life[ter_formed>0]), norm = (normalise_p1), marker = 's', label = 'Stable Triple')
-            plt.colorbar().set_label(r'$\langle t_{sys} \rangle$ [kyr]')
-            ax.set_ylim(0, 1.1*p1ymax)
-            ax.legend()
-            plt.savefig('figures/binary_hierarchical/sys_formation_N_plot'+str(integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
-
+        for int_ in range(2):
             fig = plt.figure(figsize=(12.5, 6))
             ax1 = fig.add_subplot(121)
             ax2 = fig.add_subplot(122)
-            ax.set_title(integrator[int_])
             for ax_ in [ax1, ax2]:
                 plot_ini.tickers(ax_, 'plot')
-                ax_.yaxis.set_major_formatter(mtick_formatter)            
+            ax1.set_title(integrator[int_])
+            ax1.yaxis.set_major_formatter(mtick_formatter)            
             ax1.set_xlim(0.9*p21xmin, 1.1*p21xmax)
             ax1.set_ylim(0.9*p21ymin, 1.1*p21ymax)        
-            #ax2.set_xlim(-1.1*10**(p22xmin), 1.1*10**(p22xmax))
-            #ax2.set_ylim(0.9*10**(p22ymin), 1.1*10**(p22ymax))
             ax1.set_ylabel(r'$\log_{10}\langle \dot{(1-e)} \rangle_{SMBH}$ [Gyr$^{-1}$]')
             ax2.set_ylabel(r'$\langle \dot{(1-e)} \rangle_{SMBH}$ [Gyr$^{-1}$]')
             ax1.set_xlabel(r'$\log_{10}\langle \dot{a}^{-1} \rangle_{SMBH}$ [pc$^{-1}$Gyr$^{-1}$]')
@@ -205,3 +216,4 @@ class sustainable_sys(object):
 
             plt.colorbar(colour_axes, ax = ax2, label = r'Initial Population')
             plt.savefig('figures/binary_hierarchical/dadt_dedt_plot'+str(integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
+            plt.clf()

@@ -182,7 +182,8 @@ class stability_plotters(object):
                     ratio = len(idx)/len(stab_time[N_parti])
                     full_simul.append(ratio)
                 N_parti_avg = np.asarray(N_parti_avg)
-                print('For Hermite, # of full simulations per population: ', pop.flatten(), full_simul)
+                with open('figures/steady_time/Hermite_summary.txt', 'w') as file:
+                    file.write('For Hermite, # of full simulations per population: '+str(pop.flatten())+str(full_simul))
 
                 full_simul = []
                 for pop_, samp_ in zip(popG, psamplesG):
@@ -192,7 +193,8 @@ class stability_plotters(object):
                     ratio = len(idx)/len(stab_timeG[N_parti])
                     full_simul.append(ratio)
                 N_parti_avgG = np.asarray(N_parti_avgG)
-                print('For GRX, # of full simulations per population: ', popG.flatten(), full_simul)
+                with open('figures/steady_time/GRX_summary.txt', 'w') as file:
+                    file.write('For GRX, # of full simulations per population: '+str(pop.flatten())+str(full_simul))
                 
                 ax.scatter(pop, N_parti_avg, color = 'red', edgecolor = 'black', zorder = 3,
                            label = r'Hermite')                
@@ -201,9 +203,9 @@ class stability_plotters(object):
                 ax.set_ylabel(r'$t_{surv}$ [Myr]')   
 
             for j, xpos in enumerate(pop):
-                ax.text(pop[j][0], -0.1*max(N_parti_avg), '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                ax.text(pop[j][0], -0.165*max(N_parti_avg), '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
             for j, xpos in enumerate(popG):
-                ax.text(popG[j][0], -0.11*max(N_parti_avg), 'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
+                ax.text(popG[j][0], -0.21*max(N_parti_avg), 'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
 
             pop = np.array([float(i) for i in pop])
             N_parti_avg = np.array([ float(i) for i in N_parti_avg])   
@@ -214,11 +216,12 @@ class stability_plotters(object):
             params, cv = scipy.optimize.curve_fit(log_fit, pop, N_parti_avg, p0)
             slope, intercept = params
             red_slope = str('{:.2f}'.format(slope))
-            xtemp = np.linspace(8, 105, 1000)
+            xtemp = np.linspace(3, 105, 1000)
             ytemp = [log_fit(i, slope, intercept) for i in xtemp]
             
             ax.plot(xtemp, ytemp, zorder = 1, color = 'black', ls = '-.')
-            ax.text(8, 4, r'$t_{{surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')
+            ax.text(8, 10, r'$t_{{surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')
+            ax.set_ylim(0,100)
             ax.legend()
             ax.xaxis.labelpad = 30
             plt.savefig('figures/steady_time/const_population_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
@@ -229,7 +232,3 @@ class stability_plotters(object):
         self.spread_steady_plotter(in_dist, in_mass, chaos_init_dist_dataG,
                                    chaos_init_mass_dataG, chaos_fparti_dataG,
                                    chaos_stab_time_dataG, 'GRX')
-
-print('...steady_plotter...')
-cst = stability_plotters()
-cst.overall_steady_plotter()
