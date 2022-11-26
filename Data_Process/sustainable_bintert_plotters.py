@@ -122,7 +122,6 @@ class sustainable_sys(object):
             self.pop[int_] = np.asarray([i for i in self.pop[int_]])
             self.bform_time[int_] = np.asarray([i for i in self.bform_time[int_]])
             self.tform_time[int_] = np.asarray([i for i in self.tform_time[int_]])
-        print(self.pop_tracker)
 
     def system_formation_data(self, int_, ini_pop):
         """
@@ -149,8 +148,6 @@ class sustainable_sys(object):
             tsys_time[iter] = np.mean(self.tsys_time[int_][idx])
             bform_time[iter] = np.mean(np.asarray(self.bform_time[int_][idx2])[(self.bform_time[int_][idx2]) >= 0])
             tform_time[iter] = np.mean(np.asarray(self.tform_time[int_][idx2])[(self.tform_time[int_][idx2]) >= 0])
-            print(bform_time)
-            print(tform_time)
 
         with open('figures/binary_hierarchical/'+str(integrator[int_])+'bin_ter_systems.txt', 'w') as file:
             file.write(str(integrator[int_])+' first binary avg. formation time')

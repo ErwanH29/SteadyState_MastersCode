@@ -203,9 +203,9 @@ class stability_plotters(object):
                 ax.set_ylabel(r'$t_{surv}$ [Myr]')   
 
             for j, xpos in enumerate(pop):
-                ax.text(pop[j][0], -0.165*max(N_parti_avg), '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                ax.text(pop[j][0], -0.105*max(N_parti_avg), '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
             for j, xpos in enumerate(popG):
-                ax.text(popG[j][0], -0.21*max(N_parti_avg), 'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
+                ax.text(popG[j][0], -0.12*max(N_parti_avg), 'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
 
             pop = np.array([float(i) for i in pop])
             N_parti_avg = np.array([ float(i) for i in N_parti_avg])   
@@ -221,7 +221,7 @@ class stability_plotters(object):
             
             ax.plot(xtemp, ytemp, zorder = 1, color = 'black', ls = '-.')
             ax.text(8, 10, r'$t_{{surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')
-            ax.set_ylim(0,100)
+            ax.set_ylim(0,1.05*max(N_parti_avg))
             ax.legend()
             ax.xaxis.labelpad = 30
             plt.savefig('figures/steady_time/const_population_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
