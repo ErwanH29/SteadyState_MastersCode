@@ -133,7 +133,6 @@ def phenomena_event(phen):
             Nev, Nevc = calc_loop(iter, z_, range_2, range_1, phi0_range[1], phi0_diffs[1], 
                                   mc_range[1], mc_diffs[1], alpha_range[1], 
                                   alpha_diffs[1], str(phen))
-
             rate.append(Nev)
             rate_const.append(Nevc)
             
@@ -200,33 +199,31 @@ def phenomena_event(phen):
     fig = plt.figure(figsize=(12.5, 5))
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
-    ax1.plot(redshift_vals, rate_const, color = 'red')
-    ax1.plot(redshift_vals, rate, color = 'black')
-    ax2.plot(xnew, fc, color = 'red', label = r'$N_{GC,const}$')
-    ax2.plot(xnew, fz, color = 'black', label = r'$N_{GC}(z)$')
-
+    ax1.set_ylabel(r'Events [Gpc$^{-3}$ yr$^{-1}$]')
+    ax2.set_ylabel(r'Events [yr$^{-1}$]')
     for ax_ in [ax1, ax2]:
         ax_.set_xlim(0,3)
         ax_.set_xlabel(r'Redshift')
         ax_.xaxis.set_ticks_position('bottom')
         ax_.yaxis.set_ticks_position('left')
         plot_ini.tickers(ax_, 'plot')
+    ax1.set_yscale('log')
+    ax2.set_yscale('log')
+    ax1.plot(redshift_vals, rate_const, color = 'red')
+    ax1.plot(redshift_vals, rate, color = 'black')
+    ax2.plot(xnew, fc, color = 'red', label = r'$N_{GC,const}$')
+    ax2.plot(xnew, fz, color = 'black', label = r'$N_{GC}(z)$')
     ax1.plot(redshift_vals, 0.1*rate, color = 'black', linestyle = 'dashdot')
     ax1.plot(redshift_vals, 0.01*rate, color = 'black', linestyle = 'dashed')
     ax2.plot(xnew, 0.1*fz, color = 'black', linestyle = 'dashdot', label = r'$f_{IMBH} = 0.1$')
     ax2.plot(xnew, 0.01*fz, color = 'black', linestyle = 'dashed', label = r'$M_{IMBH} \leq 0.1M_{GC}$')
-    ax1.set_yscale('log')
-    ax2.set_yscale('log')
     if phen == 'ULX':
         ax1.set_ylim(5e-1, 800) 
         ax2.set_ylim(5e-1, 12000)
     else:   
         ax1.set_ylim(3e-2, 60) 
         ax2.set_ylim(3e-2, 1000)
-    
     ax2.legend()
-    ax1.set_ylabel(r'Events [Gpc$^{-3}$ yr$^{-1}$]')
-    ax2.set_ylabel(r'Events [yr$^{-1}$]')
     plt.savefig('figures/forecast/'+str(phen)+'_rate.pdf', dpi=300, bbox_inches='tight')
 
 def PS_function(zmass, phi0, mc, alpha):

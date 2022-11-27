@@ -30,24 +30,26 @@ class KE_PE_plotters(object):
 
         MW_code = MWpotentialBovy2015()
 
-        ext = np.empty((len(file_IMBH)))
-        eyt = np.empty((len(file_IMBH)))
-        ezt = np.empty((len(file_IMBH)))
-        vesc = np.empty((len(file_IMBH)))
+        ext = np.empty(len(file_IMBH))
+        eyt = np.empty(len(file_IMBH))
+        ezt = np.empty(len(file_IMBH))
+        vesc = np.empty(len(file_IMBH))
 
-        ejec_KEt = np.empty((len(file_IMBH)))
-        ejec_PEt = np.empty((len(file_IMBH)))
-        Nclose = np.empty((len(file_IMBH)))
+        ejec_KEt = np.empty(len(file_IMBH))
+        ejec_PEt = np.empty(len(file_IMBH))
+        Nclose = np.empty(len(file_IMBH))
         ejected = np.empty(len(file_IMBH))
 
         for i in range(len(file_IMBH)):
             ext[i], eyt[i], ezt[i], vesc[i], ejec_KEt[i], ejec_PEt[i], Nclose[i], \
             ejected[i] = ejected_extract_final(file_IMBH[i], file_ejec[i], 'E')
         ejec_PEt = np.asarray(ejec_PEt)
-        #ejec_PEt = np.asarray([PE_ + ((1000*1|units.MSun) * MW_code.get_potential_at_point(0, x * 1 | units.pc, y * 1 | units.pc, z * 1 | units.pc)).value_in(units.J) for PE_, x, y, z in zip(ejec_PEt, ext, eyt, ezt)])
         ejec_KE = np.asarray(ejec_KEt[np.isfinite(ejec_KEt)])
         ejec_PE = np.asarray(ejec_PEt[np.isfinite(ejec_KEt)])
-        ex = ext[np.isfinite(ext)] ; ey = eyt[np.isfinite(eyt)] ; ez = ezt[np.isfinite(ezt)]
+        ex = ext[np.isfinite(ext)]
+        ey = eyt[np.isfinite(eyt)] 
+        ez = ezt[np.isfinite(ezt)]
+
         PE_MW = ((1e3 | units.MSun) * MW_code.get_potential_at_point(0, 1 | units.pc, 1 | units.pc, 1 | units.pc)).value_in(units.J) / max(ejec_KE)
 
         if filter == 'B':
@@ -95,28 +97,30 @@ class KE_PE_plotters(object):
                 plot_ini.tickers(ax_, 'plot')
                 
             if hist == 'Y':
+                ax.set_title(r'Ejected Particle $K_E$ vs. $P_E$')
+
                 bin2d_sim, xedges_s, yedges_s, image = ax2.hist2d(KE, PE, bins=(200, 200), range=([0,1.1],[1.1*min(PE),0]))
                 bin2d_sim /= np.max(bin2d_sim)
                 extent = [0, 1.1, 1.1*min(PE), 0]
 
-                ax.set_title(r'Ejected Particle $K_E$ vs. $P_E$')
                 contours = ax2.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-                ax2.set_xlim(0,max(KE))
                 bin2d_sim, xedges_s, yedges_s, image = ax1.hist2d(KE, PE, bins=(80, 80), range=([0,0.35],[-0.35,0]))
                 bin2d_sim /= np.max(bin2d_sim)
                 extent = [0, 0.3, -0.3,0]
+
                 contours = ax1.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
                 cbar = plt.colorbar(contours, ax=ax2)
-                cbar.set_label(label = r'$\log_{10}(N/N_{\rm{max}})$',rotation=270,labelpad=15)
+                cbar.set_label(label = r'$\log_{10}(N/N_{\rm{max}})$', rotation=270, labelpad=15)
 
                 ax1.set_xlim(0,0.3)
                 ax1.set_ylim(-0.3,0)
+                ax2.set_xlim(0,max(KE))
                 plt.savefig('figures/ejection_stats/KEPE_diagram_'+str(save_file)+'_.pdf', dpi=500, bbox_inches='tight')
 
             if hist == 'N':
                 colour_axes = ax1.scatter(KE, PE, edgecolor = 'black', c=cdata, s = 20, zorder = 2)
                 colour_axes = ax2.scatter(KE, PE, edgecolor = 'black', c=cdata, s = 20, zorder = 3)
-                plt.colorbar(colour_axes, ax=ax2, label = clabel)
+                plt.colorbar(colour_axes, ax=ax2, label = clabel, rotation=270)
                 ax2.set_xlim(0,1.05)
                 ax2.set_ylim(-0.1, 0)
                 ax1.set_xlim(0,0.1)
@@ -126,20 +130,21 @@ class KE_PE_plotters(object):
         
         else:
             if hist == 'N':
+                fig, ax = plt.subplots()
+                ax.set_title(r'Ejected Particle $K_E$ vs. $P_E$')
+                ax.set_xlabel(r'$E_K/E_{{K, \rm{max}}}$')
+                ax.set_ylabel(r'$E_{{P}}/E_{{K, \rm{max}}}$')
 
                 MW_linex = np.linspace(abs(MW_line), 1.05)
                 MW_liney = [MW_line for i in range(len(MW_linex))]
 
-                fig, ax = plt.subplots()
-                ax.set_title(r'Ejected Particle $K_E$ vs. $P_E$')
                 ax.plot(linex, liney, color = 'black', linestyle = '-.', zorder = 1)
                 colour_axes = ax.scatter(KE, PE, c = cdata, edgecolors = 'black', s = 20, zorder = 3)
+                ax.plot(MW_linex, MW_liney, linestyle = '--', color = 'black', zorder = 2)
+                plt.colorbar(colour_axes, ax = ax, label = r'$r_{\rm{GC}}$ [pc]', rotation=270)
+
                 ax.set_xlim(0,1.05)
                 ax.set_ylim(-1.05,0)
-                ax.plot(MW_linex, MW_liney, linestyle = '--', color = 'black', zorder = 2)
-                plt.colorbar(colour_axes, ax = ax, label = r'$r_{\rm{GC}}$ [pc]')
-                ax.set_xlabel(r'$E_K/E_{{K, \rm{max}}}$')
-                ax.set_ylabel(r'$E_{{P}}/E_{{K, \rm{max}}}$')
                 plot_ini.tickers(ax, 'hist')
                 plt.savefig('figures/ejection_stats/KEPE_histogram_'+str(save_file)+'.pdf', dpi=300, bbox_inches='tight')
                 plt.clf()
@@ -160,7 +165,7 @@ class KE_PE_plotters(object):
                 contours = ax.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
                 ax.plot(linex, liney, color = 'black', linestyle = '-.')
                 cbar = plt.colorbar(contours, ax=ax)
-                cbar.set_label(r"$\log_{10}(N/N_{max})$", labelpad=15)
+                cbar.set_label(r"$\log_{10}(N/N_{max})$", rotation=270, labelpad=15)
                 
                 ax.set_yscale('symlog')
                 plot_ini.tickers(ax, 'plot')
@@ -206,7 +211,6 @@ class vejection(object):
         ejec_PE = [[ ], [ ]]
         Nclose = [[ ], [ ]]
 
-        tot_mass = [[ ], [ ]]
         tot_pop = [[ ], [ ]]
         ejected = [[ ], [ ]]
         surv_time = [[ ], [ ]]
@@ -269,17 +273,16 @@ class vejection(object):
             ax_[int_].set_ylim(0, 1.1*ymax)
             ax_[int_].set_title(ax_title[int_])
             plot_ini.tickers_pop(ax_[int_], pops[int_])
-        plt.colorbar(colour_axes, ax=ax2, label = r'$\log_{10}\langle t_{ej}\rangle$ [Myr]')
+        plt.colorbar(colour_axes, ax=ax2, rotation=270, label = r'$\log_{10}\langle t_{ej}\rangle$ [Myr]')
         plt.savefig('figures/ejection_stats/mean_vej.pdf', dpi=300, bbox_inches='tight')
 
-        
         fig = plt.figure(figsize=(15, 6))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax_ = [ax1, ax2]
         ax_title = ['Ejection Velocity Histogram \n Hermite', '\n GRX']
         colours = ['red', 'blue']
-        xmax =max(max(vesc[0]), max(vesc[1]))
+        xmax = max(max(vesc[0]), max(vesc[1]))
         for int_ in range(2):
             n, bins, patches = ax_[int_].hist(vesc[int_], 20, histtype = 'step', color=colours[int_])
             n, bins, patches = ax_[int_].hist(vesc[int_], 20, color=colours[int_], alpha = 0.4)
@@ -291,7 +294,6 @@ class vejection(object):
             ax_[int_].set_xlim(0,1.01*xmax)
             plot_ini.tickers(ax_[int_], 'plot')
         plt.savefig('figures/ejection_stats/vejection_histogram.pdf', dpi = 300, bbox_inches='tight')
-
 
 class event_tracker(object):
     """

@@ -21,7 +21,7 @@ class loss_cone(object):
 
         with open(pfile[0][0], 'rb') as input_file:
             data = pkl.load(input_file)
-            self.SMBH_mass = data.iloc[0][1][1]
+        self.SMBH_mass = data.iloc[0][1][1]
         self.SMBH_angL = np.sqrt(16*constants.G**2*self.SMBH_mass**2*constants.c**-2).value_in(units.m*units.m/units.s) #TB2008 chapter 7
 
         self.init_pop = [[ ], [ ]]
@@ -47,7 +47,7 @@ class loss_cone(object):
                         angL_arr = [ ]
                         energy_arr = [ ]
                         time = [ ]
-                        if parti_ !=0:
+                        if parti_ != 0:
                             self.init_pop[int_].append(pop)
                             angL_val = 0
                             for col_ in range(np.shape(data)[1]-1):
@@ -92,7 +92,7 @@ class loss_cone(object):
             self.dangL_avg[int_] = np.asarray(self.dangL_avg[int_])
             self.angL_init[int_] = np.asarray(self.angL_init[int_])
             self.angL_fin[int_] = np.asarray(self.angL_fin[int_]) 
-            self.angL_evol[int_] = np.asarray([i for i in self.angL_evol[int_]])
+            self.angL_evol[int_] = np.asarray(self.angL_evol[int_])
             self.energy[int_] = np.asarray(self.energy[int_])
             self.ejec_part[int_] = np.asarray(self.ejec_part[int_])
             self.time[int_] = np.asarray(self.time[int_])
@@ -119,45 +119,22 @@ class loss_cone(object):
 
         angL_init = np.asarray(self.angL_init)
         angL_fin = np.asarray(self.angL_fin)    
- 
         init_pop_t = np.asarray(self.init_pop)
+
         init_pop = [[ ], [ ]]
         for int_ in range(2):
             for pop_ in init_pop_t[int_]:
-                if pop_%10 == 0:
-                    init_pop[int_].append(pop_)
-                else:
-                    init_pop[int_].append(pop_-1)
+                init_pop[int_].append(10*round(0.1*pop_))
             init_pop[int_] = np.asarray([i for i in init_pop[int_]])
-
         xline = np.linspace(1, 1.1*max(max(angL_init[0]), max(angL_init[1]),
                                        max(angL_fin[0]),  max(angL_fin[1])))
+        
         file = ['Hermite', 'GRX']
         for int_ in range(2):
             fig = plt.figure(figsize=(15, 6))
             ax1 = fig.add_subplot(121)
             ax2 = fig.add_subplot(122)
             ax_ = [ax1, ax2]
-
-            colours = ['black', 'white']
-            xmax = 1.01*np.log10(max(max(angL_init[0]), max(angL_init[1])))
-            ymax = 1.01*np.log10(max(max(angL_fin[0]), max(angL_fin[1])))
-            plot_ini.tickers(ax2, 'hist')
-            plot_ini.tickers(ax1, 'plot')
-
-            idx_ejec = np.where(self.ejec_part[int_] == 1)
-            idx_stab = np.where(self.ejec_part[int_] != 1)
-        
-            bin2d_sim, xed, yed, image = ax2.hist2d(np.log10(angL_init[int_]), np.log10(angL_fin[int_]), bins=(100, 100), \
-                                                    range=([17.8, 1.01*xmax], [17.8, 1.01*ymax]))
-            bin2d_sim /= np.max(bin2d_sim)
-            extent = [17.8, 1.01*(xmax), 17.8, 1.01*(ymax)]
-            contours = ax2.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-            colour_axes = ax1.scatter(np.log10(angL_init[int_][idx_stab]), np.log10(angL_fin[int_][idx_stab]), 
-                                      c = init_pop[int_][idx_stab], edgecolors='black')
-            colour_axes = ax1.scatter(np.log10(angL_init[int_][idx_ejec]), np.log10(angL_fin[int_][idx_ejec]), 
-                                      c = init_pop[int_][idx_ejec], marker = 'X', edgecolors='black')
-
             iter = -1
             for ax_ in [ax1, ax2]:
                 iter += 1
@@ -170,8 +147,32 @@ class loss_cone(object):
                 ax_.set_ylim(17.8, 1.01*(ymax))
             ax1.text(18, 1.002*np.log10(self.SMBH_angL), r'$L_{\rm{crit}}$')
 
-            plt.colorbar(colour_axes, ax=ax1, label = r'IMBH Population [$N$]')
-            plt.savefig('figures/loss_cone/loss_cone_evolution_'+str(file[int_])+'.pdf', dpi=300, bbox_inches='tight')
+            colours = ['black', 'white']
+            xmax = 1.01*np.log10(max(max(angL_init[0]), max(angL_init[1])))
+            ymax = 1.01*np.log10(max(max(angL_fin[0]), max(angL_fin[1])))
+            plot_ini.tickers(ax2, 'hist')
+            plot_ini.tickers(ax1, 'plot')
+
+            idx_ejec = np.where(self.ejec_part[int_] == 1)[0]
+            idx_stab = np.where(self.ejec_part[int_] != 1)[0]
+            normalise = plt.Normalize(10, 100)
+        
+            bin2d_sim, xed, yed, image = ax2.hist2d(np.log10(angL_init[int_]), np.log10(angL_fin[int_]), bins=(100, 100),
+                                                    range=([17.8, 1.01*xmax], [17.8, 1.01*ymax]))
+            bin2d_sim /= np.max(bin2d_sim)
+            extent = [17.8, 1.01*(xmax), 17.8, 1.01*(ymax)]
+            contours = ax2.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+            for idx in idx_ejec:
+                colour_axes = ax1.scatter(np.log10(angL_init[int_][idx]), np.log10(angL_fin[int_][idx]), 
+                                          c = init_pop[int_][idx], cmap='tab10', norm = normalise,
+                                          marker = 'X', edgecolors='black')
+            for idx in idx_stab:
+                ax1.scatter(np.log10(angL_init[int_][idx]), np.log10(angL_fin[int_][idx]), 
+                                     c = init_pop[int_][idx], cmap='tab10', norm = normalise,
+                                     edgecolors='black')
+
+            plt.colorbar(colour_axes, ax=ax1, label = r'IMBH Population [$N$]', rotation = 270)
+            plt.savefig('figures/loss_cone/LCif_hist_'+str(file[int_])+'.pdf', dpi=300, bbox_inches='tight')
             plt.clf()
 
     def lcone_plotter(self):
@@ -197,20 +198,19 @@ class loss_cone(object):
         ax1.text(18.85, 43.4, r'$L_{\rm{crit}}$', rotation = -90)
 
         for int_ in range(2):
-            idx_ejec = np.where(self.ejec_part[int_] == 1)
-            for parti_ in idx_ejec:
-                ax[int_].scatter(np.log10(self.angL_evol[int_][parti_, 0]), np.log10((self.energy[int_][parti_, 0])), color = 'black', s = 18, zorder = 4)
-                ax[int_].scatter(np.log10(self.angL_evol[int_][parti_, -1]), np.log10((self.energy[int_][parti_, -1])), color = 'black', s = 18, zorder = 3)
-                colour_axes = ax[int_].scatter(np.log10(self.angL_evol[int_][parti_, 1:-3]), np.log10((self.energy[int_][parti_, 1:-3])), 
-                                                c = np.log10(self.time[int_][parti_, 1:-3]), norm = normalise, s = 13, zorder = 1)
+            idx_ejec = np.where(self.ejec_part[int_] == 1)[0]
+            for idx in idx_ejec:
+                ax[int_].scatter(np.log10(self.angL_evol[int_][idx][0]), np.log10((self.energy[int_][idx][0])), color = 'black', s = 18, zorder = 4)
+                ax[int_].scatter(np.log10(self.angL_evol[int_][idx][-1]), np.log10((self.energy[int_][idx][-1])), color = 'black', s = 18, zorder = 3)
+                colour_axes = ax[int_].scatter(np.log10(self.angL_evol[int_][idx][1:-3]), np.log10((self.energy[int_][idx][1:-3])), 
+                                                c = np.log10(self.time[int_][idx][1:-3]), norm = normalise, s = 13, zorder = 1)
         for int_ in range(2):
-            idx_ejec = np.where(self.ejec_part[int_] == 1)
-            for parti_ in idx_ejec:
-                print(self.angL_evol[int_][parti_])
-                ax[int_].plot(np.log10(self.angL_evol[int_][parti_][0]), np.log10((self.energy[int_][parti_][0])), color = 'black', alpha = 0.4, zorder = 2)
+            idx_ejec = np.where(self.ejec_part[int_] == 1)[0]
+            for idx in idx_ejec:
+                ax[int_].plot(np.log10(self.angL_evol[int_][idx]), np.log10((self.energy[int_][idx])), color = 'black', alpha = 0.4, zorder = 2)
                 
-        plt.colorbar(colour_axes, ax = ax2, label = r'$\log_{10} t$ [Myr]')
-        plt.savefig('figures/loss_cone/merger_evol.pdf', dpi=300, bbox_inches='tight')
+        plt.colorbar(colour_axes, ax = ax2, label = r'$\log_{10} t$ [Myr]', rotation = 270)
+        plt.savefig('figures/loss_cone/LC_evol.pdf', dpi=300, bbox_inches='tight')
 
     def lcone_timescale(self):
         init_pop_t = np.asarray(self.init_pop)
@@ -218,10 +218,8 @@ class loss_cone(object):
         init_pop = [[ ], [ ]]
         for int_ in range(2):
             for pop_ in init_pop_t[int_]:
-                if pop_%10 == 0:
-                    init_pop[int_].append(pop_)
-                else:
-                    init_pop[int_].append(pop_-1)
+                init_pop[int_].append(10*round(0.1*pop_))
+            init_pop[int_] = np.asarray([i for i in init_pop[int_]])
             init_pop[int_] = np.unique(init_pop[int_])
         avg_angL_timescale = [[ ], [ ]]
         avg_angL_replenish = [[ ], [ ]]
@@ -251,4 +249,4 @@ class loss_cone(object):
             ax2.scatter(init_pop[int_], avg_angL_timescale[int_], \
                         color = colours[int_], edgecolors = 'black', label = labels[int_])
             ax1.legend()
-        plt.savefig('figures/loss_cone/avg_N_loss_cone_tscale_repl.pdf', dpi=300, bbox_inches='tight')
+        plt.savefig('figures/loss_cone/avgN_LC_tscale_repl.pdf', dpi=300, bbox_inches='tight')

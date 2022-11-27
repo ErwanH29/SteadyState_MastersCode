@@ -235,8 +235,6 @@ def ejected_index(pset, ejected, int):
     merger = False
     eject = False
     end = False
-
-    
     if int == 'Hermite':
         for i in range(len(pset)): #Loop for particle that is merged
             if isinstance(pset.iloc[i][-1][0], float): #Will detect NAN if merger occurs
@@ -347,7 +345,6 @@ def stats_chaos_extractor(dir):
             stab_time_data[i] = sim_data.iloc[0][13].value_in(units.Myr)
         else:
             faults += 1
-            pass
         
     return ini_parti_data, fin_parti_data, number_mergers, cum_merge_mass, simulated_end, ejected_parti, \
            stab_time_data, init_dist_data, init_mass_data, inj_mass_data, eje_mass_data

@@ -19,6 +19,7 @@ class coupled_systems(object):
         
         np.seterr(divide='ignore')
         warnings.filterwarnings("ignore", category=RuntimeWarning) 
+        print('!!!!!! WARNING THIS WILL TAKE A WHILE !!!!!!!')
 
         H0 = 73.04 #Taken from arXiv:2112.04510 in km/s/Mpc
         self.tH = (H0*(3.2408*10**-20))**-1 * 1/(3600*365*24*10**6)
@@ -31,7 +32,6 @@ class coupled_systems(object):
         self.close_enc = [[ ], [ ]]
         self.mass_SMBH = [[ ], [ ]]
         self.mass_IMBH = [[ ], [ ]]
-        self.mass_flyby = [[ ], [ ]]
 
         self.semi_SMBH_avg = [[ ], [ ]]
         self.semi_SMBH_min = [[ ], [ ]]
@@ -66,18 +66,13 @@ class coupled_systems(object):
                 with open(filename[int_][file_], 'rb') as input_file:
                     print('Reading file', file_, ': ', filename[int_][file_])
                     data = pkl.load(input_file)
-#                    if np.shape(data)[0] == 11: DEPENDENT ON STEADY STATE RESULT
                     Nclose = 0
                     Nfbnn = 0
                     Nfbt = 0
                     sim_time = np.shape(data)[1]-1
 
-                    avg_mass = 0
-                    for parti_ in range(np.shape(data)[0]-1):
-                        avg_mass +=  data.iloc[parti_+1][0][1].value_in(units.kg)
-                    avg_mass /= (np.shape(data)[0])
-
-                    for parti_ in range(np.shape(data)[0]): #Iterate over all particles present
+                    for parti_ in range(np.shape(data)[0]):
+                        print(parti_)
                         semi_SMBH = []
                         ecc_SMBH = []
                         min_GW_SMBH = []
@@ -94,7 +89,7 @@ class coupled_systems(object):
                         self.mass_SMBH[int_].append([mass1, SMBH_sys_mass])
 
                         if parti_ != 0:
-                            self.pop[int_].append(np.shape(data)[0])
+                            self.pop[int_].append(10*round(0.1*np.shape(data)[0]))
                             self.semi_SMBH_fin[int_].append(data.iloc[parti_][-2][7][0])
                             self.semi_SMBH_ini[int_].append(data.iloc[parti_][2][7][0]) 
                             self.ecc_SMBH_fin[int_].append(data.iloc[parti_][-2][8][0])
@@ -116,20 +111,28 @@ class coupled_systems(object):
                                     if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
                                         mass2 = data.iloc[part_][0][1]
                                 
-                                if np.shape(data)[0] == 10:
+                                if np.shape(data)[0] == 10: 
                                     strain_nn, freqGW_nn = self.gw_amp_freq(semi_major_nn, ecc_nn, mass1, mass2)
+                                    linex = data.iloc[parti_][col_][2][0] - data.iloc[0][col_][2][0]
+                                    liney = data.iloc[parti_][col_][2][1] - data.iloc[0][col_][2][1]
+                                    linez = data.iloc[parti_][col_][2][2] - data.iloc[0][col_][2][2]
+                                    dist_SMBH = (linex**2+liney**2+linez**2).sqrt()
+                                    dist_NN = data.iloc[parti_][col_][-1]
+
                                     if freqGW_nn > 10**-7:
                                         self.freq_flyby_nn[int_].append(freqGW_nn)
                                         self.strain_flyby_nn[int_].append(strain_nn)
                                         self.time_flyby_nn[int_].append(col_ * 10**-3)
-                                        Nfbnn += 1
+                                        if dist_SMBH == dist_NN:
+                                            Nfbnn += 1
+                                        else:
+                                            Nfbnn += 0.5
 
                                     strain_t, freqGW_t = self.gw_amp_freq(semi_major_t, ecc_t, mass1, mass2)
                                     if freqGW_t > 10**-7:
                                         self.freq_flyby_t[int_].append(freqGW_t)
                                         self.strain_flyby_t[int_].append(strain_t)
                                         self.time_flyby_t[int_].append(col_ * 10**-3)
-                                        Nfbt += 1
 
                                 if ecc_nn < 1 and semi_major_nn < 0.02 | units.parsec:
                                     IMBH_BE = ((constants.G*mass1*mass2)/(2*data.iloc[parti_][col_][7][1])).value_in(units.J) 
@@ -196,7 +199,7 @@ class coupled_systems(object):
                             self.semi_SMBH_min[int_].append(semi_SMBH[idx_SMBH])
                             self.ecc_SMBH_min[int_].append(ecc_SMBH[idx_SMBH])
 
-                self.tot_sim_time[int_].append(sim_time)
+                self.tot_sim_time[int_].append(sim_time*10**3)
                 self.tot_events[int_].append(Nfbnn+Nfbt)
                 self.fb_nn_events[int_].append(Nfbnn)
                 self.fb_t_events[int_].append(Nfbt)
@@ -213,8 +216,6 @@ class coupled_systems(object):
 
             self.mass_IMBH[int_] = np.asarray(self.mass_IMBH[int_]) * 1 | units.MSun
             self.pop[int_] = np.asarray(self.pop[int_])
-            self.pop[int_][self.pop[int_] %10 != 0] -= 1
-            self.pop[int_] = np.asarray(self.pop[int_])
 
             self.tot_events[int_] = np.asarray(self.tot_events[int_])
             self.tot_sim_time[int_] = np.asarray(self.tot_sim_time[int_])
@@ -222,17 +223,13 @@ class coupled_systems(object):
             self.fb_t_events[int_] = np.asarray(self.fb_t_events[int_])
 
         integrator = ['Hermite', 'GRX']
-
-        with open('figures/gravitational_waves/event_rate.txt', 'w') as file:
+        with open('figures/gravitational_waves/output/event_rate.txt', 'w') as file:
             for int_ in range(2):
                 file.write('\nData for '+str(integrator[int_]))
-                file.write('\nAverage event rate per Myr                ' + str(np.mean(self.tot_events[int_]/self.tot_sim_time[int_] * 10**-6)))
-                file.write('\nAverage nearest neigh. event rate per Myr ' + str(np.mean(self.fb_nn_events[int_]/self.tot_sim_time[int_] * 10**-6)))
-                file.write('\nAverage tertiary event rate per Myr       ' + str(np.mean(self.fb_t_events[int_]/self.tot_sim_time[int_] * 10**-6)))
+                file.write('\nAverage total event rate per Myr          ' + str(np.mean(self.tot_events[int_]/self.tot_sim_time[int_] * 10**6)))
+                file.write('\nAverage nearest neigh. event rate per Myr ' + str(np.mean(self.fb_nn_events[int_]/self.tot_sim_time[int_] * 10**6)))
+                file.write('\nAverage tertiary event rate per Myr       ' + str(np.mean(self.fb_t_events[int_]/self.tot_sim_time[int_] * 10**6)))
                 file.write('\n========================================================================')
-
-        print(self.tot_sim_time, self.tot_events, self.fb_nn_events, self.fb_t_events)
-
 
     def coll_radius(self, mass_arr):
         return 3 * (2*constants.G*mass_arr)/(constants.c**2)
@@ -244,13 +241,13 @@ class coupled_systems(object):
         
         self.ecc_range = np.linspace(0.0001, 0.9999999, 50)
 
+        self.LIGO_semimaj_max = self.GW_freq(self.ecc_range[1:], 10000 | units.Hz, mass_arr[0][0], mass_arr[0][1])
         self.LIGO_semimaj_min = self.GW_freq(self.ecc_range[1:], 10 | units.Hz, mass_arr[0][0], mass_arr[0][1])
         self.LIGO_semimaj = self.GW_freq(self.ecc_range[1:], 200 | units.Hz, mass_arr[0][0], mass_arr[0][1])
-        self.LIGO_semimaj_max = self.GW_freq(self.ecc_range[1:], 10000 | units.Hz, mass_arr[0][0], mass_arr[0][1])
 
+        self.LISA_semimaj_max = self.GW_freq(self.ecc_range[1:], 1 | units.Hz, mass_arr[0][0], mass_arr[0][1])
         self.LISA_semimaj_min = self.GW_freq(self.ecc_range[1:], 1e-4 | units.Hz, mass_arr[0][0], mass_arr[0][1])
         self.LISA_semimaj = self.GW_freq(self.ecc_range[1:], 1e-2 | units.Hz, mass_arr[0][0], mass_arr[0][1])
-        self.LISA_semimaj_max = self.GW_freq(self.ecc_range[1:], 1 | units.Hz, mass_arr[0][0], mass_arr[0][1])
 
         self.ecc_range = [np.log(1-i) for i in self.ecc_range[1:]]
         self.text_angle = np.degrees(np.arctan((self.ecc_range[-4]-self.ecc_range[-3])/(self.LIGO_semimaj[-4]-self.LIGO_semimaj[-3]))) - 4
@@ -365,7 +362,6 @@ class coupled_systems(object):
 
                 ecc_SMBHm = self.ecc_SMBH_min[int_][k]
                 sem_SMBHm = self.semi_SMBH_min[int_][k]
-                print(ecc_SMBHm, sem_SMBHm)
                 min_amp, min_freq = self.gw_amp_freq(sem_SMBHm, ecc_SMBHm, self.mass_SMBH[int_][k][0], self.mass_SMBH[int_][k][1])
                 tgw_amp_min_SMBH[int_].append(min_amp)
                 tgw_frq_min_SMBH[int_].append(min_freq)
@@ -411,7 +407,7 @@ class coupled_systems(object):
             ax_[int_].set_xscale('log')
             ax_[int_].set_yscale('log')
         ax1.legend()
-        plt.savefig('figures/gravitational_waves/GW_freq_strain_diagram.pdf', dpi = 300, bbox_inches='tight')
+        plt.savefig('figures/gravitational_waves/GW_freq_strain_maximise_diagram.pdf', dpi = 300, bbox_inches='tight')
 
         ecc_SMBH = 0
         ecc_IMBH = 0
@@ -420,7 +416,7 @@ class coupled_systems(object):
         avg_amp_SMBH, avg_frq_SMBH = self.gw_amp_freq(sem_SMBH, ecc_SMBH, self.mass_SMBH[int_][i][0], self.mass_SMBH[int_][i][1])
         avg_amp_IMBH, avg_frq_IMBH = self.gw_amp_freq(sem_IMBH, ecc_IMBH, self.mass_IMBH[int_][i][0], self.mass_IMBH[int_][i][1])
 
-        with open('figures/gravitational_waves/Binaries_redshift_freq_strain.txt', 'w') as file:
+        with open('figures/gravitational_waves/output/Binaries_redshift_freq_strain.txt', 'w') as file:
             for int_ in range(2):
                 file.write('\nData for '+str(integrator[int_]))
                 file.write('\nFor eccentric events @ z ~ 3.5, IMBH-IMBH avg. strain is: ' + str(np.mean(tgw_amp_avg_IMBH[int_]) * (1/7015)))
@@ -452,12 +448,11 @@ class coupled_systems(object):
         ecc_IMBH_min = [[ ], [ ]]
         ecc_IMBH_avg = [[ ], [ ]]
         ecc_IMBH_conc = [[ ], [ ]]
-        idx_hard = [[ ], [ ]]
-        idx_soft = [[ ], [ ]]
+        
         for int_ in range(2):
             for i in range(len(self.semi_IMBH_avg[int_])):
                 grav_IMBH_avg_timescale = self.gw_calc(self.semi_IMBH_avg[int_][i], self.ecc_IMBH_avg[int_][i], 
-                                                      self.mass_IMBH[int_][i][0], self.mass_IMBH[int_][i][1]).value_in(units.Myr)
+                                                       self.mass_IMBH[int_][i][0], self.mass_IMBH[int_][i][1]).value_in(units.Myr)
                 grav_IMBH_min_timescale = self.gw_calc(self.semi_IMBH_min[int_][i], self.ecc_IMBH_min[int_][i], 
                                                        self.mass_IMBH[int_][i][0], self.mass_IMBH[int_][i][1]).value_in(units.Myr)
                 tgw_IMBH_avg[int_].append(grav_IMBH_avg_timescale)
@@ -520,10 +515,10 @@ class coupled_systems(object):
                                        c = np.log10(tgw_IMBH_min[int_][idx_stab]), 
                                        norm = normalise, edgecolors='black')
             self.forecast_interferometer(ax1, self.mass_IMBH[int_])
-            plt.colorbar(colour_axes, ax = ax1, label = r'$\log_{10} \langle t_{GW}\rangle$ [Myr]')
+            plt.colorbar(colour_axes, ax = ax1, label = r'$\log_{10} \langle t_{GW}\rangle$ [Myr]', rotation = 270)
             ax1.text(-8.5, -5, r'$f = 200$ Hz', verticalalignment = 'center', fontsize ='xx-small', rotation=self.text_angle-3, color = 'black')
             ax1.text(-5.6, -5, r'$f = 10^{-2}$ Hz', verticalalignment = 'center', fontsize ='xx-small', rotation=self.text_angle-3, color = 'black')
-            plt.savefig('figures/gravitational_waves/ecc_semi_IMBH_histogram'+str(integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
+            plt.savefig('figures/gravitational_waves/ecc_semi_bins_IMBH_histogram'+str(integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
 
 
     def SMBH_tgw_plotter(self):
@@ -653,13 +648,13 @@ class coupled_systems(object):
             colour_axes = ax1.scatter(semi_SMBH_min[int_][idx_stab], ecc_SMBH_min[int_][idx_stab], norm = normalise,
                                       c = np.log10(tgw_SMBH_min[int_][idx_stab]), edgecolors='black')
             self.forecast_interferometer(ax1, self.mass_SMBH[int_])
-            plt.colorbar(colour_axes, ax = ax1, label = r'$\log_{10} \langle t_{GW}\rangle$ [Myr]')
+            plt.colorbar(colour_axes, ax = ax1, label = r'$\log_{10} \langle t_{GW}\rangle$ [Myr]', rotation=270)
             ax1.set_xlim(-10, 0)
             ax1.text(-6.87, -6, r'$f = 200$ Hz', verticalalignment = 'center', fontsize ='xx-small', rotation=self.text_angle-2, color = 'black')
             ax1.text(-4.03, -6, r'$f = 10^{-2}$ Hz', verticalalignment = 'center', fontsize ='xx-small', rotation=self.text_angle-2, color = 'black')
-            plt.savefig('figures/gravitational_waves/ecc_semi_SMBH_'+str(integrator[int_])+'_histogram.pdf', dpi=300, bbox_inches='tight')
+            plt.savefig('figures/gravitational_waves/ecc_semi_bins_SMBH_'+str(integrator[int_])+'_histogram.pdf', dpi=300, bbox_inches='tight')
 
-        with open('figures/gravitational_waves/GWmerger_time.txt', 'w') as file:
+        with open('figures/gravitational_waves/output/GWmerger_time.txt', 'w') as file:
             for int_ in range(2):
                 file.write('\nData for '+str(integrator[int_]))
                 file.write('\nAverage GW timescales for IMBH-SMBH:       ' + str(np.mean(tgw_SMBH_min[int_])) + ' Myr')
@@ -672,18 +667,18 @@ class coupled_systems(object):
         ax1.set_title('Hermite')
         ax2.set_title('GRX')
 
-        xmax = max(np.nanmax(np.log10(self.close_enc[0])), np.nanmax(np.log10(self.close_enc[1])))
+        xmax = max(np.nanmax((self.close_enc[0])), np.nanmax((self.close_enc[1])))
         ymin = min(np.nanmin(np.log10(tgw_ratio[0])), np.nanmin(np.log10(tgw_ratio[0])))
         ymax = max(np.nanmax(np.log10(tgw_ratio[0])), np.nanmax(np.log10(tgw_ratio[0])))
         iter = -1
         for ax_ in [ax1, ax2]:
             iter += 1
-            bin2d_sim, xedg, xedg, image = ax_.hist2d(np.log10(self.close_enc[iter]), np.log10(tgw_ratio[iter]), 
+            bin2d_sim, xedg, xedg, image = ax_.hist2d((self.close_enc[iter]), np.log10(tgw_ratio[iter]), 
                                                       bins=(50,50), range=([0, 1.1*xmax], [0.9*ymin, 1.1*ymax]))
             bin2d_sim /= np.max(bin2d_sim)
             extent = [0, 1.1*xmax, 0.9*ymin, 1.1*ymax]
             contours = ax_.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-            ax_.set_xlabel(r'$\log_{10} N_{\rm{enc}}$')
+            ax_.set_xlabel(r'$N_{\rm{enc}}$')
             ax_.set_ylabel(r'$\log_{10}(t_{\rm{GW},f}/t_{\rm{GW},0})$')
             ax_.set_xlim(0, 1.1*xmax)
             plot_init.tickers(ax_, 'hist')
@@ -724,4 +719,4 @@ class coupled_systems(object):
                                   color = colours[i])
 
         ax1.legend()
-        plt.show()
+        plt.savefig('figures/gravitational_waves/events_time.pdf', dpi = 300, bbox_inches='tight')

@@ -72,8 +72,7 @@ class sustainable_sys(object):
                                                     bin_sys = True
                                                 bin_val += 1
                                                 bin_key.append([i for i in data.iloc[parti_][col_][6][1]][0])
-                                                if col_ != 0:
-                                                    bsys_time.append(col_)
+                                                bsys_time.append(col_)
 
                                                 #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
                                                 if data.iloc[parti_][col_][8][2] < 1 \
@@ -94,9 +93,8 @@ class sustainable_sys(object):
 
                                                         ter_val += 1
                                                         ter_key.append([i for i in data.iloc[parti_][col_][6][2]][0])
-                                                        if col_ != 0:
-                                                            tsys_time.append(col_)
-                        
+                                                        tsys_time.append(col_)
+
                         if parti_ == (np.shape(data)[0]-1):
                             if len(bin_key) > 0:
                                 bin_formed = len(np.unique(bin_key))
@@ -104,7 +102,7 @@ class sustainable_sys(object):
                             if len(ter_key) > 0:
                                 ter_formed = len(np.unique(ter_key))
                                 ter_sys += ter_formed
-                    
+                                
                     self.bsys_time[int_].append((len(np.unique(bsys_time)))/(col_))
                     self.tsys_time[int_].append((len(np.unique(tsys_time)))/(col_))
                     self.sys_bin[int_].append(bin_sys)
@@ -149,7 +147,7 @@ class sustainable_sys(object):
             bform_time[iter] = np.mean(np.asarray(self.bform_time[int_][idx2])[(self.bform_time[int_][idx2]) >= 0])
             tform_time[iter] = np.mean(np.asarray(self.tform_time[int_][idx2])[(self.tform_time[int_][idx2]) >= 0])
 
-        with open('figures/binary_hierarchical/'+str(integrator[int_])+'bin_ter_systems.txt', 'w') as file:
+        with open('figures/binary_hierarchical/output/'+str(integrator[int_])+'bin_ter_systems.txt', 'w') as file:
             file.write(str(integrator[int_])+' first binary avg. formation time')
             for pop_ in range(len(bform_time)):
                 file.write('\nPopulation: '+str(ini_pop[pop_])+': '+str(bform_time[pop_]/10**3)+' kyr')
@@ -169,6 +167,7 @@ class sustainable_sys(object):
         norm_max = max(np.nanmax(np.mean(self.sys_bin[0])), np.nanmax(np.mean(self.sys_bin[1])),
                        np.nanmax(np.mean(self.sys_ter[0])), np.nanmin(np.mean(self.sys_ter[1])))
         normalise_p1 = plt.Normalize((norm_min), (norm_max))
+        normalise_p2 = plt.Normalize(10, 100)
 
         p21ymin = min(np.nanmin(np.log10(10**6*(self.dedt[0]))), np.nanmin(np.log10(10**6*(self.dedt[1]))))
         p21ymax = max(np.nanmax(np.log10(10**6*(self.dedt[0]))), np.nanmax(np.log10(10**6*(self.dedt[1]))))
@@ -187,9 +186,9 @@ class sustainable_sys(object):
             ax_[int_].set_ylabel(r'$t_{\rm{sys}} / t_{\rm{sim}}$')
             ax_[int_].set_ylim(0, 1.03)
             bin_formed, ter_formed, bsys_time, tsys_time = self.system_formation_data(int_, ini_pop)
-            colour_axes = ax_[int_].scatter(ini_pop[bin_formed>0], (bsys_time[bin_formed>0]), edgecolors  = 'black', c = (bin_formed[bin_formed>0]), norm = (normalise_p1), label = 'Stable Binary')
-            ax_[int_].scatter(ini_pop[ter_formed>0], (tsys_time[ter_formed>0]), edgecolors  = 'black', c = (ter_formed[ter_formed>0]), norm = (normalise_p1), marker = 's', label = 'Stable Triple')
-        plt.colorbar(colour_axes, ax=ax2).set_label(r'$\langle N_{\rm{sys}} \rangle$ ')
+            colour_axes = ax_[int_].scatter(ini_pop[bin_formed>0], np.log10(bsys_time[bin_formed>0]), edgecolors  = 'black', c = (bin_formed[bin_formed>0]), norm = (normalise_p1), label = 'Stable Binary')
+            ax_[int_].scatter(ini_pop[ter_formed>0], np.log10(tsys_time[ter_formed>0]), edgecolors  = 'black', c = (ter_formed[ter_formed>0]), norm = (normalise_p1), marker = 's', label = 'Stable Triple')
+        plt.colorbar(colour_axes, ax=ax2, rotation=270, label = r'$\log_{10}\langle N_{\rm{sys}} \rangle$ ')
         ax2.legend()
         plt.savefig('figures/binary_hierarchical/sys_formation_N_plot.pdf', dpi=300, bbox_inches='tight')
 
@@ -208,9 +207,11 @@ class sustainable_sys(object):
             ax1.set_xlabel(r'$\log_{10}\langle \dot{a}^{-1} \rangle_{SMBH}$ [pc$^{-1}$Gyr$^{-1}$]')
             ax2.set_xlabel(r'$\langle \dot{a}^{-1} \rangle_{SMBH}$ [pc$^{-1}$Gyr$^{-1}$]')
             ax1.xaxis.set_major_formatter(mtick_formatter)
-            colour_axes = ax1.scatter(np.log10(10**6*self.dadt[int_]), np.log10(10**6*self.dedt[int_]), edgecolors = 'black', c = self.pop[int_])
-            colour_axes = ax2.scatter((10**6*self.dadt[int_]), (10**6*self.dedt[int_]), edgecolors = 'black', c = self.pop[int_])
+            colour_axes = ax1.scatter(np.log10(10**6*self.dadt[int_]), np.log10(10**6*self.dedt[int_]), cmap='tab10', 
+                                      norm = normalise_p2, edgecolors = 'black', c = self.pop[int_])
+            colour_axes = ax2.scatter(10**6*self.dadt[int_], (10**6*self.dedt[int_]), cmap='tab10', 
+                                      norm = normalise_p2, edgecolors = 'black', c = self.pop[int_])
 
-            plt.colorbar(colour_axes, ax = ax2, label = r'Initial Population')
+            plt.colorbar(colour_axes, ax = ax2, rotation=270, label = r'Initial Population')
             plt.savefig('figures/binary_hierarchical/dadt_dedt_plot'+str(integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
             plt.clf()

@@ -6,7 +6,7 @@ import pandas as pd
 import os
 
 class data_initialiser(object):
-    def chaotic_sim_tracker(self, pset, init_pop, Nmerge, cum_mergermass, ejected_key, 
+    def chaotic_sim_tracker(self, pset, init_pop, Nmerge, cum_mergermass, time, ejected_key, 
                             stab_time, added_mass, ejected_mass, comp_time, ejected, int_string, pert):
 
         """
@@ -43,6 +43,7 @@ class data_initialiser(object):
                                  'Initial Particles': (len(pset)-1), 
                                  'Number of Mergers': Nmerge, 
                                  'PN Term': str(pert),
+                                 'Simulated Till': time.in_(units.yr),
                                  'Stability Time': stab_time})
         stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
         stab_tracker.to_pickle(os.path.join(path+str('/no_addition/chaotic_simulation'), 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(len(pset)-1)

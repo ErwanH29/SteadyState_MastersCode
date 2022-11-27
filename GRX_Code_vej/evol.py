@@ -281,7 +281,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
     comp_end = cpu_time.time()
     comp_time = comp_end-comp_start 
     
-    if iter > 10:
+    if iter > 10 and eject > 0:
         print('Saving Data')
         no_plot = False
         chaos_stab_timescale = time1
@@ -290,7 +290,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
         if time1 == tend:
             ejected_key_track = parti[1].key_tracker
        
-        path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/GRX/'
+        path = '/home/erwanh/Desktop/SteadyStateBH/data_vej/'
         file_names = 'IMBH_'+str(int_string)+'_'+str(pert)+'_'+str(init_IMBH)+'_sim'+str(count)+ \
                      '_init_dist'+str('{:.3f}'.format(init_dist.value_in(units.parsec)))+'_equal_mass_' \
                      +str('{:.3f}'.format(parti[2].mass.value_in(units.MSun)))+'.pkl'
@@ -324,6 +324,6 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
 
     else:
         no_plot = True
-        print('...No stability timescale - simulation ended too quick...')
+        print('...No stability timescale/merger event...')
 
     return no_plot
