@@ -20,10 +20,10 @@ class sustainable_sys(object):
         self.dadt = [[ ], [ ]]
         self.sys_bin = [[ ], [ ]]
         self.sys_ter = [[ ], [ ]]
-        self.bform_time = [[ ], [ ]]
-        self.tform_time = [[ ], [ ]]
         self.bsys_time = [[ ], [ ]]
         self.tsys_time = [[ ], [ ]]
+        self.bform_time = [[ ], [ ]]
+        self.tform_time = [[ ], [ ]]
         self.pop_tracker = [[ ], [ ]]
         
         for int_ in range(2):
@@ -32,21 +32,20 @@ class sustainable_sys(object):
                     print('Reading file', file_, ':', input_file)
                     data = pkl.load(input_file)
 
-                    pop = np.shape(data)[0]
-                    if pop %10 != 0:
-                        pop -=1
+                    pop = 10*round(0.1*np.shape(data)[0])
                     self.pop[int_].append(pop)
-                    bin_key = [] ; ter_key = []
-                    temp_dedt = [] ; temp_dadt = []
-                    bin_val = 0 ; ter_val = 0
-                    bin_sys = 0 ; ter_sys = 0
+
+                    bin_key = [] 
+                    ter_key = []
+                    temp_dedt = [] 
+                    temp_dadt = []
                     bsys_time = []
                     tsys_time = []
 
-                    avg_mass = 0
-                    for parti_ in range(np.shape(data)[0]-1):
-                        avg_mass +=  data.iloc[parti_+1][0][1].value_in(units.kg)
-                    avg_mass /= (np.shape(data)[0])
+                    bin_val = 0 
+                    ter_val = 0
+                    bin_sys = 0 
+                    ter_sys = 0
 
                     for parti_ in range(np.shape(data)[0]):
                         bin_sys = False
@@ -66,12 +65,13 @@ class sustainable_sys(object):
                                             mass2 = data.iloc[part_][0][1]
                                             bin_BE = ((constants.G*mass1*mass2)/(data.iloc[parti_][col_][7][1])).value_in(units.J) 
                                             if bin_BE > (150000)**2*(1+mass1/mass2):   #Hard binary conditions based on Quinlan 1996b
+                                                print('Binary Detected')
                                                 if not (bin_sys):                     #First formation time
                                                     formation_time = col_*1000
                                                     self.bform_time[int_][-1] = formation_time
                                                     bin_sys = True
                                                 bin_val += 1
-                                                bin_key.append([i for i in data.iloc[parti_][col_][6][1]][0])
+                                                bin_key.append(data.iloc[parti_][col_][6][1])
                                                 bsys_time.append(col_)
 
                                                 #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
@@ -82,10 +82,12 @@ class sustainable_sys(object):
                                                     for part_ in range(np.shape(data)[0]):
                                                         if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
                                                             mass_outer = data.iloc[part_][0][1]
+
                                                     ecc_outer = data.iloc[parti_][col_][8][2]
                                                     semi_ratio = semi_outer / semi_inner
                                                     equality = 2.8 * ((1+mass_outer/(mass1+mass2))*(1+ecc_outer)/(1-ecc_outer**2)**0.5)**0.4
                                                     if semi_ratio > equality:
+                                                        print('Tertiary Detected')
                                                         if not (ter_sys):
                                                             formation_time = col_*1000
                                                             self.tform_time[int_][-1] = formation_time
@@ -123,7 +125,11 @@ class sustainable_sys(object):
 
     def system_formation_data(self, int_, ini_pop):
         """
-        Function to plot various 'sustainable system' plots
+        Extract data to form plots
+        
+        Inputs:
+        int_:    Integrator defining which data is being used
+        ini_pop: The population of the given simulation results
         """
 
         bin_formed = np.empty(len(ini_pop))
@@ -158,6 +164,9 @@ class sustainable_sys(object):
         return bin_formed, ter_formed, bsys_time, tsys_time
     
     def system_formation_plotter(self):
+        """
+        Function to plot various 'sustainable system' plots
+        """
 
         plot_ini = plotter_setup()
         mtick_formatter = mtick.FormatStrFormatter('%0.2f')
@@ -183,12 +192,13 @@ class sustainable_sys(object):
             plot_ini.tickers_pop(ax_[int_], ini_pop)
             ax_[int_].set_title(integrator[int_])
             ax_[int_].set_xlabel(r'IMBH Population [$N$]')
-            ax_[int_].set_ylabel(r'$t_{\rm{sys}} / t_{\rm{sim}}$')
-            ax_[int_].set_ylim(0, 1.03)
+            ax_[int_].set_ylabel(r'$\log_{10} t_{\rm{sys}} / t_{\rm{sim}}$')
+            ax_[int_].set_ylim(-5.2, 0)
             bin_formed, ter_formed, bsys_time, tsys_time = self.system_formation_data(int_, ini_pop)
             colour_axes = ax_[int_].scatter(ini_pop[bin_formed>0], np.log10(bsys_time[bin_formed>0]), edgecolors  = 'black', c = (bin_formed[bin_formed>0]), norm = (normalise_p1), label = 'Stable Binary')
             ax_[int_].scatter(ini_pop[ter_formed>0], np.log10(tsys_time[ter_formed>0]), edgecolors  = 'black', c = (ter_formed[ter_formed>0]), norm = (normalise_p1), marker = 's', label = 'Stable Triple')
-        plt.colorbar(colour_axes, ax=ax2, rotation=270, label = r'$\log_{10}\langle N_{\rm{sys}} \rangle$ ')
+
+        plt.colorbar(colour_axes, ax=ax2, label = r'$\log_{10}\langle N_{\rm{sys}} \rangle$ ')
         ax2.legend()
         plt.savefig('figures/binary_hierarchical/sys_formation_N_plot.pdf', dpi=300, bbox_inches='tight')
 
@@ -207,11 +217,11 @@ class sustainable_sys(object):
             ax1.set_xlabel(r'$\log_{10}\langle \dot{a}^{-1} \rangle_{SMBH}$ [pc$^{-1}$Gyr$^{-1}$]')
             ax2.set_xlabel(r'$\langle \dot{a}^{-1} \rangle_{SMBH}$ [pc$^{-1}$Gyr$^{-1}$]')
             ax1.xaxis.set_major_formatter(mtick_formatter)
-            colour_axes = ax1.scatter(np.log10(10**6*self.dadt[int_]), np.log10(10**6*self.dedt[int_]), cmap='tab10', 
+            colour_axes = ax1.scatter(np.log10(10**6*self.dadt[int_]), np.log10(10**6*self.dedt[int_]),
                                       norm = normalise_p2, edgecolors = 'black', c = self.pop[int_])
-            colour_axes = ax2.scatter(10**6*self.dadt[int_], (10**6*self.dedt[int_]), cmap='tab10', 
+            colour_axes = ax2.scatter(10**6*self.dadt[int_], (10**6*self.dedt[int_]), 
                                       norm = normalise_p2, edgecolors = 'black', c = self.pop[int_])
 
-            plt.colorbar(colour_axes, ax = ax2, rotation=270, label = r'Initial Population')
-            plt.savefig('figures/binary_hierarchical/dadt_dedt_plot'+str(integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
+            plt.colorbar(colour_axes, ax = ax2, label = r'Initial Population')
+            plt.savefig('figures/binary_hierarchical/simavg_dadt_dedt_plot'+str(integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
             plt.clf()

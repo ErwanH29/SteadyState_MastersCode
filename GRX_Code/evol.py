@@ -5,6 +5,7 @@ from data_init import *
 from evol_func import *
 
 from amuse.ext.orbital_elements import orbital_elements_from_binary
+from amuse.ext.LagrangianRadii import LagrangianRadii
 from amuse.community.hermite import Hermite
 from amuse.community.hermite_grx.interface import *
 
@@ -104,10 +105,12 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
         added_mass = 0 | units.MSun
         ejected_mass = 0 | units.MSun
         tcoll = 0 | units.yr
+        
 
         if iter % 10 == 0:
             print('Iteration', iter, '@', cpu_time.ctime(cpu_time.time()))
             print('Change in Energy: ', de)
+            print('Half mass radius : ', LagrangianRadii(parti)[6].in_(units.parsec))
 
         time += eta*tend
         channel_IMBH["to_gravity"].copy()
@@ -170,7 +173,6 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
 
                     tcoll = time.in_(units.s) - eta*tend
                     deltaE = abs(energy_after-energy_before)/abs(energy_before)
-                    data_trackers.stable_sim_tracker(parti, injbin, merge, merger_mass, stab_timescale, int_string, deltaE, pert) 
                     
                     ejected_key_track = parti[-1].key_tracker
                     extra_note = 'Stopped due to merger'
@@ -299,10 +301,6 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
         energy_tracker.to_pickle(os.path.join(path+str('energy'), file_names))
         data_trackers.chaotic_sim_tracker(parti, initial_set, Nenc, cum_merger_mass, time1, ejected_key_track, chaos_stab_timescale, 
                                           added_mass, ejected_mass, comp_time, eject, int_string, pert)
-                                          
-        if Nenc > 0:
-            data_trackers.coll_tracker(int_string, init_IMBH, count, init_dist, parti, tcoll, 
-                                       enc_particles_set, ejected_key_track, merger_mass, pert)
 
         lines = ['Simulation: ', "Total CPU Time: "+str(comp_end-comp_start)+' seconds', 
                  'Timestep: '+str(eta),

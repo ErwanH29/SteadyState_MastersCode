@@ -64,7 +64,7 @@ class loss_cone(object):
                                 angL_arr.append(self.ang_momentum(semi_val, ecc_val))
                                 angL_val += self.ang_momentum(semi_val, ecc_val)
                             
-                            if not isinstance(data.iloc[parti_][col_+1][0], np.uint64):
+                            if not isinstance(data.iloc[parti_][col_+1][0], np.uint64) or data.iloc[parti_][col_+1][1] > 4*10**6 | units.MSun:
                                 self.ejec_part[int_].append(1)
                             else:
                                 self.ejec_part[int_].append(0)
@@ -135,19 +135,9 @@ class loss_cone(object):
             ax1 = fig.add_subplot(121)
             ax2 = fig.add_subplot(122)
             ax_ = [ax1, ax2]
-            iter = -1
-            for ax_ in [ax1, ax2]:
-                iter += 1
-                ax_.set_xlabel(r'$\log_{10} L_{0}$')
-                ax_.set_ylabel(r'$\log_{10} L_{f}$')
-                ax_.axhline(np.log10(self.SMBH_angL), color = colours[iter])
-                ax_.axvline(np.log10(self.SMBH_angL), color = colours[iter])
-                ax_.plot(xline, xline, color = colours[iter], linestyle = ':')
-                ax_.set_xlim(17.8, 1.01*(xmax))
-                ax_.set_ylim(17.8, 1.01*(ymax))
-            ax1.text(18, 1.002*np.log10(self.SMBH_angL), r'$L_{\rm{crit}}$')
-
             colours = ['black', 'white']
+            iter = -1
+
             xmax = 1.01*np.log10(max(max(angL_init[0]), max(angL_init[1])))
             ymax = 1.01*np.log10(max(max(angL_fin[0]), max(angL_fin[1])))
             plot_ini.tickers(ax2, 'hist')
@@ -164,14 +154,24 @@ class loss_cone(object):
             contours = ax2.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
             for idx in idx_ejec:
                 colour_axes = ax1.scatter(np.log10(angL_init[int_][idx]), np.log10(angL_fin[int_][idx]), 
-                                          c = init_pop[int_][idx], cmap='tab10', norm = normalise,
+                                          c = init_pop[int_][idx], norm = normalise,
                                           marker = 'X', edgecolors='black')
             for idx in idx_stab:
-                ax1.scatter(np.log10(angL_init[int_][idx]), np.log10(angL_fin[int_][idx]), 
-                                     c = init_pop[int_][idx], cmap='tab10', norm = normalise,
-                                     edgecolors='black')
+                colour_axes = ax1.scatter(np.log10(angL_init[int_][idx]), np.log10(angL_fin[int_][idx]), 
+                                          c = init_pop[int_][idx], norm = normalise,
+                                          edgecolors='black')
+            for ax_ in [ax1, ax2]:
+                iter += 1
+                ax_.set_xlabel(r'$\log_{10} L_{0}$')
+                ax_.set_ylabel(r'$\log_{10} L_{f}$')
+                ax_.axhline(np.log10(self.SMBH_angL), color = colours[iter])
+                ax_.axvline(np.log10(self.SMBH_angL), color = colours[iter])
+                ax_.plot(xline, xline, color = colours[iter], linestyle = ':')
+                ax_.set_xlim(17.8, 1.01*(xmax))
+                ax_.set_ylim(17.8, 1.01*(ymax))
+            ax1.text(18, 1.002*np.log10(self.SMBH_angL), r'$L_{\rm{crit}}$')
 
-            plt.colorbar(colour_axes, ax=ax1, label = r'IMBH Population [$N$]', rotation = 270)
+            plt.colorbar(colour_axes, ax=ax1, label = r'IMBH Population [$N$]')
             plt.savefig('figures/loss_cone/LCif_hist_'+str(file[int_])+'.pdf', dpi=300, bbox_inches='tight')
             plt.clf()
 
@@ -187,15 +187,6 @@ class loss_cone(object):
         ax2 = fig.add_subplot(122)
         ax = [ax1, ax2]
         normalise = plt.Normalize(0, 6)
-        for ax_ in [ax1, ax2]:
-            ax_.set_xlabel(r'$L$ [m$^{2}$ s$^{-1}$]')
-            ax_.set_ylabel(r'$\log_{10}|E_{\rm{tot}}|$ [J]')
-            ax_.set_ylim(43.25, 44.5)
-            ax_.set_xlim(17.8, 23)
-            plot_ini.tickers(ax_, 'plot')
-            ax_.axhline(np.log10(self.SMBH_angL), color = 'black')
-            ax_.axvline(np.log10(self.SMBH_angL), color = 'black')
-        ax1.text(18.85, 43.4, r'$L_{\rm{crit}}$', rotation = -90)
 
         for int_ in range(2):
             idx_ejec = np.where(self.ejec_part[int_] == 1)[0]
@@ -209,12 +200,21 @@ class loss_cone(object):
             for idx in idx_ejec:
                 ax[int_].plot(np.log10(self.angL_evol[int_][idx]), np.log10((self.energy[int_][idx])), color = 'black', alpha = 0.4, zorder = 2)
                 
-        plt.colorbar(colour_axes, ax = ax2, label = r'$\log_{10} t$ [Myr]', rotation = 270)
+        for ax_ in [ax1, ax2]:
+            ax_.set_xlabel(r'$L$ [m$^{2}$ s$^{-1}$]')
+            ax_.set_ylabel(r'$\log_{10}|E_{\rm{tot}}|$ [J]')
+            ax_.set_ylim(43.25, 44.5)
+            ax_.set_xlim(17.8, 23)
+            plot_ini.tickers(ax_, 'plot')
+            ax_.axhline(np.log10(self.SMBH_angL), color = 'black')
+            ax_.axvline(np.log10(self.SMBH_angL), color = 'black')
+        ax1.text(18.85, 43.4, r'$L_{\rm{crit}}$', rotation = -90)
+        
+        plt.colorbar(colour_axes, ax = ax2, label = r'$\log_{10} t$ [Myr]')
         plt.savefig('figures/loss_cone/LC_evol.pdf', dpi=300, bbox_inches='tight')
 
     def lcone_timescale(self):
         init_pop_t = np.asarray(self.init_pop)
-
         init_pop = [[ ], [ ]]
         for int_ in range(2):
             for pop_ in init_pop_t[int_]:

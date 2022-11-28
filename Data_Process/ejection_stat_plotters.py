@@ -288,7 +288,7 @@ class vejection(object):
             n, bins, patches = ax_[int_].hist(vesc[int_], 20, color=colours[int_], alpha = 0.4)
             
             ax_[int_].axvline(vesc_MW, linestyle = ':', color = 'black')
-            ax_[int_].text(vesc_MW*(1+0.05), 0.9*max(n), r'$v_{esc, MW}$', horizontalalignment = 'center', rotation = 270)
+            ax_[int_].text(vesc_MW*(1+0.05), 0.9*max(n), r'$v_{esc, MW}$', horizontalalignment = 'center')
             ax_[int_].set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
             ax_[int_].set_ylabel(r'Frequency')
             ax_[int_].set_xlim(0,1.01*xmax)

@@ -113,10 +113,10 @@ class stability_plotters(object):
                     ax.scatter(pop, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
                     ax.scatter(pop, N_parti_avg, color = 'black')
                     
-                    ax.text(85, 0.96*(max(np.add(N_parti_avg, std))), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
+                    ax.text(82, 87, r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
                     ax.set_xlim(5, 105)
-                    ax.set_ylim(0, 100)
-                    ax.set_ylabel(r'$t_{eject}$ [Myr]')
+                    ax.set_ylim(0, 105)
+                    ax.set_ylabel(r'$t_{\rm{eject}}$ [Myr]')
                     ax.set_title(r'Spread in Stability Time')
                     plot_ini.tickers_pop(ax, pop)
                     plt.savefig('figures/steady_time/spread_steady_time'+str(integrator)+'_dist_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
@@ -200,7 +200,7 @@ class stability_plotters(object):
                            label = r'Hermite')                
                 ax.scatter(popG, N_parti_avgG, edgecolor = 'black', color = 'blue', 
                            zorder = 3, label = r'Hermite GRX')    
-                ax.set_ylabel(r'$t_{surv}$ [Myr]')   
+                ax.set_ylabel(r'$t_{\rm{surv}}$ [Myr]')   
 
             for j, xpos in enumerate(pop):
                 ax.text(pop[j][0], -0.105*max(N_parti_avg), '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
@@ -220,8 +220,8 @@ class stability_plotters(object):
             ytemp = [log_fit(i, slope, intercept) for i in xtemp]
             
             ax.plot(xtemp, ytemp, zorder = 1, color = 'black', ls = '-.')
-            ax.text(8, 10, r'$t_{{surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')
-            ax.set_ylim(0,1.05*max(N_parti_avg))
+            ax.text(82, 87, r'$t_{{\rm surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')
+            ax.set_ylim(0,105)
             ax.legend()
             ax.xaxis.labelpad = 30
             plt.savefig('figures/steady_time/const_population_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
