@@ -108,15 +108,15 @@ class stability_plotters(object):
                         std.append(np.std(stab_time[N_parti]))
                     y_max.append(max(np.add(N_parti_avg, std)))
 
-                    ax.errorbar(pop, N_parti_avg, color = 'black', yerr=std, fmt = 'o')
-                    ax.scatter(pop, np.add(N_parti_avg, std), marker = '_', color = 'black')
-                    ax.scatter(pop, np.subtract(N_parti_avg, std), marker = '_', color = 'black')
-                    ax.scatter(pop, N_parti_avg, color = 'black')
+                    ax.errorbar(pop, (N_parti_avg), color = 'black', yerr=std, fmt = 'o')
+                    ax.scatter(pop, (np.add(N_parti_avg, std)), marker = '_', color = 'black')
+                    ax.scatter(pop, (np.subtract(N_parti_avg, std)), marker = '_', color = 'black')
+                    ax.scatter(pop, (N_parti_avg), color = 'black')
                     
-                    ax.text(82, 87, r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
+                    ax.text(82, (87), r'$r_{SMBH}=$'+str(dist_)+' pc\n'+r'$m_{i} =$ '+str(mass_[0])+r' $M_\odot$')
                     ax.set_xlim(5, 105)
-                    ax.set_ylim(0, 105)
-                    ax.set_ylabel(r'$t_{\rm{eject}}$ [Myr]')
+                    ax.set_ylim(10**-3, 120)
+                    ax.set_ylabel(r'$\log_{10} t_{\rm{eject}}$ [Myr]')
                     ax.set_title(r'Spread in Stability Time')
                     plot_ini.tickers_pop(ax, pop)
                     plt.savefig('figures/steady_time/spread_steady_time'+str(integrator)+'_dist_'+str(dist_)+'.pdf', dpi = 300, bbox_inches='tight')
@@ -127,7 +127,7 @@ class stability_plotters(object):
         """
 
         def log_fit(xval, slope, yint):
-            return (slope) /( (xval)*np.log(xval)) + yint
+            return (slope) /( np.log(xval)) + yint
 
         plot_ini = plotter_setup()
 
@@ -196,16 +196,16 @@ class stability_plotters(object):
                 with open('figures/steady_time/GRX_summary.txt', 'w') as file:
                     file.write('For GRX, # of full simulations per population: '+str(pop.flatten())+str(full_simul))
                 
-                ax.scatter(pop, N_parti_avg, color = 'red', edgecolor = 'black', zorder = 3,
+                ax.scatter(pop, np.log10(N_parti_avg), color = 'red', edgecolor = 'black', zorder = 3,
                            label = r'Hermite')                
-                ax.scatter(popG, N_parti_avgG, edgecolor = 'black', color = 'blue', 
+                ax.scatter(popG, np.log10(N_parti_avgG), edgecolor = 'black', color = 'blue', 
                            zorder = 3, label = r'Hermite GRX')    
                 ax.set_ylabel(r'$t_{\rm{surv}}$ [Myr]')   
 
             for j, xpos in enumerate(pop):
-                ax.text(pop[j][0], -0.105*max(N_parti_avg), '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                ax.text(pop[j][0], -0.68, '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
             for j, xpos in enumerate(popG):
-                ax.text(popG[j][0], -0.12*max(N_parti_avg), 'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
+                ax.text(popG[j][0], -0.73, 'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
 
             pop = np.array([float(i) for i in pop])
             N_parti_avg = np.array([ float(i) for i in N_parti_avg])   
@@ -219,9 +219,9 @@ class stability_plotters(object):
             xtemp = np.linspace(3, 105, 1000)
             ytemp = [log_fit(i, slope, intercept) for i in xtemp]
             
-            ax.plot(xtemp, ytemp, zorder = 1, color = 'black', ls = '-.')
-            ax.text(82, 87, r'$t_{{\rm surv}} \approx \frac{{{}}}{{N\lnN}}$'.format(red_slope)+ ' Myr')
-            ax.set_ylim(0,105)
+            ax.plot(xtemp, np.log10(ytemp), zorder = 1, color = 'black', ls = '-.')
+            ax.text(82, 1.5, r'$t_{{\rm surv}} \approx \frac{{{}}}{{\lnN}}$'.format(red_slope)+ ' Myr')
+            ax.set_ylim(-0.5, 1.05*np.log10(max(N_parti_avg)))
             ax.legend()
             ax.xaxis.labelpad = 30
             plt.savefig('figures/steady_time/const_population_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')

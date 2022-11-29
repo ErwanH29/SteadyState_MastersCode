@@ -404,7 +404,6 @@ def ejected_evolution():
         SMBHz = []
         SMBH_sample = [[], [], []]
         
-        
         for file_ in range(len(data)):
             with open(chaotic[file_], 'rb') as input_file:
                 print('Reading file : ', input_file)
@@ -584,8 +583,6 @@ def ejected_evolution():
             ax4.set_ylabel(r'$\log_{10}r_{NN}$ [pc]')
             plt.savefig('figures/system_evolution/'+str(int_)+'_Merger/ejec_bin_trip_evol'+str(save_file[j])+'.pdf', dpi=300, bbox_inches='tight')
             plt.clf()
-
-        
         
         """fig = plt.figure(figsize=(14, 6))
         ax1 = fig.add_subplot(121)
@@ -616,36 +613,36 @@ def ejected_evolution():
         for sublist in ejec_NNdist_arr[j]:
             for item in sublist:
                 ejec_NNdist_flat[j].append(item)
-                
-    cdf = [False, True]
-    for cdf_ in cdf:
-        if (cdf_):
-            string = 'cum'
-        else:
-            string = 'norm'
-        fig = plt.figure(figsize=(12.5, 10))
-        ax1 = fig.add_subplot(221)
-        ax2 = fig.add_subplot(222)
-        ax3 = fig.add_subplot(223)
-        ax4 = fig.add_subplot(224) 
-        ax1.set_xlabel(r'$\log_{10}(1-e)$')
-        ax2.set_xlabel(r'$\log_{10}r_{SMBH}$ [pc]')
-        ax3.set_xlabel(r'$\log_{10}|v|$ [km s$^{-1}$]')
-        ax4.set_xlabel(r'$\log_{10}r_{NN}$ [pc]')
-        for ax_ in [ax1, ax2, ax3, ax4]:
-            plot_ini.tickers(ax_, 'plot')
-        for j in range(2):        
-            colour_iter = 0
-            n, bins, patches = ax1.hist(ejec_ecc_flat[j], 10, density=True, alpha = 0.35, color=c_hist[j], label = integrator[j], cumulative=cdf_)
-            n, bins, patches = ax1.hist(ejec_ecc_flat[j], 10, density=True, histtype = 'step', color=c_hist[j], cumulative=cdf_)
-            n, bins, patches = ax2.hist(ejec_distSMBH_flat[j], 10, density=True, alpha = 0.35, color=c_hist[j], cumulative=cdf_)
-            n, bins, patches = ax2.hist(ejec_distSMBH_flat[j], 10, density=True, histtype = 'step', color=c_hist[j], cumulative=cdf_)
-            n, bins, patches = ax3.hist(ejec_vel_flat[j], 10, density=True, alpha = 0.35, color=c_hist[j], cumulative=cdf_)
-            n, bins, patches = ax3.hist(ejec_vel_flat[j], 10, density=True, histtype = 'step', color=c_hist[j], cumulative=cdf_)
-            n, bins, patches = ax4.hist(ejec_NNdist_flat[j], 10, density=True, alpha = 0.35, color=c_hist[j], cumulative=cdf_)
-            n, bins, patches = ax4.hist(ejec_NNdist_flat[j], 10, density=True, histtype = 'step', color=c_hist[j], cumulative=cdf_)
-        ax1.legend(loc='upper left')
-        plt.savefig('figures/system_evolution/ejected_properties_'+str(string)+'_histogram.pdf', dpi=300, bbox_inches='tight')
+    
+    fig = plt.figure(figsize=(12.5, 10))
+    ax1 = fig.add_subplot(221)
+    ax2 = fig.add_subplot(222)
+    ax3 = fig.add_subplot(223)
+    ax4 = fig.add_subplot(224) 
+    ax1.set_xlabel(r'$\log_{10}(1-e)$')
+    ax2.set_xlabel(r'$\log_{10}r_{SMBH}$ [pc]')
+    ax3.set_xlabel(r'$\log_{10}|v|$ [km s$^{-1}$]')
+    ax4.set_xlabel(r'$\log_{10}r_{NN}$ [pc]')
+    for ax_ in [ax1, ax2, ax3, ax4]:
+        plot_ini.tickers(ax_, 'plot')
+    for j in range(2):
+        ejec_ecc_sort = np.sort(ejec_ecc_flat[j])
+        ejec_ecc_index = np.asarray([i for i in enumerate(ejec_ecc_sort)])
+        ax1.plot(ejec_ecc_sort, ejec_ecc_index[:,0]/ejec_ecc_index[-1,0], color = c_hist[j], label = integrator[j])
+
+        ejec_distSMBH_sort = np.sort(ejec_distSMBH_flat[j])
+        ejec_distSMBH_index = np.asarray([i for i in enumerate(ejec_distSMBH_sort)])
+        ax2.plot(ejec_distSMBH_sort, ejec_distSMBH_index[:,0]/ejec_distSMBH_index[-1,0], color = c_hist[j])
+
+        ejec_vel_sort = np.sort(ejec_vel_flat[j])
+        ejec_vel_index = np.asarray([i for i in enumerate(ejec_vel_sort)])
+        ax3.plot(ejec_vel_sort, ejec_vel_index[:,0]/ejec_vel_index[-1,0], color = c_hist[j])
+
+        ejec_NNdist_sort = np.sort(ejec_NNdist_flat[j])
+        ejec_NNdist_index = np.asarray([i for i in enumerate(ejec_NNdist_sort)])
+        ax4.plot(ejec_NNdist_sort, ejec_NNdist_index[:,0]/ejec_NNdist_index[-1,0], color = c_hist[j])
+    ax1.legend(loc='upper left')
+    plt.savefig('figures/system_evolution/ejected_properties_cdf_histogram.pdf', dpi=300, bbox_inches='tight')
 
 def energy_plotter(int_string):
     """
