@@ -40,6 +40,8 @@ class KE_PE_plotters(object):
         Nclose = np.empty(len(file_IMBH))
         ejected = np.empty(len(file_IMBH))
 
+        print(file_IMBH)
+
         for i in range(len(file_IMBH)):
             ext[i], eyt[i], ezt[i], vesc[i], ejec_KEt[i], ejec_PEt[i], Nclose[i], \
             ejected[i] = ejected_extract_final(file_IMBH[i], file_ejec[i], 'E')
@@ -110,7 +112,7 @@ class KE_PE_plotters(object):
 
                 contours = ax1.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
                 cbar = plt.colorbar(contours, ax=ax2)
-                cbar.set_label(label = r'$\log_{10}(N/N_{\rm{max}})$', rotation=270, labelpad=15)
+                cbar.set_label(label = r'$\log_{10}(N/N_{\rm{max}})$', labelpad=15)
 
                 ax1.set_xlim(0,0.3)
                 ax1.set_ylim(-0.3,0)
@@ -120,7 +122,7 @@ class KE_PE_plotters(object):
             if hist == 'N':
                 colour_axes = ax1.scatter(KE, PE, edgecolor = 'black', c=cdata, s = 20, zorder = 2)
                 colour_axes = ax2.scatter(KE, PE, edgecolor = 'black', c=cdata, s = 20, zorder = 3)
-                plt.colorbar(colour_axes, ax=ax2, label = clabel, rotation=270)
+                plt.colorbar(colour_axes, ax=ax2, label = clabel)
                 ax2.set_xlim(0,1.05)
                 ax2.set_ylim(-0.1, 0)
                 ax1.set_xlim(0,0.1)
@@ -141,7 +143,7 @@ class KE_PE_plotters(object):
                 ax.plot(linex, liney, color = 'black', linestyle = '-.', zorder = 1)
                 colour_axes = ax.scatter(KE, PE, c = cdata, edgecolors = 'black', s = 20, zorder = 3)
                 ax.plot(MW_linex, MW_liney, linestyle = '--', color = 'black', zorder = 2)
-                plt.colorbar(colour_axes, ax = ax, label = r'$r_{\rm{GC}}$ [pc]', rotation=270)
+                plt.colorbar(colour_axes, ax = ax, label = r'$r_{\rm{GC}}$ [pc]')
 
                 ax.set_xlim(0,1.05)
                 ax.set_ylim(-1.05,0)
@@ -165,7 +167,7 @@ class KE_PE_plotters(object):
                 contours = ax.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
                 ax.plot(linex, liney, color = 'black', linestyle = '-.')
                 cbar = plt.colorbar(contours, ax=ax)
-                cbar.set_label(r"$\log_{10}(N/N_{max})$", rotation=270, labelpad=15)
+                cbar.set_label(r"$\log_{10}(N/N_{max})$", labelpad=15)
                 
                 ax.set_yscale('symlog')
                 plot_ini.tickers(ax, 'plot')
@@ -183,9 +185,9 @@ class KE_PE_plotters(object):
             save_file = ['fpos', 'fpos_crop']
             data_filt = [None, 'B']
 
-            for i in range(2):
+            for i in range(1):
                 axis = i+1
-                ejected_KE, ejected_PE, final_pos, unbounded_x, unbounded_y, line_MW = self.energy_data_extract(data_filt[i], data.IMBH_data_GRX, data.ejec_data_GRX)
+                ejected_KE, ejected_PE, final_pos, unbounded_x, unbounded_y, line_MW = self.energy_data_extract(data_filt[i], data.IMBH_data, data.ejec_data)
                 self.energy_plot_setup(ejected_KE, ejected_PE, unbounded_x, unbounded_y, line_MW, final_pos, 'Final Distance to Core [pc]', axis, save_file[i], 'N')
 
 class vejection(object):
@@ -217,12 +219,12 @@ class vejection(object):
         avg_surv = [[ ], [ ]]
         avg_vel = [[ ], [ ]]
 
-
+        samples = [[ ], [ ]]
         pops = [[ ], [ ]]
         IMBH_data = [data.IMBH_data, data.IMBH_data_GRX]
         ejec_data = [data.ejec_data, data.ejec_data_GRX]
 
-        for int_ in range(2):
+        for int_ in range(1):
             for i in range(len(IMBH_data[int_])):
                 ex_val, ey_val, ez_val, vesc_val, ejec_KE_val, ejec_PE_val, Nclose_val, \
                 ejected_val = ejected_extract_final(IMBH_data[int_][i], ejec_data[int_][i], 'E')
@@ -250,6 +252,7 @@ class vejection(object):
                 iter += 1
                 pops[int_].append(pop_)
                 indices = np.where((tot_pop[int_] == pop_))[0]
+                samples[int_].append(len(vesc[int_][indices]))
                 avg_vel_t[iter] = np.mean([vesc[int_][i] for i in indices])
                 avg_surv_t[iter] = np.mean([surv_time[int_][i] for i in indices])
             avg_vel[int_] = [i for i in avg_vel_t]
@@ -260,20 +263,27 @@ class vejection(object):
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax_ = [ax1, ax2]
-        ax_title = ['Hermite', 'GRX']        
+        ax_title = ['Hermite', 'GRX']    
+        ymin = min(avg_vel[0])
+        ymax = max(avg_vel[0])
+        """ymax = max(max(avg_vel[0]), max(avg_vel[1]))
         norm_min = np.log10(min(min(avg_surv[0]), min(avg_surv[1])))
-        norm_max = np.log10(max(max(avg_surv[0]), max(avg_surv[1])))
+        norm_max = np.log10(max(max(avg_surv[0]), max(avg_surv[1])))"""
+        norm_min = np.log10(min(avg_surv[0]))#, min(avg_surv[1])))
+        norm_max = np.log10(max(avg_surv[0]))#, max(avg_surv[1])))
         normalise = plt.Normalize(norm_min, norm_max)
-        ymax = max(max(avg_vel[0]), max(avg_vel[1]))
-        for int_ in range(2):
+        for int_ in range(1):
             colour_axes = ax_[int_].scatter(pops[int_], avg_vel[int_], edgecolors='black', c = np.log10(avg_surv[int_]), norm = normalise, zorder = 3)
             ax_[int_].set_ylabel(r'$\langle v_{ej} \rangle$ [km/s]')
             ax_[int_].axhline(vesc_MW, color = 'black', linestyle = ':')
             ax_[int_].text(15, 660, r'$v_{\rm{esc, MW}}$')
-            ax_[int_].set_ylim(0, 1.1*ymax)
+            ax_[int_].set_ylim(0.9*ymin, 1.1*ymax)
             ax_[int_].set_title(ax_title[int_])
+            ax_[int_].xaxis.labelpad = 30
+            for j, xpos in enumerate(pops[int_]):
+                ax_[int_].text(pops[int_][j], 0.6*ymin, str(ax_title[int_])+'\n'+str('{:.0f}'.format(samples[int_][j])), fontsize = 'xx-small', ha = 'center' )
             plot_ini.tickers_pop(ax_[int_], pops[int_])
-        plt.colorbar(colour_axes, ax=ax2, rotation=270, label = r'$\log_{10}\langle t_{ej}\rangle$ [Myr]')
+        plt.colorbar(colour_axes, ax=ax2, label = r'$\log_{10}\langle t_{ej}\rangle$ [Myr]')
         plt.savefig('figures/ejection_stats/mean_vej.pdf', dpi=300, bbox_inches='tight')
 
         fig = plt.figure(figsize=(15, 6))
@@ -282,13 +292,15 @@ class vejection(object):
         ax_ = [ax1, ax2]
         ax_title = ['Ejection Velocity Histogram \n Hermite', '\n GRX']
         colours = ['red', 'blue']
-        xmax = max(max(vesc[0]), max(vesc[1]))
-        for int_ in range(2):
+        #xmax = max(max(vesc[0]), max(vesc[1]))
+        xmax = (max(vesc[0]))
+        
+        for int_ in range(1):
             n, bins, patches = ax_[int_].hist(vesc[int_], 20, histtype = 'step', color=colours[int_])
             n, bins, patches = ax_[int_].hist(vesc[int_], 20, color=colours[int_], alpha = 0.4)
             
             ax_[int_].axvline(vesc_MW, linestyle = ':', color = 'black')
-            ax_[int_].text(vesc_MW*(1+0.05), 0.9*max(n), r'$v_{esc, MW}$', horizontalalignment = 'center')
+            ax_[int_].text(vesc_MW*(1+0.05), 0.9*max(n), r'$v_{esc, MW}$', rotation = 270, horizontalalignment = 'center')
             ax_[int_].set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
             ax_[int_].set_ylabel(r'Frequency')
             ax_[int_].set_xlim(0,1.01*xmax)
@@ -336,9 +348,10 @@ class event_tracker(object):
         plt.legend()
         plt.savefig('figures/ejection_stats/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')
 
-"""cst = vejection()
-cst.vejec_plotter()
 
+print('...ejection_stat_plotters...')
 cst = event_tracker()
+cst = vejection()
+cst.vejec_plotter()
 cst = KE_PE_plotters()
-cst.KEPE_plotter()"""
+cst.KEPE_plotter()

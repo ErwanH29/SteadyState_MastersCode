@@ -110,7 +110,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
         if iter % 10 == 0:
             print('Iteration', iter, '@', cpu_time.ctime(cpu_time.time()))
             print('Change in Energy: ', de)
-            print('Half mass radius : ', LagrangianRadii(parti)[6].in_(units.parsec))
+            print('Half mass radius : ', LagrangianRadii(parti[1:])[6].in_(units.parsec))
 
         time += eta*tend
         channel_IMBH["to_gravity"].copy()
