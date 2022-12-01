@@ -408,7 +408,7 @@ def ejected_evolution():
             with open(chaotic[file_], 'rb') as input_file:
                 print('Reading file : ', input_file)
                 chaotic_tracker = pkl.load(input_file)
-                if chaotic_tracker.iloc[0][-4] > 0:
+                if chaotic_tracker.iloc[0][-4] > 0 or chaotic_tracker.iloc[0][5] > 0:
                     with open(data[file_], 'rb') as input_file:
                         ptracker = pkl.load(input_file)
 
@@ -421,7 +421,7 @@ def ejected_evolution():
                         col_len = np.shape(ptracker)[1]-1
                         smoothing = round(0.1 * col_len)
                         focus_idx, res = ejected_index(ptracker, chaotic_tracker, int_)
-                        if res == 'merger':
+                        if res == 'merger' or res == 'ejected' and focus_idx != 0:
                             filter += 1
                             ejec_particle = ptracker.iloc[focus_idx]
                             SMBH_data = ptracker.iloc[0]
@@ -445,7 +445,7 @@ def ejected_evolution():
                                 for i in range(3):
                                     neigh_key[i][j] = time_step[6][i]
 
-                                NN[j] = np.log10(abs(time_step[-1]))
+                                NN[j] = np.log10(time_step[-1])
                                 time[j] = time_arr[6].value_in(units.Myr)
                                 
                                 line_x = (time_step[2][0] - SMBH_coords[2][0])
@@ -490,6 +490,7 @@ def ejected_evolution():
                             ax2.set_ylabel(r'$K_E / K_{E,0}$ [J]')
                             ax3.set_ylabel(r'$\log_{10} |v|$ [km s$^{-1}$]')
                             ax4.set_ylabel(r'$r_{nn}$ [pc]')
+                            ax1.set_ylim(1.05*min(ejec_ecc_SMBH), 0)
                             for ax_ in [ax1, ax2, ax3, ax4]:
                                 ax_.set_xlabel('Time [Myr]')
                                 plot_ini.tickers(ax_, 'plot')
@@ -508,10 +509,10 @@ def ejected_evolution():
                             ax4.legend()
                             if focus_idx == 0:
                                 plt.savefig('figures/system_evolution/'+str(int_)+'_Merger/ejec_bin_trip_evol_'+str(file_)
-                                            +'_pop_'+str(np.shape(ptracker)[0])+'_SMBH_merged.pdf', dpi=300, bbox_inches='tight')
+                                            +'_pop_'+str(np.shape(ptracker)[0])+'_'+str(res)+'_SMBH_merged.pdf', dpi=300, bbox_inches='tight')
                             else:
                                 plt.savefig('figures/system_evolution/'+str(int_)+'_Merger/ejec_bin_trip_evol_'+str(file_)
-                                            +'_pop_'+str(np.shape(ptracker)[0])+'.pdf', dpi=300, bbox_inches='tight')
+                                            +'_pop_'+str(np.shape(ptracker)[0])+'_'+str(res)+'.pdf', dpi=300, bbox_inches='tight')
                             plt.clf()
 
                             ejec_ecc.append(ejec_ecc_SMBH)
@@ -524,15 +525,16 @@ def ejected_evolution():
                             vel_smooth.append(pvel_smooth)
                             NNdist.append(NN)
                             NNdist_smooth.append(nearest_smooth)
-                            if len(ejec_ecc_SMBH[ejec_ecc_SMBH < 10**-6]) != 0:
-                                high_ecc += 1
-                                if max(time) < 5:
-                                    cropped_idx.append(filter-1)
-                                all_idx.append(filter-1)
-                            ejec_ecc_arr[iter].append(ejec_ecc_SMBH)
-                            ejec_distSMBH_arr[iter].append(SMBH_dist)
-                            ejec_vel_arr[iter].append(pvel)
-                            ejec_NNdist_arr[iter].append(NN)
+                            if res == 'merger':
+                                if len(ejec_ecc_SMBH[ejec_ecc_SMBH < 10**-6]) != 0:
+                                    high_ecc += 1
+                                    if max(time) < 5:
+                                        cropped_idx.append(filter-1)
+                                    all_idx.append(filter-1)
+                                ejec_ecc_arr[iter].append(ejec_ecc_SMBH)
+                                ejec_distSMBH_arr[iter].append(SMBH_dist)
+                                ejec_vel_arr[iter].append(pvel)
+                                ejec_NNdist_arr[iter].append(NN)
                         
         save_file = ['All', 'Cropped']
         idx = [all_idx, cropped_idx]
@@ -756,133 +758,145 @@ def spatial_plotter(int_string):
     """
 
     plot_ini = plotter_setup()
-    count = file_counter(int_string)
 
-    ptracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
-    etracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
-    col_len_raw = np.shape(ptracker)[1]
-    col_len = round(col_len_raw**0.6)
-    parti_size = 20+len(ptracker)**-0.5
+    ptracker_files = natsort.natsorted(glob.glob('data/'+str(int_string)+'/particle_trajectory/*'))
+    etracker_files = natsort.natsorted(glob.glob('data/'+str(int_string)+'/energy/*'))
+    ctracker_files = natsort.natsorted(glob.glob('data/'+str(int_string)+'/no_addition/chaotic_simulation/*'))
+    iter_file = -1
+    for file_ in range(len(ptracker_files)):
+        iter_file += 1
+        with open(ctracker_files[file_], 'rb') as input_file:
+            print('Reading File : ', input_file)
+            ctracker = pkl.load(input_file)
+            if ctracker.iloc[0][5] > 0:
+                with open(ptracker_files[file_], 'rb') as input_file:
+                    ptracker = pkl.load(input_file)
+                with open(etracker_files[file_], 'rb') as input_file:
+                    etracker = pkl.load(input_file)
 
-    line_x = np.empty((len(ptracker), col_len))
-    line_y = np.empty((len(ptracker), col_len))
-    line_z = np.empty((len(ptracker), col_len))
+                col_len_raw = np.shape(ptracker)[1]
+                col_len = round(col_len_raw)
+                parti_size = 20+len(ptracker)**-0.5
 
-    for i in range(len(ptracker)):
-        tptracker = ptracker.iloc[i]
-        for j in range(col_len):
-            coords = tptracker.iloc[j][2]
-            if len(coords) == 1:
-                pass
-            else:
-                line_x[i][j] = coords[0].value_in(units.pc)
-                line_y[i][j] = coords[1].value_in(units.pc)
-                line_z[i][j] = coords[2].value_in(units.pc)
+                line_x = np.empty((len(ptracker), col_len))
+                line_y = np.empty((len(ptracker), col_len))
+                line_z = np.empty((len(ptracker), col_len))
 
-    time = np.empty((col_len_raw - 1))
-    dE_array = np.empty((col_len_raw - 1))
+                for i in range(len(ptracker)):
+                    tptracker = ptracker.iloc[i]
+                    for j in range(col_len):
+                        coords = tptracker.iloc[j][2]
+                        if len(coords) == 1:
+                            pass
+                        else:
+                            line_x[i][j] = coords[0].value_in(units.pc)
+                            line_y[i][j] = coords[1].value_in(units.pc)
+                            line_z[i][j] = coords[2].value_in(units.pc)
 
-    for i in range(col_len_raw):
-        if i == 0:
-            pass
-        else:
-            vals = etracker.iloc[i]
-            time[i-1] = vals[6].value_in(units.Myr)
-            dE_array[i-1] = vals[7]
+                time = np.empty((col_len_raw - 1))
+                dE_array = np.empty((col_len_raw - 1))
 
-    c = colour_picker()
-    fig = plt.figure(figsize=(12.5, 15))
-    ax1 = fig.add_subplot(321)
-    ax2 = fig.add_subplot(322)
-    ax3 = fig.add_subplot(323)
-    ax4 = fig.add_subplot(324)
-    
-    ax1.set_title('Overall System')
-    ax2.set_title('Energy Error vs. Time')
-    ax1.xaxis.set_major_locator(plt.MaxNLocator(3))
-    ax1.yaxis.set_major_locator(plt.MaxNLocator(3))
-    for ax_ in [ax1, ax2, ax3, ax4]:
-        plot_ini.tickers(ax_, 'plot') 
+                for i in range(col_len_raw):
+                    if i == 0:
+                        pass
+                    else:
+                        vals = etracker.iloc[i]
+                        time[i-1] = vals[6].value_in(units.Myr)
+                        dE_array[i-1] = vals[7]
 
-    xaxis_lim = 1.05*np.nanmax(abs(line_x-line_x[0]))
-    yaxis_lim = 1.05*np.nanmax(abs(line_y-line_y[0]))
-    zaxis_lim = 1.05*np.nanmax(abs(line_z-line_z[0]))
+                c = colour_picker()
+                fig = plt.figure(figsize=(12.5, 15))
+                ax1 = fig.add_subplot(321)
+                ax2 = fig.add_subplot(322)
+                ax3 = fig.add_subplot(323)
+                ax4 = fig.add_subplot(324)
+                
+                ax1.set_title('Overall System')
+                ax2.set_title('Energy Error vs. Time')
+                ax1.xaxis.set_major_locator(plt.MaxNLocator(3))
+                ax1.yaxis.set_major_locator(plt.MaxNLocator(3))
+                for ax_ in [ax1, ax2, ax3, ax4]:
+                    plot_ini.tickers(ax_, 'plot') 
 
-    ax1.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
-    ax1.set_ylim(-abs(yaxis_lim), yaxis_lim)
-    ax3.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
-    ax3.set_ylim(-abs(zaxis_lim), zaxis_lim)
-    ax4.set_xlim(-abs(yaxis_lim), abs(yaxis_lim))
-    ax4.set_ylim(-abs(zaxis_lim), zaxis_lim)
-    ax2.set_yscale('log')
+                xaxis_lim = 1.05*np.nanmax(abs(line_x-line_x[0]))
+                yaxis_lim = 1.05*np.nanmax(abs(line_y-line_y[0]))
+                zaxis_lim = 1.05*np.nanmax(abs(line_z-line_z[0]))
 
-    ax1.set_xlabel(r'$x$ [pc]')
-    ax1.set_ylabel(r'$y$ [pc]')
-    ax2.set_xlabel(r'Time [Myr]')
-    ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
-    ax3.set_xlabel(r'$x$ [pc]')
-    ax3.set_ylabel(r'$z$ [pc]')
-    ax4.set_xlabel(r'$y$ [pc]')
-    ax4.set_ylabel(r'$z$ [pc]')
-    iter = -1
-    
-    for i in range(len(ptracker)):
-        iter += 1
-        if iter > len(c):
-            iter = 0
+                ax1.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
+                ax1.set_ylim(-abs(yaxis_lim), yaxis_lim)
+                ax3.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
+                ax3.set_ylim(-abs(zaxis_lim), zaxis_lim)
+                ax4.set_xlim(-abs(yaxis_lim), abs(yaxis_lim))
+                ax4.set_ylim(-abs(zaxis_lim), zaxis_lim)
+                ax2.set_yscale('log')
 
-        if i == 0:
-            adapt_c = 'black'
-            ax1.scatter((line_x[i]-line_x[0]), (line_y[i]-line_y[0]), 
-                         c = adapt_c, zorder = 1, s = 250)
-            ax3.scatter((line_x[i]-line_x[0]), (line_z[i]-line_z[0]), 
-                         c = adapt_c, zorder = 1, s = 250)
-            ax4.scatter((line_z[i]-line_z[0]), (line_y[i]-line_y[0]), 
-                         c = adapt_c, zorder = 1, s = 250)
-            
-        else:
-            ax1.scatter(line_x[i][-1]-line_x[0][-1], line_y[i][-1]-line_y[0][-1], 
-                        c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
-            ax1.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], 
-                        c = c[iter-2], s = 1, zorder = 1) 
+                ax1.set_xlabel(r'$x$ [pc]')
+                ax1.set_ylabel(r'$y$ [pc]')
+                ax2.set_xlabel(r'Time [Myr]')
+                ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
+                ax3.set_xlabel(r'$x$ [pc]')
+                ax3.set_ylabel(r'$z$ [pc]')
+                ax4.set_xlabel(r'$y$ [pc]')
+                ax4.set_ylabel(r'$z$ [pc]')
+                iter = -1
+                
+                for i in range(len(ptracker)):
+                    iter += 1
+                    if iter > len(c):
+                        iter = 0
 
-            ax3.scatter(line_x[i][-1]-line_x[0][-1], line_z[i][-1]-line_z[0][-1], 
-                        c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
-            ax3.scatter(line_x[i]-line_x[0], line_z[i]-line_z[0], 
-                        c = c[iter-2], s = 1, zorder = 1) 
+                    if i == 0:
+                        adapt_c = 'black'
+                        ax1.scatter((line_x[i]-line_x[0]), (line_y[i]-line_y[0]), 
+                                    c = adapt_c, zorder = 1, s = 250)
+                        ax3.scatter((line_x[i]-line_x[0]), (line_z[i]-line_z[0]), 
+                                    c = adapt_c, zorder = 1, s = 250)
+                        ax4.scatter((line_z[i]-line_z[0]), (line_y[i]-line_y[0]), 
+                                    c = adapt_c, zorder = 1, s = 250)
+                        
+                    else:
+                        ax1.scatter(line_x[i][-1]-line_x[0][-1], line_y[i][-1]-line_y[0][-1], 
+                                    c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+                        ax1.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], 
+                                    c = c[iter-2], s = 1, zorder = 1) 
 
-            ax4.scatter(line_y[i][-1]-line_y[0][-1], line_z[i][-1]-line_z[0][-1], 
-                        c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
-            ax4.scatter(line_y[i]-line_y[0], line_z[i]-line_z[0], 
-                        c = c[iter-2], s = 1, zorder = 1) 
-            
-    ax2.plot(time[:-5], dE_array[:-5], color = 'black')
-    plt.savefig('figures/system_evolution/simulation_evolution_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
-    plt.clf()
-    plt.close()     
+                        ax3.scatter(line_x[i][-1]-line_x[0][-1], line_z[i][-1]-line_z[0][-1], 
+                                    c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+                        ax3.scatter(line_x[i]-line_x[0], line_z[i]-line_z[0], 
+                                    c = c[iter-2], s = 1, zorder = 1) 
 
-    fig = plt.figure(figsize=(8, 8))
-    ax3D = fig.add_subplot(121, projection="3d")
-    iter = -1
-    for i in range(len(ptracker)):
-        iter += 1
-        if iter > len(c):
-            iter = 0
-        if i == 0:
-            pass
-        else:
-            ax3D.scatter(line_x[i]-line_x[0], 
-                         line_y[i]-line_y[0], 
-                         line_z[i]-line_z[0], 
-                         c = c[iter-2], s = 1, zorder = 1)
-    ax3D.scatter(0, 0, 0, color = 'black', s = 150, zorder = 2)
-    ax3D.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-    ax3D.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-    ax3D.zaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-    ax3D.set_xlabel(r'$x$ [pc]')
-    ax3D.set_ylabel(r'$y$ [pc]')
-    ax3D.set_zlabel(r'$z$ [pc]')
-    ax3D.view_init(30, 160)
-    plt.savefig('figures/system_evolution/simulation_evolution_3D_'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
+                        ax4.scatter(line_y[i][-1]-line_y[0][-1], line_z[i][-1]-line_z[0][-1], 
+                                    c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+                        ax4.scatter(line_y[i]-line_y[0], line_z[i]-line_z[0], 
+                                    c = c[iter-2], s = 1, zorder = 1) 
+                        
+                ax2.plot(time[:-5], dE_array[:-5], color = 'black')
+                plt.savefig('figures/system_evolution/Overall_System/simulation_evolution_'+str(iter_file)+'.pdf', dpi=300, bbox_inches='tight')
+                plt.clf()
+                plt.close()     
+
+                fig = plt.figure(figsize=(8, 8))
+                ax3D = fig.add_subplot(121, projection="3d")
+                iter = -1
+                for i in range(len(ptracker)):
+                    iter += 1
+                    if iter > len(c):
+                        iter = 0
+                    if i == 0:
+                        pass
+                    else:
+                        ax3D.scatter(line_x[i]-line_x[0], 
+                                    line_y[i]-line_y[0], 
+                                    line_z[i]-line_z[0], 
+                                    c = c[iter-2], s = 1, zorder = 1)
+                ax3D.scatter(0, 0, 0, color = 'black', s = 150, zorder = 2)
+                ax3D.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+                ax3D.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+                ax3D.zaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+                ax3D.set_xlabel(r'$x$ [pc]')
+                ax3D.set_ylabel(r'$y$ [pc]')
+                ax3D.set_zlabel(r'$z$ [pc]')
+                ax3D.view_init(30, 160)
+                plt.savefig('figures/system_evolution/Overall_System/simulation_evolution_3D_'+str(iter_file)+'.pdf', dpi=300, bbox_inches='tight')
 
     return

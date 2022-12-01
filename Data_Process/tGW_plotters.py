@@ -32,8 +32,8 @@ class coupled_systems(object):
 
         print('!!!!!! WARNING THIS WILL TAKE A WHILE !!!!!!!')
 
-        Hermite_data = glob.glob('data/Hermite/particle_trajectory_new/*')
-        GRX_data = glob.glob('data/GRX/particle_trajectory_new/*')
+        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/particle_trajectory/*'))
+        GRX_data = glob.glob('data/GRX/particle_trajectory/*')
         filename = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)] 
         for int_ in range(2):
             for file_ in range(len(filename[int_])):
@@ -78,8 +78,9 @@ class coupled_systems(object):
 
                         if parti_ != 0:
                             for col_ in range(np.shape(data)[1]-1):
+                                sem_SMBH = data.iloc[parti_][col_][7][0]
                                 if data.iloc[parti_][col_][8][0] < 1:
-                                    semi_SMBH.append(data.iloc[parti_][col_][7][0].value_in(units.pc))
+                                    semi_SMBH.append(sem_SMBH.value_in(units.pc))
                                     ecc_SMBH.append(data.iloc[parti_][col_][8][0])
                                     val = (data.iloc[parti_][col_][7][0].value_in(units.pc))**4 * (1-data.iloc[parti_][col_][8][0]**2)**3.5
                                     min_GW_SMBH.append(val)
@@ -112,15 +113,14 @@ class coupled_systems(object):
                                         Nfbnn_indiv += 0.5
                                         SMBH_NN_event.append(-5)
                                         
-                                sem_SMBH = data.iloc[parti_][col_][7][0]
-                                sem_tertiary = data.iloc[parti_][col_][7][2]
                                 tSMBH = False
-                                if sem_SMBH == sem_tertiary:
+                                if sem_SMBH == semi_major_t:
                                     mass2 = SMBH_sys_mass
                                     tSMBH = True
 
                                 strain_t, freqGW_t = self.gw_amp_freq(semi_major_t, ecc_t, mass1, mass2)
                                 if freqGW_t > 5*10**-5:
+                                    sem_SMBH = data.iloc[parti_][col_][7][0]
                                     freq_t_GW_indiv.append(freqGW_t)
                                     strain_t_GW_indiv.append(strain_t)
                                     time_t_GW_indiv.append(10**-3 * col_)     
@@ -267,7 +267,7 @@ class coupled_systems(object):
 
         self.event_rate =[[ ], [ ]]
 
-        tGW_data = natsort.natsorted(glob.glob('data/tGW_TEST/*'))
+        tGW_data = natsort.natsorted(glob.glob('data/tGW/*'))
         for file_ in range(len(tGW_data)):
             with open(tGW_data[file_], 'rb') as input_file:
                 data_file = pkl.load(input_file)
@@ -784,7 +784,7 @@ class coupled_systems(object):
         ax = fig.add_subplot(gs[1, 0])
         ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
         ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
-        for int_ in range(2):
+        for int_ in range(1):
             length_SMBH = len(tgw_frq_min_SMBH[int_])
             self.scatter_hist(np.concatenate((tgw_frq_min_SMBH[int_], tgw_frq_min_IMBH[int_])), 
                               np.concatenate((tgw_amp_min_SMBH[int_], tgw_amp_min_IMBH[int_])),

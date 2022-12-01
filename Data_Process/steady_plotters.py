@@ -1,11 +1,10 @@
 from amuse.lab import *
 from file_logistics import *
 from spatial_plotters import *
-from itertools import cycle
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 import numpy as np
 import scipy.optimize
+from scipy.optimize import OptimizeWarning
 
 class stability_plotters(object):
     """
@@ -16,6 +15,8 @@ class stability_plotters(object):
         """
         Function to extract data from simulations who end in ejection
         """
+
+        warnings.filterwarnings("ignore", category=OptimizeWarning) 
         self.chaos_ini_parti_data, self.chaos_fparti_data, self.chaos_number_mergers, self.chaos_cumulative_mm, self.chaos_simulated_end, \
         self.chaos_ejected_parti, self.chaos_stab_time_data, self.chaos_init_dist_data, self.chaos_init_mass_data, \
         self.chaos_inj_mass_data, self.chaos_eje_mass_data = stats_chaos_extractor(dirC)  
@@ -126,8 +127,15 @@ class stability_plotters(object):
         Function to plot stability time for constant distances
         """
 
-        def log_fit(xval, slope, yint):
-            return (slope) /( np.log(xval)) + yint
+        def log_slope(slope):
+            rclust = 0.1 | units.pc
+            Mclust = 4.1*10**6 | units.MSun
+            slope = slope * (1 | units.Myr)
+            trlx_coeff = (rclust/(constants.G*Mclust)**1/3)
+            return np.log(abs(slope.value_in(units.s)))/np.log(trlx_coeff.value_in(units.s**2/units.m**2))
+            
+        def log_fit(xval, slope, alpha, yint):
+            return (slope)/(np.log(alpha*xval)) + yint
 
         plot_ini = plotter_setup()
 
@@ -154,7 +162,6 @@ class stability_plotters(object):
 
             tot_pop  = [ ]   
             iter = -1   
-            coloursycler = cycle(colour_picker())
             for mass_ in in_mass:
                 iter += 1
                 pop, psamples, fparti, stab_time = self.index_extractor(chaos_init_mass_data, chaos_fparti_data, 
@@ -163,68 +170,113 @@ class stability_plotters(object):
                                                                             chaos_stab_time_dataG, init_dist_idx_chaosG, mass_)
 
                 N_parti_avg = [ ]
+                N_parti_std = [ ]
                 pop_id = np.argwhere(pop > 2)
                 pop = pop[pop_id]
                 psamples = psamples[pop_id]
 
                 N_parti_avgG = [ ]
+                N_parti_stdG = [ ]
                 pop_idG = np.argwhere(popG > 2)
                 popG = popG[pop_idG]
                 psamplesG = psamplesG[pop_idG]
 
                 tot_pop.append(max(pop))
 
-                full_simul = []
+                full_simul_H = []
                 for pop_, samp_ in zip(pop, psamples):
                     N_parti = np.argwhere(fparti == pop_)
                     N_parti_avg.append(np.mean(stab_time[N_parti]))
+                    N_parti_std.append(np.std(stab_time[N_parti]))
                     idx = np.where(stab_time[N_parti] == 100)[0]
                     ratio = len(idx)/len(stab_time[N_parti])
-                    full_simul.append(ratio)
+                    full_simul_H.append(ratio)
                 N_parti_avg = np.asarray(N_parti_avg)
-                with open('figures/steady_time/Hermite_summary.txt', 'w') as file:
-                    file.write('For Hermite, # of full simulations per population: '+str(pop.flatten())+str(full_simul))
 
-                full_simul = []
+                full_simul_G = []
                 for pop_, samp_ in zip(popG, psamplesG):
                     N_parti = np.argwhere(fpartiG == pop_)
                     N_parti_avgG.append(np.mean(stab_timeG[N_parti]))
+                    N_parti_stdG.append(np.std(stab_timeG[N_parti]))
                     idx = np.where(stab_timeG[N_parti] == 100)[0]
                     ratio = len(idx)/len(stab_timeG[N_parti])
-                    full_simul.append(ratio)
+                    full_simul_G.append(ratio)
                 N_parti_avgG = np.asarray(N_parti_avgG)
-                with open('figures/steady_time/GRX_summary.txt', 'w') as file:
-                    file.write('For GRX, # of full simulations per population: '+str(pop.flatten())+str(full_simul))
-                
+
+                """
                 ax.scatter(pop, np.log10(N_parti_avg), color = 'red', edgecolor = 'black', zorder = 3,
                            label = r'Hermite')                
                 ax.scatter(popG, np.log10(N_parti_avgG), edgecolor = 'black', color = 'blue', 
-                           zorder = 3, label = r'Hermite GRX')    
-                ax.set_ylabel(r'$t_{\rm{surv}}$ [Myr]')   
+                           zorder = 3, label = r'Hermite GRX')  """  
+                           
+                ax.errorbar(pop, N_parti_avg, color = 'red', yerr=N_parti_std, fmt = 'o', label = 'Hermite')
+                ax.scatter(pop, N_parti_avg, color = 'black', s= 60)
+                ax.scatter(pop, N_parti_avg+N_parti_std, marker = '_', color = 'red')
+                ax.scatter(pop, N_parti_avg-N_parti_std, marker = '_', color = 'red')
+                ax.errorbar(popG, N_parti_avgG, color = 'blue', yerr=N_parti_stdG, fmt = 'o', label = 'GRX')
+                ax.scatter(popG, N_parti_avgG, color = 'black', s= 60)
+                ax.scatter(popG, N_parti_avgG+N_parti_stdG, marker = '_', color = 'blue')
+                ax.scatter(popG, N_parti_avgG-N_parti_stdG, marker = '_', color = 'blue')
+
+                ax.set_ylabel(r'$\log_{10} t_{\rm{surv}}$ [Myr]')   
 
             for j, xpos in enumerate(pop):
-                ax.text(pop[j][0], -0.68, '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
+                ax.text(pop[j][0], 3.25*10**-1, '# Ejec.\n'+'Hermite: '+str('{:.0f}'.format(psamples[j][0])), fontsize = 'xx-small', ha = 'center' )
             for j, xpos in enumerate(popG):
-                ax.text(popG[j][0], -0.73, 'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
+                ax.text(popG[j][0], 2.9*10**-1, 'GRX: '+str('{:.0f}'.format(psamplesG[j][0])), fontsize = 'xx-small', ha = 'center' )
 
             pop = np.array([float(i) for i in pop])
-            N_parti_avg = np.array([ float(i) for i in N_parti_avg])   
+            N_parti_avg = np.array([float(i) for i in N_parti_avg])   
             plot_ini.tickers_pop(ax, pop)
             ax.set_xlim(5,105)
 
-            p0 = (6,  0.50)
-            params, cv = scipy.optimize.curve_fit(log_fit, pop, N_parti_avg, p0)
-            slope, intercept = params
-            red_slope = str('{:.2f}'.format(slope))
-            xtemp = np.linspace(3, 105, 1000)
-            ytemp = [log_fit(i, slope, intercept) for i in xtemp]
+
+            ymax = [N_parti_avg[0]+N_parti_std[0], 14.558, 0]
+            ymin = [N_parti_avg[0]-N_parti_std[0], 10.94627273, 14.558, N_parti_avg[-1]+N_parti_std[-1]]
+            p0 = (1.5,  0.9, 10)
+            params, cv = scipy.optimize.curve_fit(log_fit, pop, (N_parti_avg), p0, maxfev = 2000)
+            params_max, cv = scipy.optimize.curve_fit(log_fit, [10, 50, 100], ymax, p0, maxfev = 2000)
+            params_min, cv = scipy.optimize.curve_fit(log_fit, [10, 40, 50, 100], ymin, p0, maxfev = 2000)
+
+            slope, alpha, intercept = params
+            slope_max, alpha_max, intercept_max = params_max
+            slope_min, alpha_min, intercept_min = params_min
             
-            ax.plot(xtemp, np.log10(ytemp), zorder = 1, color = 'black', ls = '-.')
-            ax.text(82, 1.5, r'$t_{{\rm surv}} \approx \frac{{{}}}{{\lnN}}$'.format(red_slope)+ ' Myr')
-            ax.set_ylim(-0.5, 1.05*np.log10(max(N_parti_avg)))
+            """paramsG, cv = scipy.optimize.curve_fit(log_fit, pop, N_parti_avg, p0) #TO CHANGE WHEN GRX
+            slopeG, interceptG = paramsG"""
+
+            x_arr = np.linspace(10,100)
+            y_arr =([10**-1.64*np.log(alpha*i)**-1 for i in x_arr])
+
+            slope_str = str('{:.2f}'.format(slope))
+            alpha_str = str('{:.2f}'.format(alpha))
+            xtemp = np.linspace(5, 105, 1000)
+            y_bf = [log_fit(i, slope, alpha, intercept) for i in xtemp]
+            y_bf1 = [log_fit(i, slope_min, alpha_min, intercept_min) for i in xtemp]
+            y_bf2 = [log_fit(i, slope_max, alpha_max, intercept_max) for i in xtemp]
+            ax.plot(xtemp, (y_bf), zorder = 1, color = 'black', ls = '-.')
+            #ax.plot(xtemp, (y_bf1), zorder = 1, color = 'black', ls = ':')
+            #ax.plot(xtemp, (y_bf2), zorder = 1, color = 'black', ls = ':')
+            ax.plot(x_arr, (y_arr))
+            ax.text(77, 52, r'$t_{{\rm surv}} \approx (\frac{{{}}}{{\ln{{{}}}N}}$'.format(slope_str, alpha_str)+') Myr')
+            ax.set_ylim(5*10**-1, 1.25*(max(N_parti_avg+N_parti_std)))
+            ax.set_yscale('log')
             ax.legend()
             ax.xaxis.labelpad = 30
             plt.savefig('figures/steady_time/const_population_stab_time_equal_dist_'+str(dist_)+'_mean.pdf', dpi = 300, bbox_inches='tight')
+
+            errs_upper = log_slope(slope_max) - log_slope(slope)
+            erra_upper = alpha_max - alpha
+            errs_lower = log_slope(slope_min) - log_slope(slope)
+            erra_lower = alpha_min - alpha
+            with open('figures/steady_time/Sim_summary.txt', 'w') as file:
+                file.write('For Hermite, # of full simulations per population: '+str(pop.flatten())+str(full_simul_H))
+                file.write('\nThe slope of the full curve goes as:               '+str(log_slope(slope)))
+                file.write('\nwith errors:                                       +'+str(errs_upper)+' '+str(errs_lower))
+                file.write('\nThe logarithmic prefactor goes as:                 '+str(alpha))
+                file.write('\nwith errors:                                       '+str(erra_upper)+' '+str(erra_lower))
+                file.write('\n\nFor GRX, # of full simulations per population: '+str(pop.flatten())+str(full_simul_G))
+                #file.write('\nand the slope of the curve goes as:                '+str(np.log(slopeG)*np.exp(1)/10))
 
         self.spread_steady_plotter(in_dist, in_mass, chaos_init_dist_data,
                                    chaos_init_mass_data, chaos_fparti_data,
@@ -232,3 +284,7 @@ class stability_plotters(object):
         self.spread_steady_plotter(in_dist, in_mass, chaos_init_dist_dataG,
                                    chaos_init_mass_dataG, chaos_fparti_dataG,
                                    chaos_stab_time_dataG, 'GRX')
+
+print('...steady_plotter...')
+cst = stability_plotters()
+cst.overall_steady_plotter()

@@ -281,7 +281,7 @@ class vejection(object):
             ax_[int_].set_title(ax_title[int_])
             ax_[int_].xaxis.labelpad = 30
             for j, xpos in enumerate(pops[int_]):
-                ax_[int_].text(pops[int_][j], 0.6*ymin, str(ax_title[int_])+'\n'+str('{:.0f}'.format(samples[int_][j])), fontsize = 'xx-small', ha = 'center' )
+                ax_[int_].text(pops[int_][j], 0.7*ymin, str(ax_title[int_])+'\n'+str('{:.0f}'.format(samples[int_][j])), fontsize = 'xx-small', ha = 'center' )
             plot_ini.tickers_pop(ax_[int_], pops[int_])
         plt.colorbar(colour_axes, ax=ax2, label = r'$\log_{10}\langle t_{ej}\rangle$ [Myr]')
         plt.savefig('figures/ejection_stats/mean_vej.pdf', dpi=300, bbox_inches='tight')
@@ -347,11 +347,3 @@ class event_tracker(object):
         plot_ini.tickers_pop(ax, in_pop[0])
         plt.legend()
         plt.savefig('figures/ejection_stats/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')
-
-
-print('...ejection_stat_plotters...')
-cst = event_tracker()
-cst = vejection()
-cst.vejec_plotter()
-cst = KE_PE_plotters()
-cst.KEPE_plotter()

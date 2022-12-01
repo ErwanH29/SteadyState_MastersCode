@@ -384,7 +384,6 @@ def ejected_index(pset, ejected, int):
                         vel = ((velx-vel[0])**2 + (vely-vel[1])**2 + (velz-vel[2])**2).sqrt().in_(units.kms)
                         print('SMBH ejected with velocity: ', vel)
 
-    print(string)
     return ejec_idx, string
 
 

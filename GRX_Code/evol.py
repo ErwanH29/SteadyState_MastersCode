@@ -63,7 +63,9 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
     code.parameters.dt_param = 1e-3
     stopping_condition = code.stopping_conditions.collision_detection
     stopping_condition.enable()
-
+    code.stopping_conditions.number_of_steps_detection.enable()
+    code.parameters.stopping_conditions_number_of_steps = 10**9
+    
     channel_IMBH = {"from_gravity": 
                     code.particles.new_channel_to(parti,
                     attributes=["x", "y", "z", "vx", "vy", "vz", "mass"],
@@ -114,8 +116,10 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
 
         time += eta*tend
         channel_IMBH["to_gravity"].copy()
-            
+        
+        step_end = cpu_time.time()
         code.evolve_model(time)
+
         for particle in parti[1:]:
             rel_vel = particle.velocity - parti[0].velocity
             dist_core = particle.position - parti[0].position
@@ -318,7 +322,6 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
             for line in lines:
                 f.write(line)
                 f.write('\n')
-        print('End time: ', time1)
 
     else:
         no_plot = True
