@@ -14,8 +14,8 @@ class loss_cone(object):
 
     def __init__(self):
         
-        Hermite_data = glob.glob('data/Hermite/particle_trajectory/*')
-        GRX_data = glob.glob('data/GRX/particle_trajectory/*')
+        Hermite_data = glob.glob(('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
+        GRX_data = glob.glob(('/media/erwanh/Elements/GRX/particle_trajectory/*'))
         pfile = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)]
         self.no_data = [len(Hermite_data), len(GRX_data)]
 

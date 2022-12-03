@@ -3,6 +3,7 @@ from file_logistics import *
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
+import warnings
 
 class sustainable_sys(object):
     """
@@ -11,13 +12,19 @@ class sustainable_sys(object):
     """
 
     def __init__(self):
-        filenameH = glob.glob('data/Hermite/particle_trajectory/*')
+        warnings.filterwarnings("ignore", category=RuntimeWarning) 
+
+        filenameH = glob.glob(os.path.join('/media/erwanh/Elements/particle_trajectory_temp/*'))
         filenameGRX = glob.glob('data/GRX/particle_trajectory/*')
         filename = [natsort.natsorted(filenameH), natsort.natsorted(filenameGRX)]
 
         self.pop = [[ ], [ ]]
         self.dedt = [[ ], [ ]]
         self.dadt = [[ ], [ ]]
+        self.semi_NN_avg = [[ ], [ ]]
+        self.semi_NN_min = [[ ], [ ]]
+        self.semi_t_avg = [[ ], [ ]]
+        self.semi_t_min = [[ ], [ ]]
         self.sys_bin = [[ ], [ ]]
         self.sys_ter = [[ ], [ ]]
         self.bsys_time = [[ ], [ ]]
@@ -35,21 +42,22 @@ class sustainable_sys(object):
                     pop = 10*round(0.1*np.shape(data)[0])
                     self.pop[int_].append(pop)
 
-                    bin_key = [] 
-                    ter_key = []
                     temp_dedt = [] 
                     temp_dadt = []
                     bsys_time = []
                     tsys_time = []
+                    bin_key = [] 
+                    ter_key = []
 
                     bin_val = 0 
                     ter_val = 0
                     bin_sys = 0 
                     ter_sys = 0
-
                     for parti_ in range(np.shape(data)[0]):
                         bin_sys = False
                         ter_sys = False
+                        semi_nn_avg = []
+                        semi_t_avg = []
                         self.bform_time[int_].append(-5)
                         self.tform_time[int_].append(-5)
                         self.pop_tracker[int_].append(10*round(0.1*np.shape(data)[0]))
@@ -57,15 +65,15 @@ class sustainable_sys(object):
                             temp_dedt.append((data.iloc[parti_][-2][8][0] - data.iloc[parti_][2][8][0])/(np.shape(data)[1]-3))
                             temp_dadt.append((data.iloc[parti_][-2][7][0]**-1 - data.iloc[parti_][2][7][0]**-1).value_in((units.pc)**-1)/(np.shape(data)[1]-3))
                             for col_ in range(np.shape(data)[1]-1):
+                                nn_semi = data.iloc[parti_][col_][7][1]
                                 if abs(data.iloc[parti_][col_][8][1]) < 1 \
-                                    and data.iloc[parti_][col_][7][1] < 0.02 | units.parsec:
+                                    and nn_semi < 0.02 | units.parsec:
                                     mass1 = data.iloc[parti_][0][1]
                                     for part_ in range(np.shape(data)[0]):
                                         if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
                                             mass2 = data.iloc[part_][0][1]
-                                            bin_BE = ((constants.G*mass1*mass2)/(data.iloc[parti_][col_][7][1])).value_in(units.J) 
+                                            bin_BE = ((constants.G*mass1*mass2)/(nn_semi)).value_in(units.J) 
                                             if bin_BE > (150000)**2*(1+mass1/mass2):   #Hard binary conditions based on Quinlan 1996b
-                                                print('Binary Detected')
                                                 if not (bin_sys):                     #First formation time
                                                     formation_time = col_*1000
                                                     self.bform_time[int_][-1] = formation_time
@@ -73,29 +81,40 @@ class sustainable_sys(object):
                                                 bin_val += 1
                                                 bin_key.append(data.iloc[parti_][col_][6][1])
                                                 bsys_time.append(col_)
+                                                semi_nn_avg.append(nn_semi.value_in(units.pc))
 
+                                                semi_outer = data.iloc[parti_][col_][7][2]
+                                                ecc_outer = data.iloc[parti_][col_][8][2]
                                                 #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
-                                                if data.iloc[parti_][col_][8][2] < 1 \
-                                                    and data.iloc[parti_][col_][7][2] < 0.1 | units.parsec:
-                                                    semi_inner = data.iloc[parti_][col_][7][1]
-                                                    semi_outer = data.iloc[parti_][col_][7][2]
+                                                if ecc_outer < 1 and semi_outer < 0.1 | units.parsec:
                                                     for part_ in range(np.shape(data)[0]):
                                                         if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
                                                             mass_outer = data.iloc[part_][0][1]
 
-                                                    ecc_outer = data.iloc[parti_][col_][8][2]
-                                                    semi_ratio = semi_outer / semi_inner
+                                                    semi_ratio = semi_outer / nn_semi
                                                     equality = 2.8 * ((1+mass_outer/(mass1+mass2))*(1+ecc_outer)/(1-ecc_outer**2)**0.5)**0.4
                                                     if semi_ratio > equality:
-                                                        print('Tertiary Detected')
                                                         if not (ter_sys):
                                                             formation_time = col_*1000
                                                             self.tform_time[int_][-1] = formation_time
                                                             ter_sys = True
-
                                                         ter_val += 1
                                                         ter_key.append([i for i in data.iloc[parti_][col_][6][2]][0])
                                                         tsys_time.append(col_)
+                                                        semi_t_avg.append(semi_outer.value_in(units.pc))
+
+                        if len(semi_nn_avg) > 0:
+                            self.semi_NN_avg[int_].append(np.mean(semi_nn_avg))
+                            self.semi_NN_min[int_].append(np.min(semi_nn_avg))
+                        else:
+                            self.semi_NN_avg[int_].append(-5)
+                            self.semi_NN_min[int_].append(-5)
+                        if len(semi_t_avg) > 0:
+                            self.semi_t_avg[int_].append(np.mean(semi_t_avg))
+                            self.semi_t_min[int_].append(np.min(semi_t_avg))
+                        else:
+                            self.semi_t_avg[int_].append(-5)
+                            self.semi_t_min[int_].append(-5)
 
                         if parti_ == (np.shape(data)[0]-1):
                             if len(bin_key) > 0:
@@ -119,9 +138,39 @@ class sustainable_sys(object):
             self.sys_ter[int_] = np.asarray([i for i in self.sys_ter[int_]])
             self.dedt[int_] = np.asarray([i for i in self.dedt[int_]])
             self.dadt[int_] = np.asarray([i for i in self.dadt[int_]])
+            self.semi_NN_avg[int_] = np.asarray([i for i in self.semi_NN_avg[int_]])
+            self.semi_NN_min[int_] = np.asarray([i for i in self.semi_NN_min[int_]])
+            self.semi_t_avg[int_] = np.asarray([i for i in self.semi_t_avg[int_]])
+            self.semi_t_min[int_] = np.asarray([i for i in self.semi_t_min[int_]])
             self.pop[int_] = np.asarray([i for i in self.pop[int_]])
             self.bform_time[int_] = np.asarray([i for i in self.bform_time[int_]])
             self.tform_time[int_] = np.asarray([i for i in self.tform_time[int_]])
+
+        with open('figures/binary_hierarchical/output/system_summary.txt', 'w') as file:
+            integrator = ['Hermite', 'GRX']
+            for int_ in range(2):
+                semi_NN_avg = [ ]
+                semi_NN_min = [ ]
+                semi_t_avg = [ ]
+                semi_t_min = [ ]
+                pop_arr = np.unique(self.pop_tracker[int_])
+                for pop_ in pop_arr:
+                    idx = np.argwhere(self.pop_tracker[int_] == pop_)
+                    semi_av = self.semi_NN_avg[int_][idx][self.semi_NN_avg[int_][idx] > 0]
+                    semi_mv = self.semi_NN_min[int_][idx][self.semi_NN_min[int_][idx] > 0]
+                    semi_avt = self.semi_t_avg[int_][idx][self.semi_t_avg[int_][idx] > 0]
+                    semi_mvt = self.semi_t_min[int_][idx][self.semi_t_min[int_][idx] > 0]
+                    if len(semi_av) > 0:
+                        semi_NN_avg.append(np.mean(semi_av))
+                        semi_NN_min.append(np.min(semi_mv))
+                    if len(semi_avt) > 0:
+                        semi_t_avg.append(np.mean(semi_avt))
+                        semi_t_min.append(np.min(semi_mvt))
+                file.write('\nData for '+str(integrator[int_]))
+                file.write('\nAverage binary semi-major axis per population:   '+str(pop_arr)+' : '+str(semi_NN_avg))
+                file.write('\nMinimum binary semi-major axis per population:   '+str(pop_arr)+' : '+str(semi_NN_min))
+                file.write('\nAverage tertiary semi-major axis per population: '+str(pop_arr)+' : '+str(semi_t_avg))
+                file.write('\nMinimum tertiary semi-major axis per population: '+str(pop_arr)+' : '+str(semi_t_min))
 
     def system_formation_data(self, int_, ini_pop):
         """
@@ -168,6 +217,9 @@ class sustainable_sys(object):
         Function to plot various 'sustainable system' plots
         """
 
+        def log_fit(xval, slope, alpha, yint):
+            return slope*xval**alpha + yint
+
         plot_ini = plotter_setup()
         mtick_formatter = mtick.FormatStrFormatter('%0.2f')
         integrator = ['Hermite', 'GRX']
@@ -187,7 +239,7 @@ class sustainable_sys(object):
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax_ = [ax1, ax2]
-        for int_ in range(2):
+        for int_ in range(1):
             ini_pop = np.unique(self.pop[int_])
             plot_ini.tickers_pop(ax_[int_], ini_pop)
             ax_[int_].set_title(integrator[int_])
@@ -198,7 +250,17 @@ class sustainable_sys(object):
             colour_axes = ax_[int_].scatter(ini_pop[bin_formed>0], np.log10(bsys_time[bin_formed>0]), edgecolors  = 'black', c = (bin_formed[bin_formed>0]), norm = (normalise_p1), label = 'Stable Binary')
             ax_[int_].scatter(ini_pop[ter_formed>0], np.log10(tsys_time[ter_formed>0]), edgecolors  = 'black', c = (ter_formed[ter_formed>0]), norm = (normalise_p1), marker = 's', label = 'Stable Triple')
 
-        plt.colorbar(colour_axes, ax=ax2, label = r'$\log_{10}\langle N_{\rm{sys}} \rangle$ ')
+            """p0 = (10, 2, 0)
+            params_bin, cv = scipy.optimize.curve_fit(log_fit, ini_pop[bin_formed>0], bsys_time[bin_formed>0], p0, maxfev = 2000)
+            slope_bin, alpha_bin, intercept_bin = params_bin
+            params_ter, cv = scipy.optimize.curve_fit(log_fit, ini_pop[ter_formed>0], bsys_time[ter_formed>0], p0, maxfev = 2000)
+        
+        y_arr = ([log_fit(i, slope_bin, alpha_bin, intercept_bin) for i in x_arr])
+        print(slope_bin, alpha_bin, intercept_bin)"""
+        x_arr = np.linspace(10,100)
+        y_arr = [bsys_time[bin_formed>0][0]*10**(0.035*i) + 100 for i in x_arr]
+        ax1.plot(x_arr, np.log(y_arr))
+        plt.colorbar(colour_axes, ax=ax2, label = r'$\langle N_{\rm{sys}} \rangle$ ')
         ax2.legend()
         plt.savefig('figures/binary_hierarchical/sys_formation_N_plot.pdf', dpi=300, bbox_inches='tight')
 
@@ -225,3 +287,7 @@ class sustainable_sys(object):
             plt.colorbar(colour_axes, ax = ax2, label = r'Initial Population')
             plt.savefig('figures/binary_hierarchical/simavg_dadt_dedt_plot'+str(integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
             plt.clf()
+
+print('...sustainable_bintert_plotters...')
+cst = sustainable_sys()
+cst.system_formation_plotter()

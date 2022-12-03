@@ -7,9 +7,17 @@ from ejection_stat_plotters import *
 from spatial_plotters import *
 
 start_time = cpu_time.time()
-
+"""
 cst = coupled_systems()
-cst.new_data_extractor()
+cst.new_data_extractor()"""
+
+print('...steady_plotter...')
+cst = stability_plotters()
+cst.overall_steady_plotter()
+
+print('...sustainable_bintert_plotters...')
+cst = sustainable_sys()
+cst.system_formation_plotter()
 
 print('...spatial_plotters...')
 ejected_evolution()
@@ -18,9 +26,6 @@ spatial_plotter('Hermite')
 nearest_neigh('Hermite')
 #chaos_deviate()
 
-print('...sustainable_bintert_plotters...')
-cst = sustainable_sys()
-cst.system_formation_plotter()
 
 
 #### TO WORK ####
@@ -39,11 +44,6 @@ cst.SMBH_tgw_plotter()
 cst.strain_freq_plotter()
 cst.IMBH_tgw_plotter()
 cst.transient_events()
-
-
-print('...steady_plotter...')
-cst = stability_plotters()
-cst.overall_steady_plotter()
 
 print('...ejection_stat_plotters...')
 cst = event_tracker()

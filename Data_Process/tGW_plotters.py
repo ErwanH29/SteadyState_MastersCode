@@ -1,10 +1,15 @@
 from amuse.lab import *
 from file_logistics import *
+from sklearn.neighbors import KernelDensity
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
 import warnings
 import pandas as pd
+
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+from statsmodels.distributions.mixture_rvs import mixture_rvs
 
 class coupled_systems(object):
     """
@@ -32,8 +37,8 @@ class coupled_systems(object):
 
         print('!!!!!! WARNING THIS WILL TAKE A WHILE !!!!!!!')
 
-        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/particle_trajectory/*'))
-        GRX_data = glob.glob('data/GRX/particle_trajectory/*')
+        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
+        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory/*'))
         filename = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)] 
         for int_ in range(2):
             for file_ in range(len(filename[int_])):
@@ -437,7 +442,33 @@ class coupled_systems(object):
         semi_maj = [np.log10(((term1 * (1+i)**1.1954/(1-i**2)**1.5 * freq_val**-1)**(2/3)).value_in(units.pc)) for i in ecc_arr]
         return semi_maj
 
-    def scatter_hist(self, x, y, ax, ax_histx, ax_histy, len_arr):
+    def LISA_sensitivity(self, freq):
+        """
+        Function to plot the LISA sensitivity curve.
+        Data are taken from arXiv:1803.01944
+        
+        Inputs:
+        freq:    The frequency range which LISA occupies"""
+        length = 2.5*10**9
+        fstar  = 19.09*10**-3
+        
+        alpha = 0.138
+        beta = -221
+        kappa = 521
+        gamma = 1680
+        fk = 0.00113
+        A = 9 * 10**-45
+
+        R = 3./20./(1. + 6./10.*(freq/fstar)**2)*2
+
+        p_oms = (1.5*10**-11)**2 * (1+((2*10**-3)/freq)**4)
+        p_acc = (3*10**-15)**2 * (1+((0.4*10**-3)/freq)**2)*(1+(freq/(8*10**-3))**4)
+        sens_const = A * freq**(-(7.3))*np.exp(-freq**alpha+beta*freq*np.sin(kappa*freq))*(1+np.tanh(gamma*(fk-freq)))
+        Pn = (p_oms + 2.*(1. + np.cos(freq/fstar)**2)*p_acc/(2.*np.pi*freq)**4)/length**2
+
+        return Pn/R + sens_const
+
+    def scatter_hist(self, x, y, ax, ax_histf, ax_histh, len_arr):
         """
         Function to plot the frequency/strain histogram along its scatter plot
         
@@ -445,27 +476,45 @@ class coupled_systems(object):
         x:        The strain array
         y:        The frequency array
         ax:       axis where the scatter plot is located
-        ax_histx: axis where the strain histogram is placed
-        ax_histy: axis where the frequency histogram is placed
+        ax_histf: axis where the strain histogram is placed
+        ax_histh: axis where the frequency histogram is placed
         len_arr:  Length of SMBH data array
         """
-
-        ax_histx.tick_params(axis="x", labelbottom=False)
-        ax_histy.tick_params(axis="y", labelleft=False)
-
-
+        x_temp = np.linspace(10**-5, 1, 10**3)
         # the scatter plot:
+        ax.plot(np.log10(x_temp), np.log10(np.sqrt(x_temp*self.LISA_sensitivity(x_temp))), color = 'black', linestyle = ':', label = 'LISA Sensitivity')
         ax.scatter(np.log10(x[:len_arr]), np.log10(y[:len_arr]), label = 'SMBH-IMBH', color = 'black')
         ax.scatter(np.log10(x[len_arr:]), np.log10(y[len_arr:]), label = 'IMBH-IMBH', color = 'purple', edgecolors = 'black')
+        
+        ax_histf.tick_params(axis="x", labelbottom=False)
+        ax_histh.tick_params(axis="y", labelleft=False)
 
-        ax_histx.hist(np.log10(x[:len_arr]), 30, histtype = 'step', color='black', density = True)
-        ax_histx.hist(np.log10(x[:len_arr]), 30, alpha = 0.35, color='black', density = True)
-        ax_histx.hist(np.log10(x[len_arr:]), 30, histtype = 'step', color='purple', density = True)
-        ax_histx.hist(np.log10(x[len_arr:]), 30, alpha = 0.35, color='purple', density = True)
-        ax_histy.hist(np.log10(y[:len_arr]), 30, histtype = 'step', color='black', density = True, orientation='horizontal')
-        ax_histy.hist(np.log10(y[:len_arr]), 30, alpha = 0.35, color='black', density = True, orientation='horizontal')
-        ax_histy.hist(np.log10(y[len_arr:]), 30, histtype = 'step', color='purple', density = True, orientation='horizontal')
-        ax_histy.hist(np.log10(y[len_arr:]), 30, alpha = 0.35, color='purple', density = True, orientation='horizontal')
+        kdef_SMBH = sm.nonparametric.KDEUnivariate(np.log10(x[:len_arr]))
+        kdef_SMBH.fit()
+        kdef_SMBH.density /= max(kdef_SMBH.density)
+        kdef_IMBH = sm.nonparametric.KDEUnivariate(np.log10(x[len_arr:]))
+        kdef_IMBH.fit()
+        kdef_IMBH.density /= max(kdef_IMBH.density)
+
+        ax_histf.plot(kdef_SMBH.support, kdef_SMBH.density, color = 'black')
+        ax_histf.fill_between(kdef_SMBH.support, kdef_SMBH.density, alpha = 0.35, color = 'black')
+        ax_histf.plot(kdef_IMBH.support, kdef_IMBH.density, color = 'purple')
+        ax_histf.fill_between(kdef_IMBH.support, kdef_IMBH.density, alpha = 0.35, color = 'purple')
+        ax_histf.set_ylim(0, 1.05)
+
+        kdeh_SMBH = sm.nonparametric.KDEUnivariate(np.log10(y[:len_arr]))
+        kdeh_SMBH.fit()
+        kdeh_SMBH.density /= max(kdeh_SMBH.density)
+        kdeh_IMBH = sm.nonparametric.KDEUnivariate(np.log10(y[len_arr:]))
+        kdeh_IMBH.fit()
+        kdeh_IMBH.density /= max(kdeh_IMBH.density)
+
+        ax_histh.plot(kdeh_SMBH.density, kdeh_SMBH.support, color = 'black')
+        ax_histh.fill_between(kdeh_SMBH.density, kdeh_SMBH.support, alpha = 0.35, color = 'black')
+        ax_histh.plot(kdeh_IMBH.density, kdeh_IMBH.support, color = 'purple')
+        ax_histh.fill_between(kdeh_IMBH.density, kdeh_IMBH.support, alpha = 0.35, color = 'purple')
+        ax_histh.set_xlim(0, 1.05)
+        
 
     def IMBH_tgw_plotter(self):
         """
@@ -910,11 +959,11 @@ class coupled_systems(object):
         ax1.legend()
         plt.savefig('figures/gravitational_waves/events_time.pdf', dpi = 300, bbox_inches='tight')
 
-"""cst = coupled_systems()
+cst = coupled_systems()
 #cst.new_data_extractor()
 cst.combine_data()
 cst.transient_events()
 cst.IMBH_tgw_plotter()
 cst.SMBH_tgw_plotter()
 cst.strain_freq_plotter()
-cst.IMBH_tgw_plotter()"""
+cst.IMBH_tgw_plotter()

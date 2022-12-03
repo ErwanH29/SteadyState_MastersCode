@@ -35,7 +35,7 @@ def animator(init_dist, int_string):
     count = file_counter(int_string)
 
     Lag_tracker = file_opener('data/'+str(int_string)+'/lagrangians/*')
-    ptracker = file_opener('data/'+str(int_string)+'/particle_trajectory/*')
+    ptracker = file_opener('/media/erwanh/Elements/'+(int_string)+'/particle_trajectory/*')
     etracker = file_opener('data/'+str(int_string)+'/energy/*')
     col_len = np.shape(ptracker)[1]
 
@@ -377,7 +377,7 @@ def ejected_evolution():
     iter = -1
     for int_ in integrator:   
         iter += 1
-        data = natsort.natsorted(glob.glob('data/'+str(int_)+'/particle_trajectory/*'))
+        data = natsort.natsorted(glob.glob('/media/erwanh/Elements/'+(integrator[int_])+'/particle_trajectory/*'))
         if int_ == 'GRX':
             chaotic = ['data/GRX/no_addition/chaotic_simulation/'+str(i[29:]) for i in data]
             energy = ['data/GRX/energy/'+str(i[29:]) for i in data]
@@ -759,7 +759,7 @@ def spatial_plotter(int_string):
 
     plot_ini = plotter_setup()
 
-    ptracker_files = natsort.natsorted(glob.glob('data/'+str(int_string)+'/particle_trajectory/*'))
+    ptracker_files = natsort.natsorted(glob.glob('/media/erwanh/Elements/'+(int_string)+'/particle_trajectory/*'))
     etracker_files = natsort.natsorted(glob.glob('data/'+str(int_string)+'/energy/*'))
     ctracker_files = natsort.natsorted(glob.glob('data/'+str(int_string)+'/no_addition/chaotic_simulation/*'))
     iter_file = -1
