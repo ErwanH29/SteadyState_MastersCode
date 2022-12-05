@@ -358,7 +358,7 @@ def chaos_deviate():
     ax4.legend()
 
     plt.savefig('figures/system_evolution/GRX_vs_Hermite_sys_evol.pdf', dpi=300, bbox_inches='tight')
-    
+
 def ejected_evolution():
     """
     Function which plots various Kepler elements of the IMBH particle stopping the simulation
@@ -377,13 +377,13 @@ def ejected_evolution():
     iter = -1
     for int_ in integrator:   
         iter += 1
-        data = natsort.natsorted(glob.glob('/media/erwanh/Elements/'+(integrator[int_])+'/particle_trajectory/*'))
+        data = natsort.natsorted(glob.glob('/media/erwanh/Elements/'+(int_)+'/particle_trajectory/*'))
         if int_ == 'GRX':
-            chaotic = ['data/GRX/no_addition/chaotic_simulation/'+str(i[29:]) for i in data]
-            energy = ['data/GRX/energy/'+str(i[29:]) for i in data]
+            chaotic = ['data/GRX/no_addition/chaotic_simulation/'+str(i[47:]) for i in data]
+            energy = ['data/GRX/energy/'+str(i[47:]) for i in data]
         else:
-            chaotic = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[33:]) for i in data]
-            energy = ['data/Hermite/energy/'+str(i[33:]) for i in data]
+            chaotic = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[51:]) for i in data]
+            energy = ['data/Hermite/energy/'+str(i[51:]) for i in data]
         filter = 0
         high_ecc = 0
         
@@ -468,6 +468,7 @@ def ejected_evolution():
                                     SMBH_sample[2].append(SMBH_coords[2][2].value_in(units.pc))
 
                             ejec_KE /= ejec_KE[0]
+                            ejec_ecc_SMBH = np.asarray(ejec_ecc_SMBH)
 
                             ejec_KE_smooth = plot_ini.moving_average(ejec_KE, smoothing)
                             ejec_ecc_SMBH_smooth = plot_ini.moving_average(ejec_ecc_SMBH, smoothing)
@@ -490,7 +491,7 @@ def ejected_evolution():
                             ax2.set_ylabel(r'$K_E / K_{E,0}$ [J]')
                             ax3.set_ylabel(r'$\log_{10} |v|$ [km s$^{-1}$]')
                             ax4.set_ylabel(r'$r_{nn}$ [pc]')
-                            ax1.set_ylim(1.05*min(ejec_ecc_SMBH), 0)
+                            ax1.set_ylim(-6.5, 0)
                             for ax_ in [ax1, ax2, ax3, ax4]:
                                 ax_.set_xlabel('Time [Myr]')
                                 plot_ini.tickers(ax_, 'plot')
@@ -643,8 +644,9 @@ def ejected_evolution():
         ejec_NNdist_sort = np.sort(ejec_NNdist_flat[j])
         ejec_NNdist_index = np.asarray([i for i in enumerate(ejec_NNdist_sort)])
         ax4.plot(ejec_NNdist_sort, ejec_NNdist_index[:,0]/ejec_NNdist_index[-1,0], color = c_hist[j])
+    ax1.plot(ejec_ecc_sort, [10**(2*i) for i in ejec_ecc_sort], color = 'black', linestyle = ':', label = 'Thermal Distribution')
     ax1.legend(loc='upper left')
-    plt.savefig('figures/system_evolution/ejected_properties_cdf_histogram.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/system_evolution/merged_properties_cdf_histogram.pdf', dpi=300, bbox_inches='tight')
 
 def energy_plotter(int_string):
     """
@@ -706,49 +708,170 @@ def energy_plotter(int_string):
 
     return
 
-def nearest_neigh(int_string):
+def global_properties():
     """
-    Function which plots the evolution of all nearest neighbour distances in a specific simulation.
+    Function which plots various Kepler elements of ALL particles simulated
+    
+    output: Plots of the inclination,semi-major axis, nearest neighbour and eccentricity of the 
+            merged/ejected particle relative to the SMBH, nearest neighbour and second-nearest neighbour
     """
     
     plot_ini = plotter_setup()
-    count = file_counter(int_string)
-    ptracker = file_opener('data/'+str(int_string)+'/spatial_plotters/particle_trajectory/*')
-    etracker = file_opener('data/'+str(int_string)+'/spatial_plotters/energy/*')
-
-    col_len = np.shape(ptracker)[1] - 1
-    no_parti = np.shape(ptracker)[0] - 1
-    smoothing = round(10**-2 * col_len)
     
+    integrator = ['Hermite', 'GRX']
+    ecc_arr = [[ ], [ ]]
+    distSMBH_arr = [[ ], [ ]]
+    vel_arr = [[ ], [ ]]
+    NNdist_arr = [[ ], [ ]]
+    KE_arr = [[ ], [ ]]
 
-    time = np.empty(col_len)
-    nn_dist = np.empty((no_parti, col_len))
-    nn_dist_smooth = np.empty((no_parti, (col_len-smoothing+1)))
+    iter = -1
+    for int_ in integrator:   
+        iter += 1
+        data = natsort.natsorted(glob.glob('/media/erwanh/Elements/'+(int_)+'/particle_trajectory/*'))
+        if int_ == 'GRX':
+            energy = ['data/GRX/energy/'+str(i[47:]) for i in data]
+            chaotic = ['data/GRX/no_addition/chaotic_simulation/'+str(i[47:]) for i in data]
+        else:
+            energy = ['data/Hermite/energy/'+str(i[51:]) for i in data]
+            chaotic = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[51:]) for i in data]
 
-    for parti_ in range(no_parti):
-        time_step = ptracker.iloc[parti_+1]
-        for j in range(col_len):
-            nn_dist[parti_][j] = time_step.iloc[j][-1]
-        nn_dist_smooth[parti_] = plot_ini.moving_average(nn_dist[parti_], smoothing)
-        nn_dist_smooth[parti_] = np.asarray(nn_dist_smooth[parti_])
+        SMBHx = []
+        SMBHy = []
+        SMBHz = []
+        SMBH_sample = [[], [], []]
+        
+        for file_ in range(len(data)):
+            with open(chaotic[file_], 'rb') as input_file:
+                chaotic_tracker = pkl.load(input_file)
 
-    for i in range(col_len):
-        time_arr = etracker.iloc[i]
-        time[i] = time_arr[6].value_in(units.Myr)
-    time_smooth = plot_ini.moving_average(time, smoothing)
-    time = np.asarray(time)
+            if chaotic_tracker.iloc[0][9] == 10:
+                with open(data[file_], 'rb') as input_file:
+                    print('Reading File :', input_file)
+                    ptracker = pkl.load(input_file)
 
-    fig, ax = plt.subplots()
-    ax.set_title('Time vs. Distance')
-    ax.set_ylabel(r'$r_{NN}$')
-    ax.set_xlabel(r'$t$ [Myr]')
-    plot_ini.tickers(ax, 'plot') 
+                with open(energy[file_], 'rb') as input_file:
+                    etracker = pkl.load(input_file)
+
+                col_len = np.shape(ptracker)[1]-1
+                for parti_ in range(np.shape(ptracker)[0]):
+                    if parti_ == 0:
+                        pass
+                    else:
+                        particle = ptracker.iloc[parti_]
+                        SMBH_data = ptracker.iloc[0]
+
+                        time = np.empty(col_len)
+                        neigh_key = np.empty((3, col_len))
+                        NN = np.empty(col_len)
+                        SMBH_dist = np.empty(col_len)
+                        pvel = np.empty(col_len)
+                        KE = np.empty(col_len)
+                        ecc_SMBH = np.empty(col_len)
+
+                        for j in range(col_len):
+                            time_step = particle.iloc[j]
+                            time_arr = etracker.iloc[j]
+                            SMBH_coords = SMBH_data.iloc[j]
+
+                            KE[j] = np.log10(time_step[4].value_in(units.J))
+                            ecc_SMBH[j] = np.log10(1-time_step[8][0])
+
+                            for i in range(3):
+                                neigh_key[i][j] = time_step[6][i]
+
+                            NN[j] = np.log10(time_step[-1])
+                            time[j] = time_arr[6].value_in(units.Myr)
+                            
+                            line_x = (time_step[2][0] - SMBH_coords[2][0])
+                            line_y = (time_step[2][1] - SMBH_coords[2][1])
+                            line_z = (time_step[2][2] - SMBH_coords[2][2])
+                            SMBH_dist[j] = np.log10(np.sqrt(line_x**2+line_y**2+line_z**2).value_in(units.pc))
+
+                            vel_x = (time_step[3][0] - SMBH_coords[3][0])
+                            vel_y = (time_step[3][1] - SMBH_coords[3][1])
+                            vel_z = (time_step[3][2] - SMBH_coords[3][2])
+                            pvel[j] = np.log10(np.sqrt(vel_x**2+vel_y**2+vel_z**2).value_in(units.kms))
+
+                            SMBHx.append(SMBH_coords[2][0].value_in(units.pc))
+                            SMBHy.append(SMBH_coords[2][1].value_in(units.pc))
+                            SMBHz.append(SMBH_coords[2][2].value_in(units.pc))
+                            if file_ == 0:
+                                SMBH_sample[0].append(SMBH_coords[2][0].value_in(units.pc))
+                                SMBH_sample[1].append(SMBH_coords[2][1].value_in(units.pc))
+                                SMBH_sample[2].append(SMBH_coords[2][2].value_in(units.pc))
+
+                        ecc_SMBH = np.asarray(ecc_SMBH)
+
+                        ecc_arr[iter].append(ecc_SMBH)
+                        distSMBH_arr[iter].append(SMBH_dist)
+                        NNdist_arr[iter].append(NN)
+                        vel_arr[iter].append(pvel)
+                        KE_arr[iter].append(KE)
+            
+    c_hist = ['red', 'blue']
+
+    ecc_flat = [[ ], [ ]]
+    distSMBH_flat = [[ ], [ ]]
+    vel_flat = [[ ], [ ]]
+    NNdist_flat = [[ ], [ ]]
+    KE_flat = [[ ], [ ]]
+    for j in range(2):
+        for sublist in ecc_arr[j]:
+            for item in sublist:
+                ecc_flat[j].append(item)
+        for sublist in distSMBH_arr[j]:
+            for item in sublist:
+                distSMBH_flat[j].append(item)
+        for sublist in vel_arr[j]:
+            for item in sublist:
+                vel_flat[j].append(item)
+        for sublist in NNdist_arr[j]:
+            for item in sublist:
+                NNdist_flat[j].append(item)
+        for sublist in KE_arr[j]:
+            for item in sublist:
+                KE_flat[j].append(item)
     
-    for parti_ in range(no_parti):
-        ax.plot(time_smooth, np.log10(nn_dist_smooth[parti_]), color = 'black', alpha = 0.5)
-        #ax.plot(time, np.log10(nn_dist[parti_]), color = 'black')
-    plt.savefig('figures/system_evolution/NN_dist_Evolution'+str(count)+'.pdf', dpi=300, bbox_inches='tight')
-    plt.clf()
+    fig = plt.figure(figsize=(12.5, 10))
+    ax1 = fig.add_subplot(221)
+    ax2 = fig.add_subplot(222)
+    ax3 = fig.add_subplot(223)
+    ax4 = fig.add_subplot(224) 
+    ax1.set_xlabel(r'$\log_{10}(1-e)$')
+    ax2.set_xlabel(r'$\log_{10}r$ [pc]')
+    ax3.set_xlabel(r'$\log_{10}|v|$ [km s$^{-1}$]')
+    ax4.set_xlabel(r'$\log_{10} K_E$ [J]')
+    for ax_ in [ax1, ax2, ax3, ax4]:
+        plot_ini.tickers(ax_, 'plot')
+    for j in range(2):
+        ecc_sort = np.sort(ecc_flat[j])
+        ecc_index = np.asarray([i for i in enumerate(ecc_sort)])
+        ax1.plot(ecc_sort, ecc_index[:,0]/ecc_index[-1,0], color = c_hist[j], label = integrator[j])
+
+        distSMBH_sort = np.sort(distSMBH_flat[j])
+        distSMBH_index = np.asarray([i for i in enumerate(distSMBH_sort)])
+        NNdist_sort = np.sort(NNdist_flat[j])
+        NNdist_index = np.asarray([i for i in enumerate(NNdist_sort)])
+        if j == 0:
+            ax2.plot(distSMBH_sort, distSMBH_index[:,0]/distSMBH_index[-1,0], color = c_hist[j], linestyle = ':', label = r'$r_{\rm{SMBH}}$')
+            ax2.plot(NNdist_sort, NNdist_index[:,0]/NNdist_index[-1,0], color = c_hist[j], linestyle = '-.', label =r'$r_{\rm{IMBH}}$')
+        else:
+            ax2.plot(distSMBH_sort, distSMBH_index[:,0]/distSMBH_index[-1,0], color = c_hist[j], linestyle = ':')
+            ax2.plot(NNdist_sort, NNdist_index[:,0]/NNdist_index[-1,0], color = c_hist[j], linestyle = '-.')
+        
+        vel_sort = np.sort(vel_flat[j])
+        vel_index = np.asarray([i for i in enumerate(vel_sort)])
+        ax3.plot(vel_sort, vel_index[:,0]/vel_index[-1,0], color = c_hist[j])
+
+        KE_sort = np.sort(KE_flat[j])
+        KE_index = np.asarray([i for i in enumerate(KE_sort)])
+        ax4.plot(KE_sort, KE_index[:,0]/KE_index[-1,0], color = c_hist[j])
+
+    ax1.plot(ecc_sort, [10**(2*i) for i in ecc_sort], color = 'black', linestyle = ':', label = 'Thermal Distribution')
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper left')
+    plt.savefig('figures/system_evolution/global_properties_N=20_cdf_histogram.pdf', dpi=300, bbox_inches='tight')
 
 def spatial_plotter(int_string):
     """
@@ -766,7 +889,7 @@ def spatial_plotter(int_string):
     for file_ in range(len(ptracker_files)):
         iter_file += 1
         with open(ctracker_files[file_], 'rb') as input_file:
-            print('Reading File : ', input_file)
+            print('Reading File ', file_, ' : ', input_file)
             ctracker = pkl.load(input_file)
             if ctracker.iloc[0][5] > 0:
                 with open(ptracker_files[file_], 'rb') as input_file:
@@ -775,7 +898,7 @@ def spatial_plotter(int_string):
                     etracker = pkl.load(input_file)
 
                 col_len_raw = np.shape(ptracker)[1]
-                col_len = round(col_len_raw)
+                col_len = round(col_len_raw**0.6)
                 parti_size = 20+len(ptracker)**-0.5
 
                 line_x = np.empty((len(ptracker), col_len))

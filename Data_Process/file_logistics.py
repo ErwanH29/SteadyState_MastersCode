@@ -198,20 +198,22 @@ def ejected_stat_extractor(chaos_dir, int):
     filt_IMBH = []
     filt_Chaotic = []
     if int == 'Hermite':
-        lbound = 95
-        ubound = 105
+        lbound = 97
+        ubound = 107
+        #lbound = 95
+        #ubound = 105
     else:
         lbound = 91
         ubound = 101
 
     for file_ in range(len(chaos_data)):
         with open(chaos_data[file_], 'rb') as input_file:
+            print('Reading file : ', input_file)
             data = pkl.load(input_file)
             if data.iloc[0][-4] < 1:
                 filt_Chaotic.append(data)
                 input_file = str(input_file)
-                IMBH_data = glob.glob('data/'+str(int)+'/particle_trajectory/*'+str(input_file[lbound:ubound])+'*')
-                
+                IMBH_data = glob.glob('/media/erwanh/Elements/'+str(int)+'/particle_trajectory/*'+str(input_file[lbound:ubound])+'*')
                 with open(IMBH_data[0], 'rb') as input_file:
                     data = pkl.load(input_file)
                     data_pts = round((np.shape(data)[1])/15)

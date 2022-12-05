@@ -1,15 +1,11 @@
 from amuse.lab import *
 from file_logistics import *
-from sklearn.neighbors import KernelDensity
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
 import warnings
 import pandas as pd
-
 import statsmodels.api as sm
-import matplotlib.pyplot as plt
-from statsmodels.distributions.mixture_rvs import mixture_rvs
 
 class coupled_systems(object):
     """
@@ -310,31 +306,31 @@ class coupled_systems(object):
                 self.event_rate[int_idx].append(data_file.iloc[0][18]/data_file.iloc[0][1])
 
         for int_ in range(2):
-            self.sim_time[int_] = np.asarray([i for i in self.sim_time[int_]])
-            self.pop[int_] = np.asarray([i for i in self.pop[int_]])
-            self.semi_SMBH_avg[int_] = np.asarray([i for i in self.semi_SMBH_avg[int_]])
-            self.semi_SMBH_min[int_] = np.asarray([i for i in self.semi_SMBH_min[int_]])
-            self.ecc_SMBH_avg[int_] = np.asarray([i for i in self.ecc_SMBH_avg[int_]])
-            self.ecc_SMBH_min[int_] = np.asarray([i for i in self.ecc_SMBH_min[int_]])
-            self.semi_IMBH_avg[int_] = np.asarray([i for i in self.semi_IMBH_avg[int_]])
-            self.semi_IMBH_min[int_] = np.asarray([i for i in self.semi_IMBH_min[int_]])
-            self.ecc_IMBH_avg[int_] = np.asarray([i for i in self.ecc_IMBH_avg[int_]])
-            self.ecc_IMBH_min[int_] = np.asarray([i for i in self.ecc_IMBH_min[int_]])
-            self.time_IMBH_avg[int_] = np.asarray([i for i in self.time_IMBH_avg[int_]])
-            self.time_IMBH_min[int_] = np.asarray([i for i in self.time_IMBH_min[int_]])
-            self.mass_SMBH[int_] = np.asarray([i for i in self.mass_SMBH[int_]])
-            self.mass_IMBH[int_] = np.asarray([i for i in self.mass_IMBH[int_]])
-            self.fb_nn_events[int_] = np.asarray(([i for i in self.fb_nn_events[int_]]), dtype = 'object')
-            self.fb_t_events[int_] = np.asarray([i for i in self.fb_t_events[int_]])
-            self.tot_events[int_] = np.asarray([i for i in self.tot_events[int_]])
-            self.close_enc[int_] = np.asarray([i for i in self.close_enc[int_]])
-            self.freq_flyby_nn[int_] = np.asarray(([i for i in self.freq_flyby_nn[int_]]), dtype = 'object')
-            self.strain_flyby_nn[int_] = np.asarray([i for i in self.strain_flyby_nn[int_]], dtype = 'object')
-            self.time_flyby_nn[int_] = np.asarray([i for i in self.time_flyby_nn[int_]], dtype = 'object')
-            self.freq_flyby_t[int_] = np.asarray(([i for i in self.freq_flyby_t[int_]]), dtype = 'object')
-            self.strain_flyby_t[int_] = np.asarray(([i for i in self.strain_flyby_t[int_]]), dtype = 'object')
-            self.time_flyby_t[int_] = np.asarray(([i for i in self.time_flyby_t[int_]]), dtype = 'object')
-            self.event_rate[int_] = np.asarray([i for i in self.event_rate[int_]])
+            self.sim_time[int_] = np.asarray(self.sim_time[int_], dtype = 'object')
+            self.pop[int_] = np.asarray(self.pop[int_], dtype = 'object')
+            self.semi_SMBH_avg[int_] = np.asarray(self.semi_SMBH_avg[int_], dtype = 'object')
+            self.semi_SMBH_min[int_] = np.asarray(self.semi_SMBH_min[int_], dtype = 'object')
+            self.ecc_SMBH_avg[int_] = np.asarray(self.ecc_SMBH_avg[int_], dtype = 'object')
+            self.ecc_SMBH_min[int_] = np.asarray(self.ecc_SMBH_min[int_], dtype = 'object')
+            self.semi_IMBH_avg[int_] = np.asarray(self.semi_IMBH_avg[int_], dtype = 'object')
+            self.semi_IMBH_min[int_] = np.asarray(self.semi_IMBH_min[int_], dtype = 'object')
+            self.ecc_IMBH_avg[int_] = np.asarray(self.ecc_IMBH_avg[int_], dtype = 'object')
+            self.ecc_IMBH_min[int_] = np.asarray(self.ecc_IMBH_min[int_], dtype = 'object')
+            self.time_IMBH_avg[int_] = np.asarray(self.time_IMBH_avg[int_], dtype = 'object')
+            self.time_IMBH_min[int_] = np.asarray(self.time_IMBH_min[int_], dtype = 'object')
+            self.mass_SMBH[int_] = np.asarray(self.mass_SMBH[int_], dtype = 'object')
+            self.mass_IMBH[int_] = np.asarray(self.mass_IMBH[int_], dtype = 'object')
+            self.fb_nn_events[int_] = np.asarray(self.fb_nn_events[int_], dtype = 'object')
+            self.fb_t_events[int_] = np.asarray(self.fb_t_events[int_], dtype = 'object')
+            self.tot_events[int_] = np.asarray(self.tot_events[int_], dtype = 'object')
+            self.close_enc[int_] = np.asarray(self.close_enc[int_], dtype = 'object')
+            self.freq_flyby_nn[int_] = np.asarray(self.freq_flyby_nn[int_], dtype = 'object')
+            self.strain_flyby_nn[int_] = np.asarray(self.strain_flyby_nn[int_], dtype = 'object')
+            self.time_flyby_nn[int_] = np.asarray(self.time_flyby_nn[int_], dtype = 'object')
+            self.freq_flyby_t[int_] = np.asarray(self.freq_flyby_t[int_], dtype = 'object')
+            self.strain_flyby_t[int_] = np.asarray(self.strain_flyby_t[int_], dtype = 'object')
+            self.time_flyby_t[int_] = np.asarray(self.time_flyby_t[int_], dtype = 'object')
+            self.event_rate[int_] = np.asarray(self.event_rate[int_], dtype = 'object')
         
         with open('figures/gravitational_waves/output/event_rate_test.txt', 'w') as file:
                 for int_ in range(2):
@@ -515,7 +511,6 @@ class coupled_systems(object):
         ax_histh.fill_between(kdeh_IMBH.density, kdeh_IMBH.support, alpha = 0.35, color = 'purple')
         ax_histh.set_xlim(0, 1.05)
         
-
     def IMBH_tgw_plotter(self):
         """
         Function which detects all binaries and plots their eccentricity vs. semi-major axis
@@ -844,7 +839,8 @@ class coupled_systems(object):
             plot_ini.tickers(ax1, 'plot')
             plot_ini.tickers(ax2, 'plot')
             plot_ini.tickers(ax, 'plot')
-            ax.set_ylim(-26,-13.2)
+            ax.set_ylim(-26, -13.2)
+            ax.set_xlim(-12.5, 1.5)
             ax.legend()
             plt.savefig('figures/gravitational_waves/'+str(self.integrator[int_])+'GW_freq_strain_maximise_diagram.pdf', dpi = 300, bbox_inches='tight')
             plt.clf()
@@ -958,12 +954,3 @@ class coupled_systems(object):
 
         ax1.legend()
         plt.savefig('figures/gravitational_waves/events_time.pdf', dpi = 300, bbox_inches='tight')
-
-cst = coupled_systems()
-#cst.new_data_extractor()
-cst.combine_data()
-cst.transient_events()
-cst.IMBH_tgw_plotter()
-cst.SMBH_tgw_plotter()
-cst.strain_freq_plotter()
-cst.IMBH_tgw_plotter()

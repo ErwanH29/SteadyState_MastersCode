@@ -9,10 +9,11 @@ def MB_distr(vel):
 fig, ax = plt.subplots()
 vel_list = np.linspace(0,700,1000)
 vel_prob = [MB_distr(i) for i in vel_list]
+vel_prob /= max(vel_prob)
 ax.plot(vel_list, vel_prob, color = 'black')
 plt.title('Velocity Distribution')
-ax.set_xlabel('Velocity [km/s]')
-ax.set_ylabel('Probability')
+ax.set_xlabel(r'$|v|$ [km/s]')
+ax.set_ylabel(r'$P(v)/P(v)_{\rm{max}}$')
 ax.yaxis.set_ticks_position('both')
 ax.xaxis.set_ticks_position('both')
 ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
