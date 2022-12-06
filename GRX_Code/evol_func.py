@@ -5,12 +5,6 @@ from evol_func import *
 import numpy as np
 
 def calc_momentum(indivp):
-    """
-    Function which calculates the momentum of the particles in collision
-    Inputs:
-    indivp: The colliding particles
-    """
-
     return (indivp.mass * indivp.velocity).sum()
 
 def find_nearest(array, value):
@@ -24,7 +18,6 @@ def find_nearest(array, value):
     array = np.asarray(array)
     index = (np.abs(array - value)).argmin()
     return index
-
 
 def indiv_PE_all(indivp, set):
     """
@@ -63,6 +56,7 @@ def merge_IMBH(parti, parti_in_enc, tcoll, int_string, code):
         new_particle.key_tracker = parti_in_enc[0].key
     else: 
         new_particle.key_tracker = parti_in_enc[1].key
+
     new_particle.mass = parti_in_enc.total_mass()
     new_particle.collision_time = tcoll
     new_particle.position = com_pos
@@ -94,11 +88,9 @@ def nearest_neighbour(indivp, pset):
     """
 
     min_dist = [ ]
-    for i in range(len(pset)):
-        if indivp == pset[i]:
-            pass
-        else:
-            rel_pos = indivp.position - pset[i].position
+    for parti_ in pset:
+        if indivp != parti_:
+            rel_pos = indivp.position - parti_.position
             min_dist.append(rel_pos.length().value_in(units.parsec))
             
     temp = np.sort(min_dist)
@@ -109,27 +101,3 @@ def nearest_neighbour(indivp, pset):
 
 def SMBH_filter(pset):
     return pset[pset.mass < 5*10**4 | units.MSun]
-
-def tidal_radius(pset):
-    """
-    Function to outline the tidal radius. Uses equation 5.8 and 5.10 of Spitzer 1969.
-    
-    Inputs:
-    pset:  The complete particle set
-    """
-
-    SMBH = MW_SMBH()
-    gc_code = globular_cluster()
-    com_particle = Particles(1)
-    com_particle.mass = SMBH_filter(pset).total_mass()
-    com_particle.radius = 0 | units.RSun
-    com_particle.velocity = SMBH_filter(pset).center_of_mass_velocity()
-    com_particle.position = SMBH_filter(pset).center_of_mass() - pset[0].position
-
-    m1, m2, semimajor, ecc, inc, argp, ascn, tanom = bin_global(pset[0], com_particle)
-    perigal = semimajor*(1-ecc)
-    xe = ((3+ecc)**-1 * (com_particle.mass)/SMBH.mass * (perigal)**3)**(1/3)
-#    xe = ((pset[1].mass)/SMBH.mass * gc_code.gc_dist**3)**(1/3)
-
-    return xe
-

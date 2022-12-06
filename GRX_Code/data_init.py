@@ -99,11 +99,9 @@ class data_initialiser(object):
             neigh_key = []
 
             if i == 0 :
-                df_IMBH_vals = pd.Series({#'key_tracker': pset[i].key_tracker, 
-                                          '{}'.format(time): [pset[i].key_tracker, pset[i].mass, pset[i].position, 
+                df_IMBH_vals = pd.Series({'{}'.format(time): [pset[i].key_tracker, pset[i].mass, pset[i].position, 
                                                               pset[i].velocity, 0 | units.J, 0 | units.J, [0,0,0], 
-                                                              [0,0,0], [0,0,0], [0,0,0],
-                                                              [0,0,0], [0,0,0], [0,0,0]]})
+                                                              [0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0]]})
                 df_IMBH = df_IMBH.append(df_IMBH_vals, ignore_index=True)
 
             if i != 0:
@@ -130,23 +128,3 @@ class data_initialiser(object):
         IMBH_array = IMBH_array.append(df_IMBH, ignore_index=True)
        
         return IMBH_array
-
-    def LG_tracker(self, pset, time, gravity):
-        """
-        Data set which tracks the Lagrangian radius and tidal radius of the cluster.
-        
-        Inputs:
-        pset:       The particle set
-        time:       The initial time of the simulation
-        gravity:    The integrator used for the simulation
-        """
-
-        LG_array = pd.DataFrame()
-        df_LG_tracker = pd.Series({'Time': time.in_(units.kyr),
-                                   'LG25': LagrangianRadii(gravity.particles[1:])[5].in_(units.parsec),
-                                   'LG50': LagrangianRadii(gravity.particles[1:])[6].in_(units.parsec),
-                                   'LG75': LagrangianRadii(gravity.particles[1:])[7].in_(units.parsec),
-                                   'Tidal Radius': tidal_radius(pset).in_(units.parsec)})
-        LG_array = LG_array.append(df_LG_tracker , ignore_index=True)
-
-        return LG_array

@@ -28,12 +28,13 @@ class IMBH_init(object):
         self.N = 0
         self.mass = 1000 | units.MSun
 
-    def N_count(self):
+    def coll_radius(self, radius):
         """
-        Function which counts the number of particles in the simulation
+        Function which sets the collision radius. 
+        Based on the rISCO.
         """
-        return int(self.N)
-    
+        return 3*radius    
+
     def IMBH_radius(self, mass):
         """
         Function which sets the IMBH radius based on the Schwarzschild radius
@@ -42,51 +43,6 @@ class IMBH_init(object):
         mass:   The mass of the input particle
         """
         return (2*constants.G*mass)/(constants.c**2)
-
-    def coll_radius(self, radius):
-        """
-        Function which sets the collision radius. 
-        Based on the rISCO.
-        """
-        return 3*radius
-
-    def ProbFunc(self, vel):
-        """
-        Function which initialises the velocity distribution [Maxwell distribution]
-        
-        Inputs:
-        vel:    The velocity range for which to sample the weights from
-        """
-
-        sigmaV = 150 # in kms (if changing, change line 26 of physics_func.py)
-
-        return np.sqrt(2/np.pi)*(vel**2/sigmaV**3)*np.exp(-vel**2/(2*sigmaV**2))
-
-    def velocityList(self, vseed):
-        """
-        Function to give a velocity for an initialised particle
-        """
-
-        np.random.seed(vseed)
-
-        vrange = np.linspace(0, 700) # in kms
-        r = [-1,1]
-        w = self.ProbFunc(vrange)
-        scale = [np.random.choice(r), [np.random.choice(r)], [np.random.choice(r)]]
-
-        vx = np.array(choices(vrange, weights=w, k = 1))*scale[0]
-        vy = np.array(choices(vrange, weights=w, k = 1))*scale[1]
-        vz = np.array(choices(vrange, weights=w, k = 1))*scale[2]
- 
-        return np.concatenate((vx,vy,vz))
-
-    def kroupa_mass(self, pset, vseed):
-        """
-        Function to set particle masses based on the Kroupa function
-        """
-        np.random.seed(vseed)
-
-        return new_kroupa_mass_distribution(pset, 50 | units.MSun, 10**5 | units.MSun)
 
     def plummer_distr(self, N, vseed):
         """
@@ -101,6 +57,36 @@ class IMBH_init(object):
         distr = new_plummer_model(N, convert_nbody = self.code_conv)
         rhmass = LagrangianRadii(distr)[6].in_(units.parsec)
         return distr, rhmass
+
+    def ProbFunc(self, vel):
+        """
+        Function which initialises the velocity distribution [Maxwell distribution]
+        
+        Inputs:
+        vel:    The velocity range for which to sample the weights from
+        """
+
+        sigmaV = 150 #in km/s
+
+        return np.sqrt(2/np.pi)*(vel**2/sigmaV**3)*np.exp(-vel**2/(2*sigmaV**2))
+
+    def velocityList(self, vseed):
+        """
+        Function to give a velocity for an initialised particle
+        """
+
+        np.random.seed(vseed)
+
+        vrange = np.linspace(0, 700) # in kms
+        w = self.ProbFunc(vrange)
+        r = [-1,1]
+        scale = [np.random.choice(r), [np.random.choice(r)], [np.random.choice(r)]]
+
+        vx = np.array(choices(vrange, weights=w, k = 1))*scale[0]
+        vy = np.array(choices(vrange, weights=w, k = 1))*scale[1]
+        vz = np.array(choices(vrange, weights=w, k = 1))*scale[2]
+ 
+        return np.concatenate((vx,vy,vz))
 
     def IMBH_first(self, init_parti, seed):
         """
@@ -129,8 +115,6 @@ class IMBH_init(object):
         particles[0].position = SMBH_parti.position
         particles[0].velocity = SMBH_parti.velocity
         particles[1:].mass = self.mass
-        #particles[1:round(self.N/3)].mass = self.mass
-        #particles[round(self.N/3):].mass = self.kroupa_mass(len(particles[round(self.N/3):]), seed)
         particles.radius = self.IMBH_radius(particles.mass)
         particles.collision_radius = self.coll_radius(particles.radius)
 
@@ -153,8 +137,6 @@ class IMBH_init(object):
                 parti_.vx = (constants.G*SMBH_parti.mass * (abs(parti_.y)/parti_.position.length()**2)).sqrt()
                 parti_.vy = (constants.G*SMBH_parti.mass * (abs(parti_.x)/parti_.position.length()**2)).sqrt()
 
-        #particles[1:round(self.N/3)].mass = self.mass
-        #particles[round(self.N/3):].mass = self.kroupa_mass(len(particles[round(self.N/3):]), seed)
         particles[1:].mass = self.mass
         particles[0].mass = SMBH_parti.mass
         particles.radius = self.IMBH_radius(particles.mass)

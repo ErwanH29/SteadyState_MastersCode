@@ -31,8 +31,10 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
     init_dist:   The initial distance between IMBH and SMBH
     converter:   Variable used to convert between nbody units and SI
     int_string:  String to dictate whether using Hermite or Hermite GRX
+    GRX_set:     String to dictate the integrator used
     """
     
+    np.seterr(divide='ignore', invalid='ignore')
     set_printing_strategy("custom", preferred_units = [units.MSun, units.pc, units.kyr, units.AU/units.yr, units.J],
                                                        precision = 20, prefix = "", separator = " ", suffix = "")
 
@@ -79,7 +81,6 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
     iter = 0
     Nenc = 0
     cum_merger_mass = 0 | units.MSun
-    stab_timescale = time
 
     N_parti = len(parti)
     init_IMBH = N_parti-1
@@ -102,22 +103,20 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
     while time < tend:
         eject  = 0
         iter += 1
+        
         app_time = 0 | units.s
         merger_mass = 0 | units.MSun
         added_mass = 0 | units.MSun
         ejected_mass = 0 | units.MSun
         tcoll = 0 | units.yr
         
-
         if iter % 10 == 0:
             print('Iteration', iter, '@', cpu_time.ctime(cpu_time.time()))
             print('Change in Energy: ', de)
             print('Half mass radius : ', LagrangianRadii(parti[1:])[6].in_(units.parsec))
 
-        time += eta*tend
         channel_IMBH["to_gravity"].copy()
-        
-        step_end = cpu_time.time()
+        time += eta*tend
         code.evolve_model(time)
 
         for particle in parti[1:]:
@@ -146,16 +145,13 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
                 print('Simulation will now stop')
                 break
 
-        injbin = 0
         if eject == 0:
             if stopping_condition.is_set():
                 print("........Encounter Detected........")
                 print('Collision at step: ', iter)
                 print('Simulation will now stop')
-                merge = 1
                 for ci in range(len(stopping_condition.particles(0))):
                     Nenc += 1
-
                     if pert == 'Newtonian':
                         energy_before = code.potential_energy + code.kinetic_energy
                         enc_particles_set = Particles(particles=[stopping_condition.particles(0)[ci],
@@ -165,6 +161,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
                         merger_mass = merged_parti.mass.sum()
                         cum_merger_mass += merger_mass
                         energy_after = code.potential_energy + code.kinetic_energy
+
                     else:
                         energy_before = code.get_total_energy_with(pert)[0]
                         particles = code.stopping_conditions.collision_detection.particles
@@ -177,6 +174,7 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
 
                     tcoll = time.in_(units.s) - eta*tend
                     deltaE = abs(energy_after-energy_before)/abs(energy_before)
+                    print('Change in energy: ', deltaE)
                     
                     ejected_key_track = parti[-1].key_tracker
                     extra_note = 'Stopped due to merger'
@@ -217,7 +215,6 @@ def evolve_system(parti, tend, eta, init_dist, converter, int_string, GRX_set):
                         neigh_key = [0, 0, 0]
 
                     else:
-                                      # First elements of the orbital arrays will be parti + SMBH
                         if Nenc == 0:
                             SMBH_parti = parti[0]
                         else:

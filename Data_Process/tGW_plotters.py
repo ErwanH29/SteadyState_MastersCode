@@ -102,7 +102,7 @@ class coupled_systems(object):
                                 dist_SMBH = (linex**2+liney**2+linez**2).sqrt()
                                 dist_NN = data.iloc[parti_][col_][-1]
 
-                                if freqGW_nn > 5*10**-5:
+                                if freqGW_nn > 5*10**-10:
                                     freq_NN_GW_indiv.append(freqGW_nn)
                                     strain_NN_GW_indiv.append(strain_nn)
                                     time_NN_GW_indiv.append(10**-3 * col_)
@@ -120,7 +120,7 @@ class coupled_systems(object):
                                     tSMBH = True
 
                                 strain_t, freqGW_t = self.gw_amp_freq(semi_major_t, ecc_t, mass1, mass2)
-                                if freqGW_t > 5*10**-5:
+                                if freqGW_t > 5*10**-10:
                                     sem_SMBH = data.iloc[parti_][col_][7][0]
                                     freq_t_GW_indiv.append(freqGW_t)
                                     strain_t_GW_indiv.append(strain_t)
@@ -332,7 +332,7 @@ class coupled_systems(object):
             self.time_flyby_t[int_] = np.asarray(self.time_flyby_t[int_], dtype = 'object')
             self.event_rate[int_] = np.asarray(self.event_rate[int_], dtype = 'object')
         
-        with open('figures/gravitational_waves/output/event_rate_test.txt', 'w') as file:
+        with open('figures/gravitational_waves/output/event_rate.txt', 'w') as file:
                 for int_ in range(2):
                     pop_idx = np.where(self.pop[int_] > 10)
                     #if len(pop_idx) > 0:

@@ -19,9 +19,9 @@ class ejection_stats(object):
         Function to extract newly simulated data into reduced manipulatable files
         """
 
-        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory_ejec/*'))
+        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
         chaotic_H = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[51:]) for i in Hermite_data]
-        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory_ejec/*'))
+        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory/*'))
         chaotic_G = ['data/GRX/no_addition/chaotic_simulation/'+str(i[47:]) for i in GRX_data]
 
         filest = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)] 
@@ -102,6 +102,8 @@ class ejection_stats(object):
         MW_code = MWpotentialBovy2015()
 
         ejec_KEt = np.asarray(self.eKE)
+        ymin = [min(self.ePE[0]/max(ejec_KEt[0])), min(self.ePE[1]/max(ejec_KEt[1]))]
+        ymax = [max(self.ePE[0]/max(ejec_KEt[0])), max(self.ePE[1]/max(ejec_KEt[1]))]
         for int_ in range(1):
             ejec_KE = np.asarray(ejec_KEt[int_][np.isfinite(ejec_KEt[int_])])
             ejec_PE = np.asarray(self.ePE[int_][np.isfinite(ejec_KEt[int_])])
@@ -123,32 +125,28 @@ class ejection_stats(object):
             final_pos = np.asarray([(i**2+j**2+z**2)**0.5 for i, j, z in zip(ex, ey, ez)])
             final_pos[np.isnan(final_pos)] = 0
 
-            linex = np.linspace(-0.01*np.min(ejected_KE), 10)
-            liney = -linex
-
             plt.figure(figsize=(13, 4))
             gs = gridspec.GridSpec(1, 2)
             ax1 = plt.subplot(gs[0,0])
             ax2 = plt.subplot(gs[0,1])
             for ax_ in [ax1, ax2]:
-                ax_.plot(linex, liney, color = 'black', linestyle = '-.', zorder = 1)
                 ax_.set_ylabel(r'$E_P/E_{{K, {\rm{max}}}}$')
                 ax_.set_xlabel(r'$E_K/E_{{K, {\rm{max}}}}$')
                 ax_.set_xlim(0, 1.1)
-                ax_.set_ylim(-1.1, 0)
+                ax_.set_ylim(1.1*ymin[int_], 0.9*ymax[int_])
                 plot_ini.tickers(ax_, 'plot')
                 
             ax1.set_title(str(self.integrator[int_]))
             colour_axes = ax1.scatter(ejected_KE, ejected_PE, edgecolor = 'black', c=final_pos, s = 20, zorder = 2)
             cbar = plt.colorbar(colour_axes, ax=ax1, label = r'$r_{\rm{SMBH}}$ [pc]')
 
-            bin2d_sim, xedge, yedge, img = ax2.hist2d(ejected_KE, ejected_PE, bins=(200, 200), range=([0,1.1],[1.1*min(ejected_PE),0]))
+            bin2d_sim, xedge, yedge, img = ax2.hist2d(ejected_KE, ejected_PE, bins=(200, 200), range=([0,1.1],[1.1*ymin[int_], 0.9*ymax[int_]]))
             bin2d_sim /= np.max(bin2d_sim)
-            extent = [0, 1.1, 1.1*min(ejected_PE), 0]
+            extent = [0, 1.1, 1.1*ymin[int_], 0.9*ymax[int_]]
             contours = ax2.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
             plt.savefig('figures/ejection_stats/KEPE_diagram_'+str(self.integrator[int_])+'_.pdf', dpi=500, bbox_inches='tight')
 
-    def vejec_plotter(self):
+    def vejec_plotters(self):
         """
         Function to plot the ejection velocity
         """
@@ -170,60 +168,73 @@ class ejection_stats(object):
         ax4 = fig.add_subplot(224)
         
         ax = [ax1, ax2, ax3, ax4]
-        for ax_ in [ax1]:#, ax3]:
-            ax_.set_ylabel(r'$\langle v_{ej} \rangle$ [km/s]')
-            ax_.axhline(vesc_MW, color = 'black', linestyle = ':')
-            ax_.text(15, 660, r'$v_{\rm{esc, MW}}$')
-            ax_.xaxis.labelpad = 30
-            plot_ini.tickers(ax_, 'plot')
-        for ax_ in [ax2]:#, ax4]:
-            ax_.set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
-            ax_.set_ylabel(r'Frequency')
-            plot_ini.tickers(ax_, 'plot')
-            ax_.axvline(vesc_MW, linestyle = ':', color = 'black')
         ax_iter = -1
-
-        ax_title = ['Ejection Velocity Histogram \n Hermite', '\n GRX']
+        ax_title = ['Hermite', '\n GRX']
         colours = ['red', 'blue']
-        for int_ in range(1):
+        for int_ in range(2):
             ax_iter += 1
-            tot_pop = np.asarray(self.tot_pop[int_])
+            tot_pop = np.asarray([10*round(0.1*i) for i in self.tot_pop[int_]])
             sim_time = np.asarray(self.sim_time[int_])
             vesc = np.asarray(self.vesc[int_])
 
-            in_pop = np.unique(tot_pop[int_])
+            in_pop = np.unique(tot_pop)
             avg_vesc = np.empty(len(in_pop))
             avg_surv = np.empty(len(in_pop))
 
             pops = [ ]
             samples = [ ]
+            minvel = [ ]
+            maxvel = [ ]
             iter = -1
+
             for pop_ in in_pop:
                 iter += 1
                 pops.append(pop_)
                 idx = np.where((tot_pop == pop_))[0]
                 samples.append(len(vesc[idx]))
-                avg_vesc[iter] = np.mean(vesc[idx])
-                avg_surv[iter] = np.mean(sim_time[idx])
+                avg_vesc[iter] = np.nanmean(vesc[idx])
+                avg_surv[iter] = np.nanmean(sim_time[idx])
+                minvel.append(np.nanmin(vesc[idx]))
+                maxvel.append(np.nanmax(vesc[idx]))
 
                 ymin.append(min(avg_vesc))
                 ymax.append(max(avg_vesc))
 
-            colour_axes = ax[3*ax_iter].scatter(pops, avg_vesc, edgecolors='black', c = np.log10(avg_surv), norm = normalise, zorder = 3)
-            ax[3*ax_iter].set_title(ax_title[int_])
+            with open('figures/ejection_stats/output/ejec_stats.txt', 'w') as file:
+                    file.write('\nData for '+str(self.integrator[int_]))
+                    file.write('\nPopulations average escape velocity ' + str(in_pop) + ' : ' + str(avg_vesc))
+                    file.write('\nPopulations min. escape velocity    ' + str(in_pop) + ' : ' + str(minvel))
+                    file.write('\nPopulations min. escape velocity    ' + str(in_pop) + ' : ' + str(maxvel))
+                    file.write('\nPopulations average escape time     ' + str(in_pop) + ' : ' + str(avg_surv))
+                    file.write('\n========================================================================')
+
+            colour_axes = ax[int_].scatter(pops, avg_vesc, edgecolors='black', c = np.log10(avg_surv), norm = normalise, zorder = 3)
+            ax[int_].set_title(ax_title[int_])
             for j, xpos in enumerate(pops):
-                ax[3*ax_iter].text(pops[j], -150, str(self.integrator[int_])+'\n'+str('{:.0f}'.format(samples[j])), fontsize = 'xx-small', ha = 'center' )
+                ax[int_].text(pops[j], -200, str(self.integrator[int_])+'\n'+str('{:.0f}'.format(samples[j])), fontsize = 'xx-small', ha = 'center' )
             plot_ini.tickers_pop(ax[ax_iter], pops)
             
-            n, bins, patches = ax[3*ax_iter].hist(vesc, 20, histtype = 'step', color=colours[int_])
-            n, bins, patches = ax[3*ax_iter].hist(vesc, 20, color=colours[int_], alpha = 0.4)
+            n1, bins, patches = ax[(int_+2)].hist(vesc, 20)
+            ax[int_+2].clear()
+            n, bins, patches = ax[(int_+2)].hist(vesc, 20, histtype = 'step', color=colours[int_], weights=[1/n1.max()]*len(vesc))
+            n, bins, patches = ax[(int_+2)].hist(vesc, 20, color=colours[int_], alpha = 0.4, weights=[1/n1.max()]*len(vesc))
 
-        """for ax_ in [ax1]:#, ax3]:
-            ax_.set_ylim(min(ymin), max(ymax))
-        for ax_ in [ax2]:#, ax4]:
-            ax_.set_xlim(min(ymin), max(ymax))
-            ax_.text(vesc_MW*(1+0.05), 0.9, r'$v_{esc, MW}$', rotation = 270, horizontalalignment = 'center')"""
+        for ax_ in [ax1, ax2]:
+            ax_.set_ylabel(r'$\langle v_{ej} \rangle$ [km/s]')
+            ax_.axhline(vesc_MW, color = 'black', linestyle = ':')
+            ax_.text(15, 660, r'$v_{\rm{esc, MW}}$')
+            ax_.xaxis.labelpad = 30
+            plot_ini.tickers_pop(ax_, self.tot_pop[0])
+        for ax_ in [ax3, ax4]:
+            ax_.set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
+            ax_.set_ylabel(r'Frequency')
+            ax_.axvline(vesc_MW, linestyle = ':', color = 'black')
+            ax_.text(660, 0.2, r'$v_{\rm{esc, MW}}$', rotation = 270)
+            plot_ini.tickers(ax_, 'plot')
 
+        for ax_ in [ax1, ax2]:
+            ax_.set_ylim(0.95*min(ymin), 1.05*max(ymax))
+        cbar = plt.colorbar(colour_axes, ax=ax2, label = r'$\log_{10} \langle t_{\rm{ej}}\rangle$ [Myr]')
         plt.savefig('figures/ejection_stats/vejection.pdf', dpi = 300, bbox_inches='tight')
 
 class event_tracker(object):

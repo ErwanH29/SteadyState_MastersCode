@@ -231,3 +231,10 @@ class stability_plotters(object):
             file.write('\n\n\nFor GRX, # of full simulations per population: '+str(pop.flatten()))
             file.write('\n                                               '+str(full_simul_G))
             #file.write('\nand the slope of the curve goes as:                '+str(np.log(slopeG)*np.exp(1)/10))
+
+print('...steady_plotter...')
+cst = stability_plotters()
+cst.overall_steady_plotter()
+end_time = cpu_time.time()
+print('Plotting time [mins]:', (end_time - start_time)/60)
+start_time2 = end_time
