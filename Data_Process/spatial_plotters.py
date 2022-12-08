@@ -32,13 +32,13 @@ def animator(init_dist, int_string):
     print('!!!!! You have chosen to animate. This will take a while !!!!!')
     
     plot_ini = plotter_setup()
-    count = file_counter(int_string)
 
+    count = file_counter(int_string)
     Lag_tracker = file_opener('data/'+str(int_string)+'/lagrangians/*')
     ptracker = file_opener('/media/erwanh/Elements/'+(int_string)+'/particle_trajectory/*')
     etracker = file_opener('data/'+str(int_string)+'/energy/*')
-    col_len = np.shape(ptracker)[1]
 
+    col_len = np.shape(ptracker)[1]
     time = np.empty((col_len, 1))
     dE_array = np.empty((col_len, 1))
 
@@ -216,8 +216,7 @@ def animator(init_dist, int_string):
         
 def chaos_deviate():
     """
-    Function to plot a comparison of two identical simulations where in one there is a 1e-15 
-    [pc] perturbation in the particles x coordinate.
+    Function to plot a comparison of two identical simulations.
     """
 
     plot_ini = plotter_setup()
@@ -335,45 +334,38 @@ def chaos_deviate():
         ax_.set_xlabel('Time [Myr]')
         plot_ini.tickers(ax_, 'plot') 
         ax_.set_xlim(0,max(time_smooth))
-    ax1.set_xlim(-0.5,0.55)
-    ax1.set_ylim(-0.5,0.5)
+    ax1.set_xlim(-0.45,0.9)
+    ax1.set_ylim(-0.25,1)
     ax2.set_ylim(0,1.05*max(phase_smooth))
 
-    steps = round(0.35*col_len)
-    ax1.scatter(line_x[:steps], line_y[:steps], s = 5, color = 'red', label = r'$\delta = 0$')
-    ax1.scatter(line_x_pert[:steps], line_y_pert[:steps], s = 5, color = 'blue', label = r'$\delta = 10^{-13}$ ')
-    ax1.scatter(0, 0, s = 250, color = 'black')
+    steps = round(0.6*col_len)
 
+    ax1.scatter(line_x[:steps], line_y[:steps], s = 5, color = 'red')
+    ax1.scatter(line_x_pert[:steps], line_y_pert[:steps], s = 5, color = 'blue')
+    ax1.scatter(0, 0, s = 250, color = 'black')
     ax2.plot(time[:len(phase_smooth)], phase_smooth, color = 'black')
-    
     ax3.plot(time_smooth, semi_SMBH_smooth, color = 'red')
     ax3.plot(time_smooth, semi_SMBH_smooth_pert, color = 'blue')
-
     ax4.plot(time_smooth, SMBH_dist_smooth, color = 'red', label = r'$r_{\rm{SMBH}}$')
     ax4.plot(time_smooth, SMBH_dist_smooth_pert, color = 'blue', )
     ax4.plot(time_smooth, nearest_smooth, color = 'red', linestyle = ':', label = r'$r_{\rm{NN}}$')
     ax4.plot(time_smooth, nearest_smooth_pert, color = 'blue', linestyle = ':')
 
-    ax1.legend()
     ax4.legend()
-
     plt.savefig('figures/system_evolution/GRX_vs_Hermite_sys_evol.pdf', dpi=300, bbox_inches='tight')
 
 def ejected_evolution():
     """
     Function which plots various Kepler elements of the IMBH particle stopping the simulation
-    
-    output: Plots of the inclination,semi-major axis, nearest neighbour and eccentricity of the 
-            merged/ejected particle relative to the SMBH, nearest neighbour and second-nearest neighbour
     """
     
     plot_ini = plotter_setup()
     
     integrator = ['Hermite', 'GRX']
     ejec_ecc_arr = [[ ], [ ]]
-    ejec_distSMBH_arr = [[ ], [ ]]
     ejec_vel_arr = [[ ], [ ]]
     ejec_NNdist_arr = [[ ], [ ]]
+    ejec_distSMBH_arr = [[ ], [ ]]
     iter = -1
     for int_ in integrator:   
         iter += 1
@@ -388,14 +380,14 @@ def ejected_evolution():
         high_ecc = 0
         
         ejec_ecc = []
-        ejec_ecc_smooth = []
         distSMBH = []
-        distSMBH_smooth = []
         ejec_time = []
-        ejec_time_smooth = []
         vel_arr = []
-        vel_smooth = []
         NNdist = []
+        ejec_ecc_smooth = []
+        distSMBH_smooth = []
+        ejec_time_smooth = []
+        vel_smooth = []
         NNdist_smooth = []
         cropped_idx = []
         all_idx = []
@@ -408,16 +400,14 @@ def ejected_evolution():
             with open(chaotic[file_], 'rb') as input_file:
                 print('Reading file : ', input_file)
                 chaotic_tracker = pkl.load(input_file)
-                if chaotic_tracker.iloc[0][-4] > 0 or chaotic_tracker.iloc[0][5] > 0:
-                    with open(data[file_], 'rb') as input_file:
-                        ptracker = pkl.load(input_file)
+                if chaotic_tracker.iloc[0][6] %10 == 0 and chaotic_tracker.iloc[0][6] <= 40:     # TURN OFF TO FIND THE COMPLETE ECCENTRIC STATISTICS
+                    if chaotic_tracker.iloc[0][-4] > 0 or chaotic_tracker.iloc[0][5] > 0:
+                        with open(data[file_], 'rb') as input_file:
+                            ptracker = pkl.load(input_file)
 
-                    with open(energy[file_], 'rb') as input_file:
-                        etracker = pkl.load(input_file)
-
-                    if np.shape(ptracker)[1] > 10**6:
-                        pass
-                    else:
+                        with open(energy[file_], 'rb') as input_file:
+                            etracker = pkl.load(input_file)
+                            
                         col_len = np.shape(ptracker)[1]-1
                         smoothing = round(0.1 * col_len)
                         focus_idx, res = ejected_index(ptracker, chaotic_tracker, int_)
@@ -517,14 +507,14 @@ def ejected_evolution():
                             plt.clf()
 
                             ejec_ecc.append(ejec_ecc_SMBH)
-                            ejec_ecc_smooth.append(ejec_ecc_SMBH_smooth)
                             distSMBH.append(SMBH_dist)
-                            distSMBH_smooth.append(SMBH_dist_smooth)
                             ejec_time.append(time)
-                            ejec_time_smooth.append(time_smooth)
                             vel_arr.append(pvel)
-                            vel_smooth.append(pvel_smooth)
                             NNdist.append(NN)
+                            ejec_ecc_smooth.append(ejec_ecc_SMBH_smooth)
+                            distSMBH_smooth.append(SMBH_dist_smooth)
+                            ejec_time_smooth.append(time_smooth)
+                            vel_smooth.append(pvel_smooth)
                             NNdist_smooth.append(nearest_smooth)
                             if res == 'merger':
                                 if len(ejec_ecc_SMBH[ejec_ecc_SMBH < 10**-6]) != 0:
@@ -586,13 +576,6 @@ def ejected_evolution():
             ax4.set_ylabel(r'$\log_{10}r_{NN}$ [pc]')
             plt.savefig('figures/system_evolution/'+str(int_)+'_Merger/ejec_bin_trip_evol'+str(save_file[j])+'.pdf', dpi=300, bbox_inches='tight')
             plt.clf()
-        
-        """fig = plt.figure(figsize=(14, 6))
-        ax1 = fig.add_subplot(121)
-        ax2 = fig.add_subplot(122)
-        ax1.scatter(SMBH_sample[0], SMBH_sample[1])
-        ax2.scatter(SMBHx, SMBHy, alpha = 0.2)
-        plt.savefig('figures/system_evolution/'+str(int_)+'_Merger/SMBH_evol.pdf', dpi=300, bbox_inches='tight')"""
 
         with open('figures/system_evolution/output/'+str(int_)+'_frac_ecc.txt', 'w') as file:
             file.write(str(int_)+' has high eccentricity in '+str(high_ecc)+'/'+str(filter)+' of its merging simulations.')
@@ -744,70 +727,69 @@ def global_properties():
         for file_ in range(len(data)):
             with open(chaotic[file_], 'rb') as input_file:
                 chaotic_tracker = pkl.load(input_file)
+                if chaotic_tracker.iloc[0][6] %10 == 0 and chaotic_tracker.iloc[0][6] <= 40:
+                    with open(data[file_], 'rb') as input_file:
+                        print('Reading File :', input_file)
+                        ptracker = pkl.load(input_file)
 
-            if chaotic_tracker.iloc[0][9] == 10:
-                with open(data[file_], 'rb') as input_file:
-                    print('Reading File :', input_file)
-                    ptracker = pkl.load(input_file)
+                    with open(energy[file_], 'rb') as input_file:
+                        etracker = pkl.load(input_file)
 
-                with open(energy[file_], 'rb') as input_file:
-                    etracker = pkl.load(input_file)
+                    col_len = np.shape(ptracker)[1]-1
+                    for parti_ in range(np.shape(ptracker)[0]):
+                        if parti_ == 0:
+                            pass
+                        else:
+                            particle = ptracker.iloc[parti_]
+                            SMBH_data = ptracker.iloc[0]
 
-                col_len = np.shape(ptracker)[1]-1
-                for parti_ in range(np.shape(ptracker)[0]):
-                    if parti_ == 0:
-                        pass
-                    else:
-                        particle = ptracker.iloc[parti_]
-                        SMBH_data = ptracker.iloc[0]
+                            time = np.empty(col_len)
+                            neigh_key = np.empty((3, col_len))
+                            NN = np.empty(col_len)
+                            SMBH_dist = np.empty(col_len)
+                            pvel = np.empty(col_len)
+                            KE = np.empty(col_len)
+                            ecc_SMBH = np.empty(col_len)
 
-                        time = np.empty(col_len)
-                        neigh_key = np.empty((3, col_len))
-                        NN = np.empty(col_len)
-                        SMBH_dist = np.empty(col_len)
-                        pvel = np.empty(col_len)
-                        KE = np.empty(col_len)
-                        ecc_SMBH = np.empty(col_len)
+                            for j in range(col_len):
+                                time_step = particle.iloc[j]
+                                time_arr = etracker.iloc[j]
+                                SMBH_coords = SMBH_data.iloc[j]
 
-                        for j in range(col_len):
-                            time_step = particle.iloc[j]
-                            time_arr = etracker.iloc[j]
-                            SMBH_coords = SMBH_data.iloc[j]
+                                KE[j] = np.log10(time_step[4].value_in(units.J))
+                                ecc_SMBH[j] = np.log10(1-time_step[8][0])
 
-                            KE[j] = np.log10(time_step[4].value_in(units.J))
-                            ecc_SMBH[j] = np.log10(1-time_step[8][0])
+                                for i in range(3):
+                                    neigh_key[i][j] = time_step[6][i]
 
-                            for i in range(3):
-                                neigh_key[i][j] = time_step[6][i]
+                                NN[j] = np.log10(time_step[-1])
+                                time[j] = time_arr[6].value_in(units.Myr)
+                                
+                                line_x = (time_step[2][0] - SMBH_coords[2][0])
+                                line_y = (time_step[2][1] - SMBH_coords[2][1])
+                                line_z = (time_step[2][2] - SMBH_coords[2][2])
+                                SMBH_dist[j] = np.log10(np.sqrt(line_x**2+line_y**2+line_z**2).value_in(units.pc))
 
-                            NN[j] = np.log10(time_step[-1])
-                            time[j] = time_arr[6].value_in(units.Myr)
-                            
-                            line_x = (time_step[2][0] - SMBH_coords[2][0])
-                            line_y = (time_step[2][1] - SMBH_coords[2][1])
-                            line_z = (time_step[2][2] - SMBH_coords[2][2])
-                            SMBH_dist[j] = np.log10(np.sqrt(line_x**2+line_y**2+line_z**2).value_in(units.pc))
+                                vel_x = (time_step[3][0] - SMBH_coords[3][0])
+                                vel_y = (time_step[3][1] - SMBH_coords[3][1])
+                                vel_z = (time_step[3][2] - SMBH_coords[3][2])
+                                pvel[j] = np.log10(np.sqrt(vel_x**2+vel_y**2+vel_z**2).value_in(units.kms))
 
-                            vel_x = (time_step[3][0] - SMBH_coords[3][0])
-                            vel_y = (time_step[3][1] - SMBH_coords[3][1])
-                            vel_z = (time_step[3][2] - SMBH_coords[3][2])
-                            pvel[j] = np.log10(np.sqrt(vel_x**2+vel_y**2+vel_z**2).value_in(units.kms))
+                                SMBHx.append(SMBH_coords[2][0].value_in(units.pc))
+                                SMBHy.append(SMBH_coords[2][1].value_in(units.pc))
+                                SMBHz.append(SMBH_coords[2][2].value_in(units.pc))
+                                if file_ == 0:
+                                    SMBH_sample[0].append(SMBH_coords[2][0].value_in(units.pc))
+                                    SMBH_sample[1].append(SMBH_coords[2][1].value_in(units.pc))
+                                    SMBH_sample[2].append(SMBH_coords[2][2].value_in(units.pc))
 
-                            SMBHx.append(SMBH_coords[2][0].value_in(units.pc))
-                            SMBHy.append(SMBH_coords[2][1].value_in(units.pc))
-                            SMBHz.append(SMBH_coords[2][2].value_in(units.pc))
-                            if file_ == 0:
-                                SMBH_sample[0].append(SMBH_coords[2][0].value_in(units.pc))
-                                SMBH_sample[1].append(SMBH_coords[2][1].value_in(units.pc))
-                                SMBH_sample[2].append(SMBH_coords[2][2].value_in(units.pc))
+                            ecc_SMBH = np.asarray(ecc_SMBH)
 
-                        ecc_SMBH = np.asarray(ecc_SMBH)
-
-                        ecc_arr[iter].append(ecc_SMBH)
-                        distSMBH_arr[iter].append(SMBH_dist)
-                        NNdist_arr[iter].append(NN)
-                        vel_arr[iter].append(pvel)
-                        KE_arr[iter].append(KE)
+                            ecc_arr[iter].append(ecc_SMBH)
+                            distSMBH_arr[iter].append(SMBH_dist)
+                            NNdist_arr[iter].append(NN)
+                            vel_arr[iter].append(pvel)
+                            KE_arr[iter].append(KE)
             
     c_hist = ['red', 'blue']
 

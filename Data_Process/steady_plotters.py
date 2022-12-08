@@ -3,8 +3,11 @@ from file_logistics import *
 from spatial_plotters import *
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import lognorm
 import scipy.optimize
 from scipy.optimize import OptimizeWarning
+from scipy.interpolate import make_interp_spline
+import statsmodels.api as sm
 
 class stability_plotters(object):
     """
@@ -18,13 +21,9 @@ class stability_plotters(object):
 
         warnings.filterwarnings("ignore", category=OptimizeWarning) 
 
-        self.iparti_data, self.fparti_data, self.no_mergers, self.cumuMM, self.sim_end, \
-        self.ejec_parti, self.stab_time_data, self.init_dist_data, self.imass_data, \
-        self.inj_mass_data, self.eje_mass_data = stats_chaos_extractor(dirC)  
+        self.fparti_data, self.stab_time_data, self.init_dist_data, self.imass_data = stats_chaos_extractor(dirC)  
 
-        return self.iparti_data, self.fparti_data, self.no_mergers, self.cumuMM, \
-               self.sim_end, self.ejec_parti, self.stab_time_data, self.init_dist_data, \
-               self.imass_data, self.inj_mass_data, self.eje_mass_data
+        return self.fparti_data, self.stab_time_data, self.init_dist_data, self.imass_data
 
     def index_extractor(self, init_mass, final_parti_data, stab_time_data, indices, vals):
         """
@@ -48,21 +47,14 @@ class stability_plotters(object):
         pop, psamp = np.unique(filt_finparti, return_counts = True)
 
         return pop, psamp, filt_finparti, filt_stabtime
-
-    def stable_extract(self, dirS):
-        """
-        Function to extract data  from simulations who end with stable state
-        """
-        self.iparti_data, self.inj_event_data, self.merge_no_data, self.mergerm_data, self.simulated_end, \
-        self.initial_dist, self.cluster_rad, self.init_parti_m, self.trelax_data = stats_stable_extractor(dirS)
-
-        return self.iparti_data, self.inj_event_data, self.merge_no_data, self.mergerm_data, self.simulated_end, \
-               self.initial_dist, self.cluster_rad, self.init_parti_m, self.trelax_data
     
     def overall_steady_plotter(self):
         """
         Function to plot stability time for constant distances
         """
+
+        def f(x, mu, sigma) :
+            return 1/(np.sqrt(2*np.pi)*sigma*x)*np.exp(-((np.log(x)-mu)**2)/(2*sigma**2))
 
         def log_slope(slope):
             rclust = 0.3 | units.pc
@@ -72,21 +64,15 @@ class stability_plotters(object):
 
             return np.log(abs(slope.value_in(units.s)))/np.log(trlx_coeff.value_in(units.s**2/units.m**2))
             
-        def log_fit(xval, slope, beta, log_c):
-            return slope * ((xval)/np.log(log_c*xval))**beta
+        def log_fit(xval, slope, beta, log_c, y_int):
+            return slope * (xval/np.log(log_c*xval))**beta + y_int
             
         plot_ini = plotter_setup()
-
         dirH = 'data/Hermite/no_addition/chaotic_simulation/*'
         dirG = 'data/GRX/no_addition/chaotic_simulation/*'
 
-        iparti_data, fparti_data, no_mergers, cumuMM, sim_end, \
-        ejec_parti, stab_time_data, init_dist_data, imass_data, \
-        inj_mass_data, eje_mass_data = self.extract(dirH)
-
-        iparti_dataG, fparti_dataG, no_mergersG, cumuMMG, sim_endG, \
-        ejec_partiG, stab_time_dataG, init_dist_dataG, imass_dataG, \
-        inj_mass_dataG, eje_mass_dataG = self.extract(dirG)
+        fparti_data, stab_time_data, init_dist_data, imass_data = self.extract(dirH)
+        fparti_dataG, stab_time_dataG, init_dist_dataG, imass_dataG = self.extract(dirG)
 
         idist_idx_chaos = np.where((np.asarray(init_dist_data) == init_dist_data))
         idist_idx_chaosG = np.where((np.asarray(init_dist_dataG) == init_dist_dataG))
@@ -95,146 +81,104 @@ class stability_plotters(object):
         pop, psamp, fparti, stab_time = self.index_extractor(imass_data, fparti_data, 
                                                              stab_time_data, idist_idx_chaos, 
                                                              imass_data)
-
         popG, psampG, fpartiG, stab_timeG = self.index_extractor(imass_dataG, fparti_dataG, 
                                                                  stab_time_dataG, idist_idx_chaosG, 
                                                                  imass_dataG)
 
-        N_parti_avg = [ ]
-        N_parti_std = [ ]
+        N_parti_avg = [[ ], [ ]]
+        N_parti_std = [[ ], [ ]]
+        avg_deviate = [[ ], [ ]]
+        full_simul = [[ ], [ ]]
+        fparti = [fparti, fpartiG]
+        stab_time = [stab_time, stab_timeG]
         pop_id = np.argwhere(pop > 2)
-        pop = pop[pop_id]
-        psamp = psamp[pop_id]
-
-        N_parti_avgG = [ ]
-        N_parti_stdG = [ ]
         pop_idG = np.argwhere(popG > 2)
-        popG = popG[pop_idG]
-        psampG = psampG[pop_idG]
+        pop = [pop[pop_id], popG[pop_idG]]
+        psamp = [psamp[pop_id], psampG[pop_idG]]
 
-        tot_pop.append(max(pop))
+        tot_pop.append(max(max(pop[0]), max(pop[1])))
 
-        full_simul_H = []
-        avg_deviate_H = []
-        for pop_, samp_ in zip(pop, psamp):
-            N_parti = np.argwhere(fparti == pop_)
-            N_parti_avg.append(np.mean(stab_time[N_parti]))
-            N_parti_std.append((np.std(stab_time[N_parti])))
-            idx = np.where(stab_time[N_parti] == 100)[0]
-            ratio = len(idx)/len(stab_time[N_parti])
-            full_simul_H.append(ratio)
-            avg_deviate_H.append(abs(np.mean(stab_time[N_parti]-np.std(stab_time[N_parti]))))
-        N_parti_avg = np.asarray(N_parti_avg)
-        N_parti_std = np.asarray(N_parti_std)
+        colors = ['red', 'blue']
+        integrator = ['Hermite', 'GRX']
+        std_max = [[ ], [ ]]
+        std_min = [[ ], [ ]]
+        for int_ in range(2):
+            for pop_, samp_ in zip(pop[int_], psamp[int_]):
+                N_parti = np.argwhere(fparti[int_] == pop_)
+                time_arr = stab_time[int_][N_parti]
+                stability = np.mean(time_arr)
 
-        full_simul_G = []
-        avg_deviate_G = []
-        for pop_, samp_ in zip(popG, psampG):
-            N_parti = np.argwhere(fpartiG == pop_)
-            N_parti_avgG.append(np.mean(stab_timeG[N_parti]))
-            N_parti_stdG.append(np.std(stab_timeG[N_parti]))
-            idx = np.where(stab_timeG[N_parti] == 100)[0]
-            ratio = len(idx)/len(stab_timeG[N_parti])
-            full_simul_G.append(ratio)
-            avg_deviate_G.append(abs(np.mean(stab_timeG[N_parti]-np.std(stab_timeG[N_parti]))))
-        N_parti_avgG = np.asarray(N_parti_avgG)
-        N_parti_stdG = np.asarray(N_parti_stdG)
+                N_parti_avg[int_].append(stability)
+                N_parti_std[int_].append((np.std(time_arr)))
+                std_max[int_].append(np.std(time_arr[stability < time_arr]))
+                std_min[int_].append(np.std(time_arr[stability > time_arr]))
 
+                idx = np.where(time_arr == 100)[0]
+                ratio = len(idx)/len(time_arr)
+                full_simul[int_].append(ratio)
+                avg_deviate[int_].append(abs(np.mean(time_arr-np.std(time_arr))))
+
+            N_parti_avg[int_] = np.asarray(N_parti_avg[int_])
+            N_parti_std[int_] = np.asarray(N_parti_std[int_])
+            pop[int_] = np.array([float(i) for i in pop[int_]])
+        
         fig = plt.figure(figsize=(8, 6))
         ax1 = fig.add_subplot(111)
         ax1.set_ylabel(r'$\log_{10} t_{\rm{surv}}$ [Myr]') 
-        plot_ini.tickers_pop(ax1, pop)
+        plot_ini.tickers_pop(ax1, pop[0])
         ax1.set_xlim(5,105)
         ax1.xaxis.labelpad = 30
         ax1.set_ylim(-2.5, 2.3)
 
-        for j, xpos in enumerate(pop):
-            ax1.text(pop[j][0], -2.75, 'Hermite: '+str('{:.0f}'.format(psamp[j][0])), fontsize = 'xx-small', ha = 'center' )
-        for j, xpos in enumerate(popG):
-            ax1.text(popG[j][0], -2.9, 'GRX: '+str('{:.0f}'.format(psampG[j][0])), fontsize = 'xx-small', ha = 'center' )
+        for int_ in range(2):
+            N_parti_avg[int_] = np.array([float(i) for i in N_parti_avg[int_]])
+            for j, xpos in enumerate(pop[int_]):
+                ax1.text(pop[int_][j], -2.75*(1+0.04*int_), str(integrator[int_])+': '+str('{:.0f}'.format(psamp[int_][j][0])), fontsize = 'xx-small', ha = 'center' )
+                if j == 0:
+                    ax1.scatter(pop[int_], np.log10(N_parti_avg[int_]), color = colors[int_], edgecolor = 'black', zorder = 2, label = integrator[int_])
+                else:
+                    ax1.scatter(pop[int_], np.log10(N_parti_avg[int_]), color = colors[int_], edgecolor = 'black', zorder = 2)
+            ax1.scatter(pop[int_], np.log10(N_parti_avg[int_]-std_min[int_]), color = colors[int_], marker = '_')
+            ax1.scatter(pop[int_], np.log10(N_parti_avg[int_]+std_max[int_]), color = colors[int_], marker = '_')
+            ax1.plot([pop[int_], pop[int_]], [np.log10(N_parti_avg[int_]-std_min[int_]), np.log10(N_parti_avg[int_]+std_max[int_])], color = colors[int_], zorder = 1)
 
-        pop = np.array([float(i) for i in pop])
-        N_parti_avg = np.array([float(i) for i in N_parti_avg])
-
-        p0 = (100, 5, 10)
-        params, cv = scipy.optimize.curve_fit(log_fit, pop, (N_parti_avg), p0, maxfev = 10000, method = 'trf')
-        slope, beta, log_c = params
+        p0 = (100, -5, 20, 40)
+        params, cv = scipy.optimize.curve_fit(log_fit, pop[1][:-1], (N_parti_avg[1][:-1]), p0, maxfev = 10000, method = 'trf')
+        slope, beta, log_c, yint = params
         
-        slope_str = str('{:.0f}'.format(slope))
+        slope_str = str('{:.2f}'.format(slope))
         logc_str = str('{:.2f}'.format(log_c))
         beta_str = str('{:.2f}'.format(beta))
         xtemp = np.linspace(10, 100, 1000)
-        curve = [(log_fit(i, slope, beta, log_c)) for i in xtemp]
-
-        iter = 0
-        for pop_ in pop:
-            y_val = np.log10(N_parti_avg[iter]+N_parti_std[iter])
-            y_val = [-y_val, y_val]
-            if iter == 0:
-                ax1.scatter(pop_, np.log10(N_parti_avg[iter]), color = 'red', edgecolor = 'black', zorder = 2, label = 'Hermite')
-            else:
-                ax1.scatter(pop_, np.log10(N_parti_avg[iter]), color = 'red', edgecolor = 'black', zorder = 2)
-            ax1.scatter(pop_, y_val[-1], color = 'red', marker = '_')
-            ax1.scatter(pop_, y_val[0], color = 'red', marker = '_')
-            ax1.plot([pop_, pop_], y_val, color = 'red', zorder = 1)
-            iter += 1
-        
-        iter = 0
-        for pop_ in popG:
-            y_val = np.log10(N_parti_avgG[iter]+N_parti_stdG[iter])
-            y_val = [-y_val, y_val]
-            if iter == 0:
-                ax1.scatter(pop_, np.log10(N_parti_avgG[iter]), color = 'blue', edgecolor = 'black', zorder = 2, label = 'GRX')
-            else:
-                ax1.scatter(pop_, np.log10(N_parti_avgG[iter]), color = 'blue', edgecolor = 'black', zorder = 2)
-            ax1.scatter(pop_, y_val[-1], color = 'blue', marker = '_')
-            ax1.scatter(pop_, y_val[0], color = 'blue', marker = '_')
-            ax1.plot([pop_, pop_], y_val, color = 'blue', zorder = 1)
-            iter += 1
+        curve = [(log_fit(i, slope, beta, log_c, yint)) for i in xtemp]
 
         ax1.plot(xtemp, np.log10(curve), zorder = 1, color = 'black', ls = '-.')
-        ax1.text(72, 1.5, r'$t_{{\rm surv}} \approx{{{}}}(\frac{{N}}{{\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Gyr')
+        ax1.text(72, 1.5, r'$t_{{\rm surv}} \approx{{{}}}(\frac{{N}}{{\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
         ax1.legend()
         plt.savefig('figures/steady_time/stab_time_mean.pdf', dpi = 300, bbox_inches='tight')
 
-        slope_avg = np.log10(N_parti_avg[-1]/N_parti_avg[0]) / 90
-        slope_min = np.log10((N_parti_avg[-1]+N_parti_std[-1])/(N_parti_avg[0]-N_parti_std[0])) / 90
-        slope_max = np.log10(abs((N_parti_avg[-1]-N_parti_std[-1])/(N_parti_avg[0]+N_parti_std[0]))) / 90
-        ratio_min = slope_min / slope_avg
-        ratio_max = slope_max / slope_avg
-
-        best_fitH = np.poly1d(np.polyfit(pop, avg_deviate_H, 5))
-        x_arr = np.linspace(10, 100, 100)
-
-        fig = plt.figure(figsize=(8, 6))
-        ax = fig.add_subplot(111)
-        ax.plot(x_arr, best_fitH(x_arr), color = 'red', zorder = 1)
-        ax.scatter(pop, avg_deviate_H, color = 'red', edgecolors='black', label = 'Hermite', zorder = 2)
-        ax.scatter(popG, avg_deviate_G, color = 'blue', edgecolors='black', label = 'GRX', zorder = 2)
-        ax.legend()
-        ax.set_ylabel(r'$\langle (t_{\rm{surv}} - \sigma_{\rm{surv}}) \rangle$')   
-        plot_ini.tickers_pop(ax, pop)
+        fig = plt.figure(figsize=(15, 6))
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        ax = [ax1, ax2]
+        for int_ in range(2):
+            x_arr = np.linspace(10, max(pop[int_]), 100)
+            smooth_curve = make_interp_spline(pop[int_], avg_deviate[int_])
+            ax[int_].set_ylabel(r'$\langle (t_{\rm{surv}} - \sigma_{\rm{surv}}) \rangle$')
+            ax[int_].set_title(integrator[int_])
+            ax[int_].plot(x_arr, smooth_curve(x_arr), color = colors[int_], zorder = 1)
+            ax[int_].scatter(pop[int_], avg_deviate[int_], color = colors[int_], edgecolors='black', zorder = 2)   
+            plot_ini.tickers_pop(ax[int_], pop[0])
         plt.savefig('figures/steady_time/stab_time_residuals.pdf', dpi = 300, bbox_inches='tight')
         plt.clf()
 
-        errs_upper = log_slope(ratio_max * slope) - log_slope(slope)
-        errs_lower = log_slope(ratio_min * slope) - log_slope(slope)
-        #erra_upper = log_cmax - log_c
-        #erra_lower = log_cmin - log_c
         with open('figures/steady_time/Sim_summary.txt', 'w') as file:
-            file.write('For Hermite, # of full simulations per population: '+str(pop.flatten()))
-            file.write('\n                                                   '+str(full_simul_H))
-            file.write('\nThe slope of the full curve goes as:               '+str(log_slope(slope)))
-            file.write('\nwith errors:                                       '+str(errs_upper)+' '+str(errs_lower))
-            file.write('\n\nThe logarithmic prefactor goes as:                 '+str(log_c))
-            #file.write('\nwith errors:                                       '+str(erra_upper)+' '+str(erra_lower))
-            file.write('\n\n\nFor GRX, # of full simulations per population: '+str(pop.flatten()))
-            file.write('\n                                               '+str(full_simul_G))
-            #file.write('\nand the slope of the curve goes as:                '+str(np.log(slopeG)*np.exp(1)/10))
-
-print('...steady_plotter...')
-cst = stability_plotters()
-cst.overall_steady_plotter()
-end_time = cpu_time.time()
-print('Plotting time [mins]:', (end_time - start_time)/60)
-start_time2 = end_time
+            for int_ in range(2):
+                file.write('\n\nFor'+str(integrator[int_])+', # of full simulations per population:  '+str(pop[int_].flatten()))
+                file.write('\n                                                   '+str(full_simul[int_]))
+                file.write('\nThe slope of the full curve goes as:               '+str(log_slope(slope)))
+                #file.write('\nwith errors:                                       '+str(errs_upper)+' '+str(errs_lower))
+                file.write('\nThe logarithmic prefactor goes as:                 '+str(log_c))
+                file.write('\nThe final raw data:                                '+str(pop[int_].flatten()))
+                file.write('\nSimulated time [Myr]                               '+str(N_parti_avg[int_].flatten()))
+                file.write('\nStandard dev. [Myr]:                               '+str(N_parti_std[int_].flatten()))

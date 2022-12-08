@@ -477,8 +477,12 @@ class coupled_systems(object):
         len_arr:  Length of SMBH data array
         """
         x_temp = np.linspace(10**-5, 1, 10**3)
+        PTA_freq = np.linspace(-9, -6)
         # the scatter plot:
-        ax.plot(np.log10(x_temp), np.log10(np.sqrt(x_temp*self.LISA_sensitivity(x_temp))), color = 'black', linestyle = ':', label = 'LISA Sensitivity')
+        ax.plot(np.log10(x_temp), np.log10(np.sqrt(x_temp*self.LISA_sensitivity(x_temp))), color = 'black')
+        ax.fill_between(PTA_freq, -26, -13, alpha = 0.35, color = 'red')
+        ax.text(-2.3, -20.5, 'Lisa Sensitivity', fontsize ='small', rotation = 276)
+        ax.text(-6, -24, 'PTA Window', fontsize ='small', rotation = 270)
         ax.scatter(np.log10(x[:len_arr]), np.log10(y[:len_arr]), label = 'SMBH-IMBH', color = 'black')
         ax.scatter(np.log10(x[len_arr:]), np.log10(y[len_arr:]), label = 'IMBH-IMBH', color = 'purple', edgecolors = 'black')
         
@@ -753,7 +757,8 @@ class coupled_systems(object):
         iter = -1
         for ax_ in [ax1, ax2]:
             iter += 1
-            bin2d_sim, xedg, xedg, image = ax_.hist2d(np.log10(self.close_enc[iter]), np.log10(tgw_SMBH_min[iter]), 
+            x_vals = [np.log(i) for i in self.close_enc[iter]]
+            bin2d_sim, xedg, xedg, image = ax_.hist2d(x_vals, np.log10(tgw_SMBH_min[iter]), 
                                                       bins=(40,40), range=([0, 1.1*xmax], [0.9*ymin, 1.1*ymax]))
             bin2d_sim /= np.max(bin2d_sim)
             extent = [0, 1.1*xmax, 0.9*ymin, 1.1*ymax]
@@ -901,18 +906,20 @@ class coupled_systems(object):
 
             iter += 1
             for i in range(len(self.time_flyby_nn[int_])):
-                for k in range(len(self.time_flyby_nn[int_][i])):
-                    if self.freq_flyby_nn[int_][i][k] > 0:
-                        time_nn_arr.append(self.time_flyby_nn[int_][i][k])
-                        freq_nn_arr.append(self.freq_flyby_nn[int_][i][k])
-                        marker_nn_arr.append(self.fb_nn_SMBH[int_][i][k])
+                if self.pop[int_][i] == 30:
+                    for k in range(len(self.time_flyby_nn[int_][i])):
+                        if self.freq_flyby_nn[int_][i][k] > 0:
+                            time_nn_arr.append(self.time_flyby_nn[int_][i][k])
+                            freq_nn_arr.append(self.freq_flyby_nn[int_][i][k])
+                            marker_nn_arr.append(self.fb_nn_SMBH[int_][i][k])
 
             for i in range(len(self.time_flyby_t[int_])):
-                for k in range(len(self.time_flyby_t[int_][i])):
-                    if self.freq_flyby_t[int_][i][k] > 0:
-                        time_t_arr.append(self.time_flyby_t[int_][i][k])
-                        freq_t_arr.append(self.freq_flyby_t[int_][i][k])
-                        marker_t_arr.append(self.fb_t_SMBH[int_][i][k])
+                if self.pop[int_][i] == 30:
+                    for k in range(len(self.time_flyby_t[int_][i])):
+                        if self.freq_flyby_t[int_][i][k] > 0:
+                            time_t_arr.append(self.time_flyby_t[int_][i][k])
+                            freq_t_arr.append(self.freq_flyby_t[int_][i][k])
+                            marker_t_arr.append(self.fb_t_SMBH[int_][i][k])
 
             marker_nn_arr = np.asarray(marker_nn_arr)
             marker_t_arr = np.asarray(marker_t_arr)

@@ -115,11 +115,10 @@ def ejected_extract_final(set, ejected, ejec_merge):
     if ejec_merge == 'E':
         for i in range(len(set)):
             if set.iloc[i][0][0] == ejected.iloc[0][4]: 
-                print('Ejection detected for pop.: ', len(set)-1)
                 ejec_data = set.iloc[i]   #Make data set of only ejected particle
                 ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
                 ejec_vel = []
-                tot_steps = round(len(ejec_data)/2)
+                tot_steps = min(round(len(ejec_data)**0.5), 10)
                 
                 for steps_ in range(tot_steps):
                     vel_ = ejec_data.iloc[(-steps_)][3].value_in(units.kms)
@@ -127,6 +126,7 @@ def ejected_extract_final(set, ejected, ejec_merge):
                     vy = vel_[1] - set.iloc[0][(-steps_)][3][1].value_in(units.kms)
                     vz = vel_[2] - set.iloc[0][(-steps_)][3][2].value_in(units.kms)
                     ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
+                    
                 idx = np.where(ejec_vel == max(ejec_vel))[0]
                 idx -= tot_steps
                 ejec_vel = np.asarray(ejec_vel)
@@ -178,7 +178,6 @@ def ejected_extract_final(set, ejected, ejec_merge):
                 Nmerge = ejected.iloc[0][10]
 
                 return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
-    return np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN
 
 def ejected_stat_extractor(chaos_dir, int):
     """
@@ -411,65 +410,22 @@ def stats_chaos_extractor(dir):
     steadytime_data = bulk_stat_extractor(dir, 'N')
     no_Data = len(steadytime_data)
 
-    inj_mass_data  = np.empty(no_Data)
-    cum_merge_mass = np.empty(no_Data)
-    eje_mass_data  = np.empty(no_Data)
-    ejected_parti  = np.empty(no_Data)
     fin_parti_data = np.empty(no_Data)
     init_dist_data = np.empty(no_Data)
     init_mass_data = np.empty((no_Data, 2))
-    ini_parti_data = np.empty(no_Data)
-    number_mergers = np.empty(no_Data)
-    simulated_end  = np.empty(no_Data)
     stab_time_data = np.empty(no_Data)
 
     for i in range(no_Data):
         sim_data = steadytime_data[i]
         
         if isinstance(sim_data.iloc[0][9], float):
-            inj_mass_data[i]  = sim_data.iloc[0][0].value_in(units.MSun)
-            cum_merge_mass[i] = sim_data.iloc[0][2].value_in(units.MSun)
-            eje_mass_data[i]  = sim_data.iloc[0][3].value_in(units.MSun)
-            ejected_parti[i]  = sim_data.iloc[0][4]
             fin_parti_data[i] = sim_data.iloc[0][6] + sim_data.iloc[0][10]
             init_dist_data[i] = sim_data.iloc[0][7].value_in(units.parsec)
-            init_mass_data[i] = [int(min(sim_data.iloc[0][8].value_in(units.MSun))), int(max(sim_data.iloc[0][8].value_in(units.MSun)))]
-            ini_parti_data[i] = sim_data.iloc[0][9]
-            number_mergers[i] = sim_data.iloc[0][10]
-            simulated_end[i]  = sim_data.iloc[0][12].value_in(units.Myr)
+            init_mass_data[i] = [int(min(sim_data.iloc[0][8].value_in(units.MSun))), 
+                                 int(max(sim_data.iloc[0][8].value_in(units.MSun)))]
             stab_time_data[i] = sim_data.iloc[0][13].value_in(units.Myr)
         
-    return ini_parti_data, fin_parti_data, number_mergers, cum_merge_mass, simulated_end, ejected_parti, \
-           stab_time_data, init_dist_data, init_mass_data, inj_mass_data, eje_mass_data
-
-def stats_stable_extractor(dir):
-    steadytime_data = bulk_stat_extractor(dir, 'N')
-    no_Data = len(steadytime_data)
-    
-    ini_parti_data = np.empty(no_Data)
-    inj_event_data = np.empty(no_Data)
-    merge_no_data  = np.empty(no_Data)
-    mergerm_data   = np.empty(no_Data)
-    simulated_end  = np.empty(no_Data)
-    initial_dist   = np.empty(no_Data)
-    cluster_rad    = np.empty(no_Data)
-    init_parti_m   = np.empty((no_Data, 2))
-    trelax_data    = np.empty(no_Data)
-
-    for i in range(no_Data):
-        sim_data = steadytime_data[i]
-        ini_parti_data[i] = sim_data.iloc[0][0]
-        inj_event_data[i] = sim_data.iloc[0][1]
-        merge_no_data[i]  = sim_data.iloc[0][2]
-        mergerm_data[i]   = sim_data.iloc[0][3].value_in(units.MSun)
-        simulated_end[i]  = sim_data.iloc[0][4].value_in(units.Myr)
-        initial_dist[i]   = sim_data.iloc[0][5].value_in(units.pc)
-        cluster_rad[i]    = sim_data.iloc[0][6].value_in(units.pc)
-        init_parti_m[i]   = [int(min(sim_data.iloc[0][7].value_in(units.MSun))), int(max(sim_data.iloc[0][7].value_in(units.MSun)))]
-        trelax_data[i]    = sim_data.iloc[0][8].value_in(units.Myr)
-
-    return ini_parti_data, inj_event_data, merge_no_data, mergerm_data, simulated_end, initial_dist, \
-           cluster_rad, init_parti_m, trelax_data
+    return fin_parti_data, stab_time_data, init_dist_data, init_mass_data
 
 def simulation_stats_checker(int_string):
     """
