@@ -9,6 +9,19 @@ from spatial_plotters import *
 start_time = cpu_time.time()
 
 
+print('... ejection_Stat_plotters ...')
+cst = event_tracker()
+cst = ejection_stats()
+cst.new_data_extractor()
+cst.combine_data()
+cst.energy_plotters()
+cst.vejec_plotters()
+
+print('...steady_plotter...')
+cst = stability_plotters()
+cst.overall_steady_plotter()
+STOP
+
 print('...spatial_plotters...')
 ejected_evolution()
 global_properties()
@@ -16,11 +29,6 @@ global_properties()
 energy_plotter('Hermite')
 #chaos_deviate()
 end_time = cpu_time.time()
-
-STOP 
-print('...steady_plotter...')
-cst = stability_plotters()
-cst.overall_steady_plotter()
 
 print('...tGW_plotters...')
 cst = coupled_systems()
@@ -45,12 +53,5 @@ cst.system_formation_plotter()
 #### NO UPDATE NEEDED ####
 ##########################
 
-print('... ejection_Stat_plotters ...')
-cst = event_tracker()
-cst = ejection_stats()
-#cst.new_data_extractor()
-cst.combine_data()
-cst.energy_plotters()
-cst.vejec_plotters()
 
 print('Plotting time [mins]:', (end_time - start_time)/60)

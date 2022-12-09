@@ -127,7 +127,7 @@ def ejected_extract_final(set, ejected, ejec_merge):
                     vz = vel_[2] - set.iloc[0][(-steps_)][3][2].value_in(units.kms)
                     ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
                     
-                idx = np.where(ejec_vel == max(ejec_vel))[0]
+                idx = np.where(ejec_vel == np.nanmax(ejec_vel))[0]
                 idx -= tot_steps
                 ejec_vel = np.asarray(ejec_vel)
                 esc_vel = ejec_vel[idx]

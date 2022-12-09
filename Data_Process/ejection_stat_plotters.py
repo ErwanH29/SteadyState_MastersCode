@@ -19,10 +19,10 @@ class ejection_stats(object):
         Function to extract newly simulated data into reduced manipulatable files
         """
 
-        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory_ejec_new/*'))
-        chaotic_H = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[60:]) for i in Hermite_data]
-        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory_ejec_new/*'))
-        chaotic_G = ['data/GRX/no_addition/chaotic_simulation/'+str(i[56:]) for i in GRX_data]
+        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
+        chaotic_H = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[51:]) for i in Hermite_data]
+        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory/*'))
+        chaotic_G = ['data/GRX/no_addition/chaotic_simulation/'+str(i[47:]) for i in GRX_data]
 
         filest = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)] 
         filesc = [natsort.natsorted(chaotic_H), natsort.natsorted(chaotic_G)] 

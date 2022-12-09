@@ -1,5 +1,6 @@
 from amuse.lab import *
 from file_logistics import *
+from scipy.special import jv 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
@@ -23,7 +24,7 @@ class coupled_systems(object):
         warnings.filterwarnings("ignore", category=RuntimeWarning) 
         warnings.filterwarnings("ignore", category=UserWarning) 
         self.H0 = 73.04 #Taken from arXiv:2112.04510 in km/s/Mpc
-        self.tH = (self.H0*(3.2408*10**-20))**-1 * 1/(3600*365*24*10**6)
+        self.tH = (self.H0*(3.2408*10**-20))**-1 * 1/(3600*365*24*10**6) | units.Myr
         self.integrator = ['Hermite', 'GRX']
         
     def new_data_extractor(self):
@@ -32,7 +33,6 @@ class coupled_systems(object):
         """
 
         print('!!!!!! WARNING THIS WILL TAKE A WHILE !!!!!!!')
-
         Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
         GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory/*'))
         filename = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)] 
@@ -45,16 +45,17 @@ class coupled_systems(object):
 
                     for parti_ in range(np.shape(data)[0]):
                         count = len(fnmatch.filter(os.listdir('data/tGW/'), '*.*'))
-                        semi_SMBH = []
-                        ecc_SMBH = []
-                        min_GW_SMBH = []
 
-                        IMBH_key = []
-                        IMBH_sem = []
-                        IMBH_ecc = []
-                        min_GW_bin = []
                         mass_IMBH = []
-                        bin_time = []
+                        semi_SMBH_GW_indiv = []
+                        semi_NN_GW_indiv = []
+                        semi_t_GW_indiv = []
+                        ecc_SMBH_GW_indiv = []
+                        ecc_NN_GW_indiv = []
+                        ecc_t_GW_indiv = []
+                        nharm_SMBH_GW_indiv = []
+                        nharm_NN_GW_indiv = []
+                        nharm_t_GW_indiv = []
 
                         mass1 = data.iloc[parti_][0][1]
                         SMBH_sys_mass = data.iloc[0][0][1]
@@ -62,50 +63,58 @@ class coupled_systems(object):
                         Nfbnn_indiv = 0
                         Nfbt_indiv = 0
 
-                        semi_IMBH_avgv = -5
-                        semi_IMBH_minv = -5
-                        ecc_IMBH_avgv = -5
-                        ecc_IMBH_minv = -5
-                        time_IMBH_avgv = -5
-                        time_IMBH_minv = -5
+                        freq_SMBH_GW_indiv = [-5]
                         freq_NN_GW_indiv = [-5]
-                        strain_NN_GW_indiv = [-5]
-                        time_NN_GW_indiv = [-5]
-                        SMBH_NN_event = [-5]
                         freq_t_GW_indiv = [-5]
+                        strain_SMBH_GW_indiv = [-5]
+                        strain_NN_GW_indiv = [-5]
                         strain_t_GW_indiv = [-5]
+                        time_SMBH_GW_indiv = [-5]
+                        time_NN_GW_indiv = [-5]
                         time_t_GW_indiv = [-5]
+                        SMBH_NN_event = [-5]
                         SMBH_t_event = [-5]
 
                         if parti_ != 0:
                             for col_ in range(np.shape(data)[1]-1):
                                 sem_SMBH = data.iloc[parti_][col_][7][0]
-                                if data.iloc[parti_][col_][8][0] < 1:
-                                    semi_SMBH.append(sem_SMBH.value_in(units.pc))
-                                    ecc_SMBH.append(data.iloc[parti_][col_][8][0])
-                                    val = (data.iloc[parti_][col_][7][0].value_in(units.pc))**4 * (1-data.iloc[parti_][col_][8][0]**2)**3.5
-                                    min_GW_SMBH.append(val)
+                                ecc_SMBH = data.iloc[parti_][col_][8][0]
+
+                                strain_SMBH = self.gw_strain(sem_SMBH, ecc_SMBH, mass1, SMBH_sys_mass)
+                                freq_SMBH = self.gw_freq(sem_SMBH, ecc_SMBH, mass1, SMBH_sys_mass)
+                                nharm_SMBH = self.gw_harmonic_mode(ecc_SMBH)
+                                if strain_SMBH > 10**-27 and freq_SMBH > 10**-12:
+                                    strain_SMBH_GW_indiv.append(strain_SMBH)
+                                    freq_SMBH_GW_indiv.append(freq_SMBH)
+                                    nharm_SMBH_GW_indiv.append(nharm_SMBH)
+                                    time_SMBH_GW_indiv.append(10**-3 * col_)
+                                    semi_SMBH_GW_indiv.append(sem_SMBH)
+                                    ecc_SMBH_GW_indiv.append(ecc_SMBH)
                                 
                                 semi_major_nn = abs(data.iloc[parti_][col_][7][1])
                                 semi_major_t = abs(data.iloc[parti_][col_][7][2])
                                 ecc_nn = (data.iloc[parti_][col_][8][1])
                                 ecc_t = (data.iloc[parti_][col_][8][2])
-
                                 for part_ in range(np.shape(data)[0]):
                                     if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
                                         mass2 = data.iloc[part_][0][1]
-                                
-                                strain_nn, freqGW_nn = self.gw_amp_freq(semi_major_nn, ecc_nn, mass1, mass2)
-                                linex = data.iloc[parti_][col_][2][0] - data.iloc[0][col_][2][0]
-                                liney = data.iloc[parti_][col_][2][1] - data.iloc[0][col_][2][1]
-                                linez = data.iloc[parti_][col_][2][2] - data.iloc[0][col_][2][2]
-                                dist_SMBH = (linex**2+liney**2+linez**2).sqrt()
-                                dist_NN = data.iloc[parti_][col_][-1]
 
-                                if freqGW_nn > 5*10**-10:
-                                    freq_NN_GW_indiv.append(freqGW_nn)
+                                strain_nn = self.gw_strain(semi_major_nn, ecc_nn, mass1, mass2)
+                                freq_nn = self.gw_freq(semi_major_nn, ecc_nn, mass1, mass2)
+                                nharm_nn = self.gw_harmonic_mode(ecc_nn)
+                                if strain_nn > 10**-27 and freq_nn > 10**-12:
                                     strain_NN_GW_indiv.append(strain_nn)
+                                    freq_NN_GW_indiv.append(freq_nn)
+                                    nharm_NN_GW_indiv.append(nharm_nn)
                                     time_NN_GW_indiv.append(10**-3 * col_)
+                                    semi_NN_GW_indiv.append(semi_major_nn)
+                                    ecc_NN_GW_indiv.append(ecc_nn)
+
+                                    linex = data.iloc[parti_][col_][2][0] - data.iloc[0][col_][2][0]
+                                    liney = data.iloc[parti_][col_][2][1] - data.iloc[0][col_][2][1]
+                                    linez = data.iloc[parti_][col_][2][2] - data.iloc[0][col_][2][2]
+                                    dist_SMBH = (linex**2+liney**2+linez**2).sqrt()
+                                    dist_NN = data.iloc[parti_][col_][-1]
 
                                     if dist_SMBH.value_in(units.pc) == dist_NN:
                                         Nfbnn_indiv += 1
@@ -119,12 +128,16 @@ class coupled_systems(object):
                                     mass2 = SMBH_sys_mass
                                     tSMBH = True
 
-                                strain_t, freqGW_t = self.gw_amp_freq(semi_major_t, ecc_t, mass1, mass2)
-                                if freqGW_t > 5*10**-10:
-                                    sem_SMBH = data.iloc[parti_][col_][7][0]
-                                    freq_t_GW_indiv.append(freqGW_t)
+                                strain_t = self.gw_strain(semi_major_t, ecc_t, mass1, mass2)
+                                freq_t = self.gw_freq(semi_major_t, ecc_t, mass1, mass2)
+                                nharm_t = self.gw_harmonic_mode(ecc_t)
+                                if strain_t > 10**-27 and freq_t > 10**-12:
                                     strain_t_GW_indiv.append(strain_t)
-                                    time_t_GW_indiv.append(10**-3 * col_)     
+                                    freq_t_GW_indiv.append(freq_t)
+                                    nharm_t_GW_indiv.append(nharm_t)
+                                    time_t_GW_indiv.append(10**-3 * col_) 
+                                    semi_t_GW_indiv.append(semi_major_t)
+                                    ecc_t_GW_indiv.append(ecc_t)    
 
                                     if (tSMBH):
                                         Nfbt_indiv += 1
@@ -133,98 +146,40 @@ class coupled_systems(object):
                                         Nfbt_indiv += 0.5
                                         SMBH_t_event.append(-5)
 
-                                if ecc_nn < 1 and semi_major_nn < 0.02 | units.parsec:
-                                    IMBH_BE = ((constants.G*mass1*mass2)/(2*data.iloc[parti_][col_][7][1])).value_in(units.J) 
-                                    if IMBH_BE > (150000)**2*(1+mass1/mass2):  #Hard binary conditions based on Quinlan 1996b
-                                        IMBH_key.append(data.iloc[parti_][col_][6][1])
-                                        IMBH_sem.append(data.iloc[parti_][col_][7][1].value_in(units.pc))
-                                        IMBH_ecc.append(data.iloc[parti_][col_][8][1])
-                                        mass_IMBH.append([mass1.value_in(units.MSun), mass2.value_in(units.MSun)])
-                                        val = (data.iloc[parti_][col_][7][1].value_in(units.pc))**4 * (1-data.iloc[parti_][col_][8][1]**2)**3.5
-                                        min_GW_bin.append(val)
-                                        bin_time.append(1000*col_)
-
-                                if data.iloc[parti_][col_][-1] < 1e-2:
+                                if data.iloc[parti_][col_][-1] < 5e-3:
                                     Nclose_indiv += 1
 
                             mass_IMBH = np.asarray(mass_IMBH)
-                            IMBH_in = 0
-                            mass_IMBH_binmin = 0 | units.MSun
-                            if len(IMBH_key) > 1:
-                                IMBH_sem = np.asarray(IMBH_sem)
-                                IMBH_ecc = np.asarray(IMBH_ecc)
-                                for rep_ in range(len(IMBH_key)):
-                                    if IMBH_key[rep_] != IMBH_key[rep_-1] and rep_ != len(IMBH_key)-1:
-                                        semi_IMBH_avgv = np.mean(IMBH_sem[IMBH_in:rep_+1])
-                                        ecc_IMBH_avgv = np.mean(IMBH_ecc[IMBH_in:rep_+1])
-                                        time_IMBH_avgv = np.mean(bin_time[IMBH_in:rep_+1])
-
-                                        idx = np.nanargmin(min_GW_bin)
-                                        semi_IMBH_minv = IMBH_sem[idx]
-                                        ecc_IMBH_minv = IMBH_ecc[idx]
-                                        time_IMBH_minv = bin_time[idx]
-                                        mass_IMBH_binmin = mass_IMBH[idx][1] * (1 | units.MSun)
-
-                                        IMBH_in = rep_
-
-                                    if IMBH_key[rep_] != IMBH_key[rep_-1] and rep_ == len(IMBH_key)-1: #Otherwise blocks out at the last time step
-                                        semi_IMBH_avgv = np.mean(IMBH_sem[IMBH_in:rep_+1])
-                                        ecc_IMBH_avgv = np.mean(IMBH_ecc[IMBH_in:rep_+1])
-                                        time_IMBH_avgv = np.mean(bin_time[IMBH_in:rep_+1])
-
-                                        idx = np.nanargmin(min_GW_bin)
-                                        semi_IMBH_minv = IMBH_sem[idx]
-                                        ecc_IMBH_minv = IMBH_ecc[idx]
-                                        time_IMBH_minv = bin_time[idx]
-                                        mass_IMBH_binmin = mass_IMBH[idx][1] * (1 | units.MSun)
-
-                                        IMBH_in = rep_
-
-                            if len(IMBH_key) == 1:
-                                semi_IMBH_avgv = IMBH_sem[0]
-                                ecc_IMBH_avgv = IMBH_ecc[0]
-                                time_IMBH_avgv = bin_time[0]
-
-                                semi_IMBH_minv = IMBH_sem[0]
-                                ecc_IMBH_minv = IMBH_ecc[0]
-                                time_IMBH_minv = bin_time[0]
-                                mass_IMBH_binmin = mass_IMBH[0][1] * (1 | units.MSun)
-
                             Ntot_indiv = Nfbnn_indiv + Nfbt_indiv
-
-                            semi_SMBH = np.asarray(semi_SMBH)
-                            ecc_SMBH = np.asarray(ecc_SMBH)
-                            idx_SMBH = np.nanargmin(min_GW_SMBH)
 
                             path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/tGW/'
                             stab_tracker = pd.DataFrame()
                             df_stabtime = pd.Series({'Integrator': self.integrator[int_],
                                                      'Simulation Time': 10**3*sim_time,
                                                      'Population': 10*round(0.1*np.shape(data)[0]),
-                                                     'Semi avg SMBH': np.mean(semi_SMBH),
-                                                     'Semi min SMBH': semi_SMBH[idx_SMBH],
-                                                     'Ecc avg SMBH': np.mean(ecc_SMBH),
-                                                     'Ecc min SMBH': ecc_SMBH[idx_SMBH],
-                                                     'Semi avg IMBH': semi_IMBH_avgv,
-                                                     'Semi min IMBH': semi_IMBH_minv,
-                                                     'Ecc avg IMBH': ecc_IMBH_avgv,
-                                                     'Ecc min IMBH': ecc_IMBH_minv,
-                                                     'Event avg time IMBH': time_IMBH_avgv,
-                                                     'Event min time IMBH': time_IMBH_minv,
                                                      'mass SMBH': SMBH_sys_mass,
                                                      'mass IMBH1': mass1,
-                                                     'mass IMBH2': mass_IMBH_binmin,
+                                                     'mass IMBH2': mass2,
                                                      'No. Binary Events': Nfbnn_indiv,
                                                      'No. Tertiary Events': Nfbt_indiv,
                                                      'No. Total Events': Ntot_indiv,
                                                      'No. Close Encounter': Nclose_indiv,
+                                                     'SMBH Binary Frequencies': freq_SMBH_GW_indiv,
+                                                     'SMBH Binary Strain': strain_SMBH_GW_indiv,
+                                                     'SMBH Binary Time': time_SMBH_GW_indiv,
+                                                     'SMBH Binary Semi major': semi_SMBH_GW_indiv,
+                                                     'SMBH Binary Eccentricity': ecc_SMBH_GW_indiv,
                                                      'FlyBy Binary Frequencies': freq_NN_GW_indiv,
                                                      'Flyby Binary Strain': strain_NN_GW_indiv,
                                                      'Flyby Binary Time': time_NN_GW_indiv,
+                                                     'Flyby Binary Semi major': semi_NN_GW_indiv,
+                                                     'Flyby Binary Eccentricity': ecc_NN_GW_indiv,
                                                      'Flyby SMBH Event': SMBH_NN_event,
                                                      'Flyby Tertiary Frequencies': freq_t_GW_indiv,
                                                      'Flyby Tertiary Strain': strain_t_GW_indiv,
                                                      'Flyby Tertiary Time': time_t_GW_indiv,
+                                                     'Flyby Tertiary Semi major': semi_t_GW_indiv,
+                                                     'Flyby Tertiary Eccentricity': ecc_t_GW_indiv,
                                                      'Tertiary SMBH Event': SMBH_t_event})
                             stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
                             stab_tracker.to_pickle(os.path.join(path, 'IMBH_'+str(self.integrator[int_])+'_tGW_data_indiv_parti_'+str(count)+'.pkl'))
@@ -239,25 +194,26 @@ class coupled_systems(object):
         self.pop = [[ ], [ ]]
         self.close_enc = [[ ], [ ]]
         self.mass_SMBH = [[ ], [ ]]
+        self.mass_parti = [[ ], [ ]]
         self.mass_IMBH = [[ ], [ ]]
 
-        self.semi_SMBH_avg = [[ ], [ ]]
-        self.semi_SMBH_min = [[ ], [ ]]
-        self.semi_IMBH_avg = [[ ], [ ]]
-        self.semi_IMBH_min = [[ ], [ ]]
-        self.ecc_SMBH_avg = [[ ], [ ]]
-        self.ecc_SMBH_min = [[ ], [ ]]
-        self.ecc_IMBH_avg = [[ ], [ ]]
-        self.ecc_IMBH_min = [[ ], [ ]]
-        self.time_IMBH_avg = [[ ], [ ]]
-        self.time_IMBH_min = [[ ], [ ]]
+        self.freq_flyby_SMBH = [[ ], [ ]]
+        self.strain_flyby_SMBH = [[ ], [ ]]
+        self.time_flyby_SMBH = [[ ], [ ]]
+        self.semi_flyby_SMBH = [[ ], [ ]]
+        self.ecc_flyby_SMBH = [[ ], [ ]]
 
         self.freq_flyby_nn = [[ ], [ ]]
-        self.freq_flyby_t = [[ ], [ ]]
         self.strain_flyby_nn = [[ ], [ ]]
-        self.strain_flyby_t = [[ ], [ ]]
         self.time_flyby_nn = [[ ], [ ]]
+        self.semi_flyby_nn = [[ ], [ ]]
+        self.ecc_flyby_nn = [[ ], [ ]]
+
+        self.freq_flyby_t = [[ ], [ ]]
+        self.strain_flyby_t = [[ ], [ ]]
         self.time_flyby_t = [[ ], [ ]]
+        self.semi_flyby_t = [[ ], [ ]]
+        self.ecc_flyby_t = [[ ], [ ]]
 
         self.tot_sim_time = [[ ], [ ]]
         self.tot_events = [[ ], [ ]]
@@ -265,8 +221,6 @@ class coupled_systems(object):
         self.fb_nn_SMBH = [[ ], [ ]]
         self.fb_t_events = [[ ], [ ]]
         self.fb_t_SMBH = [[ ], [ ]]
-
-        self.event_rate =[[ ], [ ]]
 
         tGW_data = natsort.natsorted(glob.glob('data/tGW/*'))
         for file_ in range(len(tGW_data)):
@@ -279,65 +233,121 @@ class coupled_systems(object):
 
                 self.sim_time[int_idx].append(data_file.iloc[0][1])
                 self.pop[int_idx].append(int(data_file.iloc[0][2]))
-                self.semi_SMBH_avg[int_idx].append(data_file.iloc[0][3])
-                self.semi_SMBH_min[int_idx].append(data_file.iloc[0][4])
-                self.ecc_SMBH_avg[int_idx].append(data_file.iloc[0][5])
-                self.ecc_SMBH_min[int_idx].append(data_file.iloc[0][6])
-                self.semi_IMBH_avg[int_idx].append(data_file.iloc[0][7])
-                self.semi_IMBH_min[int_idx].append(data_file.iloc[0][8])
-                self.ecc_IMBH_avg[int_idx].append(data_file.iloc[0][9])
-                self.ecc_IMBH_min[int_idx].append(data_file.iloc[0][10])
-                self.time_IMBH_avg[int_idx].append(data_file.iloc[0][11])
-                self.time_IMBH_min[int_idx].append(data_file.iloc[0][12])
-                self.mass_SMBH[int_idx].append([data_file.iloc[0][14], data_file.iloc[0][13]])
-                self.mass_IMBH[int_idx].append([data_file.iloc[0][14], data_file.iloc[0][15]])
-                self.fb_nn_events[int_idx].append(data_file.iloc[0][16])
-                self.fb_t_events[int_idx].append(data_file.iloc[0][17])
-                self.tot_events[int_idx].append(data_file.iloc[0][18])
-                self.close_enc[int_idx].append(data_file.iloc[0][19])
-                self.freq_flyby_nn[int_idx].append(data_file.iloc[0][20])
-                self.strain_flyby_nn[int_idx].append(data_file.iloc[0][21])
-                self.time_flyby_nn[int_idx].append(data_file.iloc[0][22])
-                self.fb_nn_SMBH[int_idx].append(data_file.iloc[0][23])
-                self.freq_flyby_t[int_idx].append(data_file.iloc[0][24])
-                self.strain_flyby_t[int_idx].append(data_file.iloc[0][25])
-                self.time_flyby_t[int_idx].append(data_file.iloc[0][26])
-                self.fb_t_SMBH[int_idx].append(data_file.iloc[0][27])
-                self.event_rate[int_idx].append(data_file.iloc[0][18]/data_file.iloc[0][1])
+                self.mass_SMBH[int_idx].append(data_file.iloc[0][3])
+                self.mass_parti[int_idx].append(data_file.iloc[0][4])
+                self.mass_IMBH[int_idx].append(data_file.iloc[0][5])
+                self.fb_nn_events[int_idx].append(data_file.iloc[0][6])
+                self.fb_t_events[int_idx].append(data_file.iloc[0][7])
+                self.tot_events[int_idx].append(data_file.iloc[0][8])
+                self.close_enc[int_idx].append(data_file.iloc[0][9])
+
+                self.freq_flyby_SMBH[int_idx].append(data_file.iloc[0][10])
+                self.strain_flyby_SMBH[int_idx].append(data_file.iloc[0][11])
+                self.time_flyby_SMBH[int_idx].append(data_file.iloc[0][12])
+                self.semi_flyby_SMBH[int_idx].append(data_file.iloc[0][13])
+                self.ecc_flyby_SMBH[int_idx].append(data_file.iloc[0][14])
+
+                self.freq_flyby_nn[int_idx].append(data_file.iloc[0][15])
+                self.strain_flyby_nn[int_idx].append(data_file.iloc[0][16])
+                self.time_flyby_nn[int_idx].append(data_file.iloc[0][17])
+                self.semi_flyby_nn[int_idx].append(data_file.iloc[0][18])
+                self.ecc_flyby_nn[int_idx].append(data_file.iloc[0][19])
+                self.fb_nn_SMBH[int_idx].append(data_file.iloc[0][20])
+
+                self.freq_flyby_t[int_idx].append(data_file.iloc[0][21])
+                self.strain_flyby_t[int_idx].append(data_file.iloc[0][22])
+                self.time_flyby_t[int_idx].append(data_file.iloc[0][23])
+                self.semi_flyby_t[int_idx].append(data_file.iloc[0][24])
+                self.ecc_flyby_t[int_idx].append(data_file.iloc[0][25])
+                self.fb_t_SMBH[int_idx].append(data_file.iloc[0][26])
 
         for int_ in range(2):
             self.sim_time[int_] = np.asarray(self.sim_time[int_], dtype = 'object')
             self.pop[int_] = np.asarray(self.pop[int_], dtype = 'object')
-            self.semi_SMBH_avg[int_] = np.asarray(self.semi_SMBH_avg[int_], dtype = 'object')
-            self.semi_SMBH_min[int_] = np.asarray(self.semi_SMBH_min[int_], dtype = 'object')
-            self.ecc_SMBH_avg[int_] = np.asarray(self.ecc_SMBH_avg[int_], dtype = 'object')
-            self.ecc_SMBH_min[int_] = np.asarray(self.ecc_SMBH_min[int_], dtype = 'object')
-            self.semi_IMBH_avg[int_] = np.asarray(self.semi_IMBH_avg[int_], dtype = 'object')
-            self.semi_IMBH_min[int_] = np.asarray(self.semi_IMBH_min[int_], dtype = 'object')
-            self.ecc_IMBH_avg[int_] = np.asarray(self.ecc_IMBH_avg[int_], dtype = 'object')
-            self.ecc_IMBH_min[int_] = np.asarray(self.ecc_IMBH_min[int_], dtype = 'object')
-            self.time_IMBH_avg[int_] = np.asarray(self.time_IMBH_avg[int_], dtype = 'object')
-            self.time_IMBH_min[int_] = np.asarray(self.time_IMBH_min[int_], dtype = 'object')
             self.mass_SMBH[int_] = np.asarray(self.mass_SMBH[int_], dtype = 'object')
+            self.mass_parti[int_] = np.asarray(self.mass_parti[int_], dtype = 'object')
             self.mass_IMBH[int_] = np.asarray(self.mass_IMBH[int_], dtype = 'object')
             self.fb_nn_events[int_] = np.asarray(self.fb_nn_events[int_], dtype = 'object')
             self.fb_t_events[int_] = np.asarray(self.fb_t_events[int_], dtype = 'object')
             self.tot_events[int_] = np.asarray(self.tot_events[int_], dtype = 'object')
             self.close_enc[int_] = np.asarray(self.close_enc[int_], dtype = 'object')
+            self.freq_flyby_SMBH[int_] = np.asarray(self.freq_flyby_SMBH[int_], dtype = 'object')
+            self.strain_flyby_SMBH[int_] = np.asarray(self.strain_flyby_SMBH[int_], dtype = 'object')
+            self.time_flyby_SMBH[int_] = np.asarray(self.time_flyby_SMBH[int_], dtype = 'object')
+            self.semi_flyby_SMBH[int_] = np.asarray(self.semi_flyby_SMBH[int_], dtype = 'object')
+            self.ecc_flyby_SMBH[int_] = np.asarray(self.ecc_flyby_SMBH[int_], dtype = 'object')
             self.freq_flyby_nn[int_] = np.asarray(self.freq_flyby_nn[int_], dtype = 'object')
             self.strain_flyby_nn[int_] = np.asarray(self.strain_flyby_nn[int_], dtype = 'object')
             self.time_flyby_nn[int_] = np.asarray(self.time_flyby_nn[int_], dtype = 'object')
+            self.semi_flyby_nn[int_] = np.asarray(self.semi_flyby_nn[int_], dtype = 'object')
+            self.ecc_flyby_nn[int_] = np.asarray(self.ecc_flyby_nn[int_], dtype = 'object')
+            self.fb_nn_SMBH[int_] = np.asarray(self.fb_nn_SMBH[int_], dtype = 'object')
             self.freq_flyby_t[int_] = np.asarray(self.freq_flyby_t[int_], dtype = 'object')
             self.strain_flyby_t[int_] = np.asarray(self.strain_flyby_t[int_], dtype = 'object')
             self.time_flyby_t[int_] = np.asarray(self.time_flyby_t[int_], dtype = 'object')
-            self.event_rate[int_] = np.asarray(self.event_rate[int_], dtype = 'object')
+            self.semi_flyby_t[int_] = np.asarray(self.semi_flyby_t[int_], dtype = 'object')
+            self.ecc_flyby_t[int_] = np.asarray(self.ecc_flyby_t[int_], dtype = 'object')
+            self.fb_t_SMBH[int_] = np.asarray(self.fb_t_SMBH[int_], dtype = 'object')
         
         with open('figures/gravitational_waves/output/event_rate.txt', 'w') as file:
-                for int_ in range(2):
-                    pop_idx = np.where(self.pop[int_] > 10)
-                    #if len(pop_idx) > 0:
-                    tot_events_t = self.tot_events[int_]#[pop_idx]
+                for int_ in range(1):
+                    pop_idx = np.where(self.pop[int_] == 10)
+                    tot_events_t = self.tot_events[int_][pop_idx]
                     tot_events = tot_events_t[tot_events_t > 0]
+                    
+                    obs_event_nn = 0
+                    samples_nn = 0
+                    perc_SMBH_nn = 0
+                    obs_event_t = 0
+                    samples_t = 0
+                    perc_SMBH_t = 0
+                    obs_event_SMBH = 0
+                    samples_SMBH = 0
+                    no_strain_nn = 0
+                    no_strain_t = 0
+                    no_strain_S = 0
+                    
+                    no_data = np.shape(self.freq_flyby_nn[int_][pop_idx])[0]
+                    for parti_ in range(no_data):
+                        sim_time = self.sim_time[int_][pop_idx][parti_]
+
+                        freq_temp = np.asarray(self.freq_flyby_nn[int_][pop_idx][parti_])
+                        strain_temp = np.asarray(self.strain_flyby_nn[int_][pop_idx][parti_])
+                        fbb_IMBH = np.asarray(self.fb_nn_SMBH[int_][pop_idx][parti_])
+                        obs_fbnn = freq_temp[(freq_temp > 10**-4) & (fbb_IMBH > 0) & (strain_temp > 10**-22)]
+                        obs_event_nn += (len(obs_fbnn)/sim_time)
+                        perc_SMBH_nn += len(obs_fbnn)/len(freq_temp)
+                        if len(obs_fbnn) > 0:
+                            samples_nn += 1
+                            no_strain_nn += len(obs_fbnn) - len(freq_temp[(freq_temp > 10**-4) & (fbb_IMBH > 0)])
+                        
+                        freq_temp = np.asarray(self.freq_flyby_t[int_][pop_idx][parti_])
+                        strain_temp = np.asarray(self.strain_flyby_t[int_][pop_idx][parti_])
+                        fbt_IMBH = np.asarray(self.fb_t_SMBH[int_][pop_idx][parti_])
+                        obs_fbt = freq_temp[(freq_temp > 10**-4) & (fbt_IMBH > 0) & (strain_temp > 10**-22)]
+                        obs_event_t += (len(obs_fbt)/sim_time)
+                        perc_SMBH_t += len(obs_fbt)/len(freq_temp)
+                        if len(obs_fbt) > 0:
+                            samples_t += 1
+                            no_strain_t += len(obs_fbt) - len(freq_temp[(freq_temp > 10**-4) & (fbt_IMBH > 0)])
+
+                        freq_temp = np.asarray(self.freq_flyby_SMBH[int_][pop_idx][parti_])
+                        strain_temp = np.asarray(self.strain_flyby_SMBH[int_][pop_idx][parti_])
+                        obs_fbS = freq_temp[(freq_temp > 10**-4) & (strain_temp > 10**-22)]
+                        obs_event_SMBH += (len(obs_fbS)-len(obs_fbt)-len(obs_fbnn))/sim_time
+                        if len(obs_fbS) > 0:
+                            samples_SMBH += 1
+                            no_strain_S += len(obs_fbS) - len(freq_temp[(freq_temp > 10**-4)])
+
+                    obs_event_nn /= max(1, samples_nn)
+                    obs_event_t /= max(1, samples_t)
+                    obs_event_SMBH /= max(1, samples_SMBH)
+                    no_strain_nn /= no_data
+                    no_strain_t /= no_data
+                    no_strain_S /= no_data
+                    perc_SMBH_nn = (obs_event_SMBH)/(obs_event_SMBH+obs_event_nn)
+                    perc_SMBH_t = (obs_event_t)/(obs_event_SMBH+obs_event_t)
+
                     fb_nn_events = self.fb_nn_events[int_]#[pop_idx]
                     fb_nn_events = fb_nn_events[tot_events_t > 0]
                     fb_t_events = self.fb_t_events[int_]#[pop_idx]
@@ -346,81 +356,61 @@ class coupled_systems(object):
                     sim_time = sim_time[tot_events_t > 0]
 
                     if len(tot_events) > 0:
+                        if int_ == 0:
+                            file.write('Detectable means f > 1e-4 Hz and strain > 1e-22 when observing a source 1Mpc away')
                         file.write('\nData for '+str(self.integrator[int_]))
-                        file.write('\nAverage total event rate per Myr            ' + str(np.mean(tot_events/sim_time * 10**6)))
-                        file.write('\nAverage nearest neigh. event rate per Myr   ' + str(np.mean(fb_nn_events/sim_time * 10**6)))
-                        file.write('\nAverage tertiary event rate per Myr         ' + str(np.mean(fb_t_events/sim_time * 10**6)))
+                        file.write('\nAverage total event rate per Myr:                      ' + str(np.mean(tot_events/sim_time * 10**6)))
+                        file.write('\nAverage total flyby events per Myr:                    ' + str(np.mean(fb_nn_events/sim_time) * 10**6))
+                        file.write('\nAverage total tertiary events per Myr:                 ' + str(np.mean(fb_t_events/sim_time) * 10**6))
+                        file.write('\nAverage detectable IMBH-IMBH per Myr:                  ' + str((obs_event_nn + obs_event_t) * 10**6))
+                        file.write('\nAverage detectable flyby IMBH-IMBH per Myr:            ' + str(obs_event_nn * 10**6))
+                        file.write('\nAverage detectable tertiary IMBH-IMBH per Myr:         ' + str(obs_event_t * 10**6))
+                        file.write('\nAverage detectable SMBH-IMBH event rate per Myr:       ' + str(obs_event_SMBH * 10**6))
+                        file.write('\nPercentage SMBH flyby events:                          ' + str(perc_SMBH_nn))
+                        file.write('\nPercentage SMBH tertiary events:                       ' + str(perc_SMBH_t))
+                        file.write('\nAvg. fraction in freq but not detectable IMBH-IMBH:    ' + str((no_strain_nn+no_strain_t)/2))
+                        file.write('\nAvg. fraction in freq but not detectable SMBH-IMBH:    ' + str(no_strain_S))
                         file.write('\n========================================================================')
 
     def coll_radius(self, mass_arr):
         return 3 * (2*constants.G*mass_arr)/(constants.c**2)
 
-    def forecast_interferometer(self, ax, mass_arr):
+    def forecast_interferometer(self, ax, m1, m2):
         """
         Function to plot the LISA and aLIGO frequency range in Ge a vs. (1-e) plots
         """
         
         ecc_range = np.linspace(0.0001, (1-10**-8), 50)
 
-        self.LIGO_semimaj_max = self.GW_freq(ecc_range[1:], 10000 | units.Hz, mass_arr[0][0], mass_arr[0][1])
-        self.LIGO_semimaj_min = self.GW_freq(ecc_range[1:], 10 | units.Hz, mass_arr[0][0], mass_arr[0][1])
-        self.LIGO_semimaj = self.GW_freq(ecc_range[1:], 200 | units.Hz, mass_arr[0][0], mass_arr[0][1])
+        self.LIGO_semimaj_max = self.gw_cfreq_semi(ecc_range[1:], 10000 | units.Hz, m1, m2)
+        self.LIGO_semimaj_min = self.gw_cfreq_semi(ecc_range[1:], 10 | units.Hz, m1, m2)
+        self.LIGO_semimaj = self.gw_cfreq_semi(ecc_range[1:], 200 | units.Hz, m1, m2)
 
-        self.LISA_semimaj_max = self.GW_freq(ecc_range[1:], 1 | units.Hz, mass_arr[0][0], mass_arr[0][1])
-        self.LISA_semimaj_min = self.GW_freq(ecc_range[1:], 1e-4 | units.Hz, mass_arr[0][0], mass_arr[0][1])
-        self.LISA_semimaj = self.GW_freq(ecc_range[1:], 1e-2 | units.Hz, mass_arr[0][0], mass_arr[0][1])
+        self.LISA_semimaj_max = self.gw_cfreq_semi(ecc_range[1:], 1 | units.Hz, m1, m2)
+        self.LISA_semimaj_min = self.gw_cfreq_semi(ecc_range[1:], 1e-4 | units.Hz, m1, m2)
+        self.LISA_semimaj = self.gw_cfreq_semi(ecc_range[1:], 1e-2 | units.Hz, m1, m2)
 
         ecc_range = [np.log(1-i) for i in ecc_range[1:]]
         self.text_angle = np.degrees(np.arctan((ecc_range[30]-ecc_range[20])/(self.LIGO_semimaj[30]-self.LIGO_semimaj[20]))) - 20
 
-        ax.plot(self.LIGO_semimaj_min, ecc_range, linestyle = ':', color = 'black')
-        ax.plot(self.LIGO_semimaj, ecc_range, linestyle = '-.', color = 'black')
-        ax.plot(self.LIGO_semimaj_max, ecc_range, linestyle = ':', color = 'black')
+        ax.plot(self.LIGO_semimaj_min, ecc_range, linestyle = ':', color = 'white')
+        ax.plot(self.LIGO_semimaj, ecc_range, linestyle = '-.', color = 'white')
+        ax.plot(self.LIGO_semimaj_max, ecc_range, linestyle = ':', color = 'white')
         ax.fill_between(np.append(self.LIGO_semimaj_min, self.LIGO_semimaj_max[::-1]), 
-                        np.append(ecc_range[:], ecc_range[::-1]), alpha = 0.2, color = 'blue')
-        ax.plot(self.LISA_semimaj_min, ecc_range, linestyle = ':', color = 'black')
-        ax.plot(self.LISA_semimaj, ecc_range, linestyle = '-.', color = 'black')
-        ax.plot(self.LISA_semimaj_max, ecc_range, linestyle = ':', color = 'black')
+                        np.append(ecc_range[:], ecc_range[::-1]), alpha = 0.6, color = 'blue')
+        ax.plot(self.LISA_semimaj_min, ecc_range, linestyle = ':', color = 'white')
+        ax.plot(self.LISA_semimaj, ecc_range, linestyle = '-.', color = 'white')
+        ax.plot(self.LISA_semimaj_max, ecc_range, linestyle = ':', color = 'white')
         ax.fill_between(np.append(self.LISA_semimaj_min, self.LISA_semimaj_max[::-1]), 
-                        np.append(ecc_range[:], ecc_range[::-1]), alpha = 0.2, color = 'red')
+                        np.append(ecc_range[:], ecc_range[::-1]), alpha = 0.6, color = 'red')
 
         return ax
+
+    def gfunc(self, ecc):
+        nharm = self.gw_harmonic_mode(ecc)
+        return nharm**4/32 * ((jv(nharm-2, nharm*ecc)-2*ecc*jv(nharm-1, nharm*ecc) + 2/nharm * jv(nharm, nharm*ecc) + 2*ecc*jv(nharm+1, nharm*ecc) - jv(nharm+2, nharm*ecc))**2 + (1-ecc**2)*(jv(nharm-2, nharm*ecc) - 2*jv(nharm, nharm*ecc) + jv(nharm+2, nharm*ecc))**2 + 4/(3*nharm**2)*(jv(nharm, nharm*ecc)**2))
     
-    def gw_amp_freq(self, semi, ecc, m1, m2):
-        """
-        Use of eqn (3) Matsubayashi et al. 2004 to calculate the approximate GW strain.
-        Frequency equation is based on Samsing et al. 2014 eqn (43). 
-        
-        Inputs:
-        semi:   The semi-major axes of the system
-        ecc:    The eccentricity of the binary system
-        m1/m2:  The individual mass components of the binary system
-        """
-
-        dist = 1 | units.Mpc  # Taken from [https://imagine.gsfc.nasa.gov/features/cosmic/milkyway_info.html]
-        freq = np.sqrt(constants.G*(m1+m2)/semi**3) * (1+ecc)**1.1954 * (np.pi*(1-ecc**2)**1.5)**-1  #Frequency based on eqn 43 of Samsing et al. 2014
-        strain = (np.sqrt(32/5) * (np.pi)**(2/3) * (constants.G)**(5/3) * constants.c**(-4) * m1*m2*(m1+m2)**(-1/3) * freq**(2/3) * dist**-1)
-        strain = strain * (1 | units.kg)**5.551115123125783e-17 * (1 | units.s)**1.1102230246251565e-16
-
-        return strain, freq.value_in(units.Hz)
-
-    def gw_calc(self, semi, ecc, m1, m2):
-        """
-        Function to calculate the GW timescale based on Peters (1964).
-        
-        Inputs:
-        semi:    The semi-major axis of the binary
-        ecc:     The eccentricity of the binary
-        m1/m2:   The binary component masses
-        outputs: The gravitational wave timescale
-        """
-
-        red_mass = (m1*m2)/(m1+m2)
-        tot_mass = m1 + m2
-        tgw = (5/256) * (constants.c)**5/(constants.G**3)*(semi**4*(1-ecc**2)**3.5)/(red_mass*tot_mass**2)
-        return tgw
-
-    def GW_freq(self, ecc_arr, freq_val, m1, m2):
+    def gw_cfreq_semi(self, ecc_arr, freq_val, m1, m2):
         """
         Function to get constant frequency curves based on eqn. 43 of Samsing et al. 2014.
         Frequency values are based on Samsing et al. 2014 and correspond to LIGO (200 Hz) with range 10 < f < 10 000 [https://link.aps.org/doi/10.1103/PhysRevD.93.112004]
@@ -437,6 +427,72 @@ class coupled_systems(object):
         term1 = np.sqrt(constants.G*(m1+m2))/np.pi
         semi_maj = [np.log10(((term1 * (1+i)**1.1954/(1-i**2)**1.5 * freq_val**-1)**(2/3)).value_in(units.pc)) for i in ecc_arr]
         return semi_maj
+
+    def gw_freq(self, semi, ecc, m1, m2):
+        """
+        Frequency equation is based on Samsing et al. 2014 eqn (43). 
+        
+        Inputs:
+        semi:   The semi-major axes of the system
+        ecc:    The eccentricity of the binary system
+        m1/m2:  The individual mass components of the binary system
+        """
+
+        nharm = self.gw_harmonic_mode(ecc)
+        freq =  (2*np.pi)**-1*np.sqrt(constants.G*(m1+m2)/abs(semi)**3) * nharm
+        return freq.value_in(units.Hz)
+
+    def gw_harmonic_mode(self, ecc):
+        """
+        Finding the peak harmonic of gravitational frequency for a given eccentric orbit.
+        Equation 36 of Wen (2003)
+        
+        Inputs:
+        ecc:    The eccentricity of the orbit
+        """
+        nharm = 2*(1+ecc)**1.1954/(1-ecc**2)**1.5
+        return nharm
+
+    def gw_strain(self, semi, ecc, m1, m2):
+        """
+        Use of eqn (7) Kremer et al. 2018.
+        Use of eqn (20) of Peters and Matthews (1963).
+        At 1Mpc, z ~ 0.0228 from cosmology calc.
+        
+        Inputs:
+        semi:   The semi-major axes of the system
+        ecc:    The eccentricity of the binary system
+        m1/m2:  The individual mass components of the binary system
+        """
+
+        dist = 1 | units.Mpc  # Taken from [https://imagine.gsfc.nasa.gov/features/cosmic/milkyway_info.html]
+        redshift = 0.0228
+
+        chirp_mass = (m1*m2)**0.6/(m1+m2)**0.2 * (1+redshift)**-1
+        cfactor = 2/(3*np.pi**(4/3)) * (constants.G**(5/3))/(constants.c**3) * (dist*(1+redshift))**-2
+        ecc_func = (1+(73/24)*ecc**2+(37/96)*ecc**4)*(1-ecc**2)**-3.5
+
+        nharm = self.gw_harmonic_mode(ecc)
+        freq = self.gw_freq(semi, ecc, m1, m2) * (1 | units.Hz)
+
+        strain = cfactor * chirp_mass**(5/3) * freq**(-1/3) * (2/nharm)**(2/3) * (self.gfunc(ecc)/ecc_func)
+        return (strain.value_in(units.s**-1.6653345369377348e-16))**0.5
+
+    def gw_timescale(self, semi, ecc, m1, m2):
+        """
+        Function to calculate the GW timescale based on Peters (1964).
+        
+        Inputs:
+        semi:    The semi-major axis of the binary
+        ecc:     The eccentricity of the binary
+        m1/m2:   The binary component masses
+        outputs: The gravitational wave timescale
+        """
+
+        red_mass = (m1*m2)/(m1+m2)
+        tot_mass = m1 + m2
+        tgw = (5/256) * (constants.c)**5/(constants.G**3)*(semi**4*(1-ecc**2)**3.5)/(red_mass*tot_mass**2)
+        return tgw
 
     def LISA_sensitivity(self, freq):
         """
@@ -480,9 +536,9 @@ class coupled_systems(object):
         PTA_freq = np.linspace(-9, -6)
         # the scatter plot:
         ax.plot(np.log10(x_temp), np.log10(np.sqrt(x_temp*self.LISA_sensitivity(x_temp))), color = 'black')
-        ax.fill_between(PTA_freq, -26, -13, alpha = 0.35, color = 'red')
+        ax.fill_between(PTA_freq, -30, -13, alpha = 0.35, color = 'red')
         ax.text(-2.3, -20.5, 'Lisa Sensitivity', fontsize ='small', rotation = 276)
-        ax.text(-6, -24, 'PTA Window', fontsize ='small', rotation = 270)
+        ax.text(-6, -15, 'PTA Window', fontsize ='small', rotation = 270)
         ax.scatter(np.log10(x[:len_arr]), np.log10(y[:len_arr]), label = 'SMBH-IMBH', color = 'black')
         ax.scatter(np.log10(x[len_arr:]), np.log10(y[len_arr:]), label = 'IMBH-IMBH', color = 'purple', edgecolors = 'black')
         
@@ -522,116 +578,104 @@ class coupled_systems(object):
 
         plot_init = plotter_setup()
 
-        tgw_IMBH_avg = [[ ], [ ]]
-        tgw_IMBH_min = [[ ], [ ]]
-        semi_IMBH_min = [[ ], [ ]]
-        semi_IMBH_avg = [[ ], [ ]]
-        semi_IMBH_conc = [[ ], [ ]]
-        ecc_IMBH_min = [[ ], [ ]]
-        ecc_IMBH_avg = [[ ], [ ]]
-        ecc_IMBH_conc = [[ ], [ ]]
+        tgw_nn = [[ ], [ ]]
+        semi_nn = [[ ], [ ]]
+        ecc_nn = [[ ], [ ]]
+        freqnn_det = [[ ], [ ]]
+
+        tgw_t = [[ ], [ ]]
+        semi_t = [[ ], [ ]]
+        ecc_t = [[ ], [ ]]
+        freqt_det = [[ ], [ ]]
         
         for int_ in range(1):
-            semi_IMBH_avg_temp = []
-            semi_IMBH_min_temp = []
-            ecc_IMBH_avg_temp = []
-            ecc_IMBH_min_temp = []
-            for i in range(len(self.semi_IMBH_avg[int_])):
-                if self.ecc_IMBH_avg[int_][i] > 0:
-                    semi_avg = self.semi_IMBH_avg[int_][i] 
-                    semi_min = self.semi_IMBH_min[int_][i]
-                    semi_IMBH_avg_temp.append(semi_avg)
-                    semi_IMBH_min_temp.append(semi_min)
+            for parti_ in range(len(self.semi_flyby_nn[int_])): #Looping through every individual particle
+                for event_ in range(len(self.semi_flyby_nn[int_][parti_])): #Looping through every detected event
+                    semi_fb_nn = self.semi_flyby_nn[int_][parti_][event_]
+                    if np.asarray(self.fb_nn_SMBH[int_][parti_][event_]) < 0 and semi_fb_nn < 1 | units.parsec:
+                        ecc_fb_nn = self.ecc_flyby_nn[int_][parti_][event_]
+                        gwtime_nn = self.gw_timescale(semi_fb_nn, ecc_fb_nn, self.mass_IMBH[int_][parti_], 
+                                                      self.mass_parti[int_][parti_]).value_in(units.Myr)
 
-                    ecc_avg = self.ecc_IMBH_avg[int_][i]
-                    ecc_min = self.ecc_IMBH_min[int_][i]
-                    ecc_IMBH_avg_temp.append(ecc_avg)
-                    ecc_IMBH_min_temp.append(ecc_min)
+                        tgw_nn[int_].append(gwtime_nn)
+                        semi_nn[int_].append(semi_fb_nn.value_in(units.pc))
+                        ecc_nn[int_].append(np.log10(1-ecc_fb_nn))
 
-                    grav_IMBH_avg_timescale = self.gw_calc(semi_avg * (1 | units.pc), ecc_avg, self.mass_IMBH[int_][i][0], 
-                                                           self.mass_IMBH[int_][i][1]).value_in(units.Myr)
-                    grav_IMBH_min_timescale = self.gw_calc(semi_min * (1 | units.pc), ecc_min, self.mass_IMBH[int_][i][0], 
-                                                           self.mass_IMBH[int_][i][1]).value_in(units.Myr)
-                    tgw_IMBH_avg[int_].append(grav_IMBH_avg_timescale)
-                    tgw_IMBH_min[int_].append(grav_IMBH_min_timescale)
+            for parti_ in range(len(self.semi_flyby_t[int_])):
+                for event_ in range(len(self.semi_flyby_t[int_][parti_])):
+                    semi_fb_t = self.semi_flyby_t[int_][parti_][event_]
+                    if np.asarray(self.fb_t_SMBH[int_][parti_][event_]) < 0 and semi_fb_t < 1 | units.parsec:
+                        ecc_fb_t = self.ecc_flyby_t[int_][parti_][event_]
+                        gwtime_t = self.gw_timescale(semi_fb_t, ecc_fb_t, self.mass_parti[int_][parti_], 
+                                                     self.mass_IMBH[int_][parti_]).value_in(units.Myr)
 
-            semi_IMBH_avg_raw = np.asarray([i for i in semi_IMBH_avg_temp])
-            semi_IMBH_min_raw = np.asarray([i for i in semi_IMBH_min_temp])
-            ecc_IMBH_avg_raw = np.asarray(ecc_IMBH_avg_temp)
-            ecc_IMBH_min_raw = np.asarray(ecc_IMBH_min_temp)
-            tgw_IMBH_min_raw = np.asarray(tgw_IMBH_min[int_])
-            tgw_IMBH_avg_raw = np.asarray(tgw_IMBH_avg[int_])
+                        tgw_t[int_].append(gwtime_t)
+                        semi_t[int_].append(semi_fb_t.value_in(units.pc))
+                        ecc_t[int_].append(np.log10(1-ecc_fb_t))
 
-            ecc_IMBH_avg[int_] = np.asarray([np.log10(1-i) for i in ecc_IMBH_avg_raw[(ecc_IMBH_avg_raw < 1) & (semi_IMBH_avg_raw > 0)]])
-            semi_IMBH_avg[int_] = np.asarray([np.log10(i) for i in semi_IMBH_avg_raw[(ecc_IMBH_avg_raw < 1) & (semi_IMBH_avg_raw > 0)]])
-            ecc_IMBH_min[int_] = np.asarray([np.log10(1-i) for i in ecc_IMBH_min_raw[(ecc_IMBH_min_raw < 1) & (semi_IMBH_min_raw > 0)]])
-            semi_IMBH_min[int_] = np.asarray([np.log10(i) for i in semi_IMBH_min_raw[(ecc_IMBH_min_raw < 1) & (semi_IMBH_min_raw > 0)]])
-            tgw_IMBH_min[int_] = np.asarray(tgw_IMBH_min_raw[(ecc_IMBH_min_raw < 1) & (semi_IMBH_min_raw > 0)])
-            tgw_IMBH_avg[int_] = np.asarray(tgw_IMBH_avg_raw[(ecc_IMBH_min_raw < 1) & (semi_IMBH_min_raw > 0)])
-            ecc_IMBH_min[int_] = np.asarray(ecc_IMBH_min[int_][semi_IMBH_min[int_] > -5])
-            tgw_IMBH_min[int_] = np.asarray(tgw_IMBH_min[int_][semi_IMBH_min[int_] > -5])
-            tgw_IMBH_avg[int_] = np.asarray(tgw_IMBH_avg[int_][semi_IMBH_min[int_] > -5])
-            semi_IMBH_min[int_] = np.asarray(semi_IMBH_min[int_][semi_IMBH_min[int_] > -5])
+                        if self.freq_flyby_t[int_][parti_][event_] > 10**-11:
+                            freqt_det[int_].append(1)
+                        else:
+                            freqt_det[int_].append(0)
 
-            ecc_IMBH_conc[int_] = np.concatenate((ecc_IMBH_avg[int_], ecc_IMBH_min[int_]), axis = None)
-            semi_IMBH_conc[int_] = np.concatenate((semi_IMBH_avg[int_], semi_IMBH_min[int_]), axis = None)        
+            tgw_nn[int_] = np.asarray(tgw_nn[int_])
+            ecc_nn[int_] = np.asarray(ecc_nn[int_])
+            semi_nn[int_] = np.asarray(semi_nn[int_])  
+            tgw_t[int_] = np.asarray(tgw_t[int_])
+            ecc_t[int_] = np.asarray(ecc_t[int_])
+            semi_t[int_] = np.asarray(semi_t[int_])
         
         ############### PLOTTING OF a vs. (1-e) FOR BIN ##############
 
-        """xmin = min(np.nanmin(semi_IMBH_conc[0]), np.nanmin(semi_IMBH_conc[1]))
-        xmax = max(np.nanmax(semi_IMBH_conc[0]), np.nanmax(semi_IMBH_conc[1]))
-        ymin = min(np.nanmin(ecc_IMBH_conc[0]), np.nanmin(ecc_IMBH_conc[1]))
-        cmin = min(np.nanmin(tgw_IMBH_min[0]), np.nanmin(tgw_IMBH_min[1]))
-        cmax = max(np.nanmax(tgw_IMBH_min[0]), np.nanmax(tgw_IMBH_min[1]))"""
+        xmin = -10
+        xmax = 0
+        ymin = -4
 
-        xmin = min((semi_IMBH_conc[0]))
-        xmax = max((semi_IMBH_conc[0]))
-        ymin = min((ecc_IMBH_conc[0]))
-        cmin = min((tgw_IMBH_min[0]))
-        cmax = max((tgw_IMBH_min[0]))
-        norm_min = np.log10(cmin)
-        norm_max = np.log10(cmax)
-        normalise = plt.Normalize(norm_min, norm_max)
+        red_mass = (self.mass_parti[0][0]**2)*(2*self.mass_parti[0][0])
+        x_arr = np.linspace(-10, 0, 2000)
+        const_tgw = [np.log10(1-np.sqrt(1-((256*self.tH*(constants.G**3)/(5*constants.c**5)*red_mass*(10**(i) * (1 | units.pc)) **-4)) **(1/3.5))) for i in x_arr]
 
-        for int_ in range(1):
-            fig = plt.figure(figsize=(15, 6))
-            ax1 = fig.add_subplot(121)
-            ax2 = fig.add_subplot(122)
-            bin2d_sim, xedg, xedg, image = ax2.hist2d(semi_IMBH_conc[int_], ecc_IMBH_conc[int_], bins=(75,75), 
+        fig = plt.figure(figsize=(15, 6))
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        ax = [ax1, ax2]
+        extent = [1.1*xmin, 1.1*xmax, 1.1*ymin, 0]
+        for j in range(1):
+            bin2d_sim, xedg, xedg, image = ax[j].hist2d(np.log10(semi_nn[j]), ecc_nn[j], bins=(200, 200), 
                                                       range=([1.1*xmin, 1.1*xmax], [1.1*ymin, 0]))
-            idx_merge = np.where(tgw_IMBH_min[int_] <= (self.tH))
-            idx_stab = np.where(tgw_IMBH_min[int_] > (self.tH))
+            bin2d_sim, xedg, xedg, image = ax[j].hist2d(np.log10(semi_t[j]), ecc_t[j], bins=(200, 200), 
+                                                      range=([1.1*xmin, 1.1*xmax], [1.1*ymin, 0]))
+                                                      
             bin2d_sim /= np.max(bin2d_sim)
-            extent = [1.1*xmin, 1.1*xmax, 1.1*ymin, 0]
-            contours = ax2.imshow(np.log10(bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-            for ax_ in [ax1, ax2]:
-                ax_.set_ylabel(r'$\log_{10}(1-e)$')
-                ax_.set_xlabel(r'$\log_{10} a$ [pc]')
-                ax_.set_ylim(1.1*ymin, 0)
-                ax_.set_xlim(-11, 1)
+            contours = ax[j].imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+            
+            ax[j].set_ylabel(r'$\log_{10}(1-e)$')
+            ax[j].set_xlabel(r'$\log_{10} a$ [pc]')
+            ax[j].set_xlim(xmin, xmax)
+            ax[j].set_ylim(ymin, 0)
                 
-            plot_init.tickers(ax2, 'hist')
-            plot_init.tickers(ax1, 'plot')
-            colour_axes = ax1.scatter((semi_IMBH_min[int_][idx_merge]), ecc_IMBH_min[int_][idx_merge], 
-                                       c = np.log10(tgw_IMBH_min[int_][idx_merge]), 
-                                       norm = normalise, edgecolors='black',  marker = 'X')
-            colour_axes = ax1.scatter((semi_IMBH_min[int_][idx_stab]), ecc_IMBH_min[int_][idx_stab], 
-                                       c = np.log10(tgw_IMBH_min[int_][idx_stab]), 
-                                       norm = normalise, edgecolors='black')
-            self.forecast_interferometer(ax1, self.mass_IMBH[int_])
-            plt.colorbar(colour_axes, ax = ax1, label = r'$t_{\rm{min, GW}}$ [Myr]')
-            ax1.text(-10.5, -0.4, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'black')
-            ax1.text(-7.65, -0.4, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'black')
-            plt.savefig('figures/gravitational_waves/ecc_semi_bins_IMBH_histogram'+str(self.integrator[int_])+'.pdf', dpi=300, bbox_inches='tight')
-            plt.clf()
+            plot_init.tickers(ax[j], 'hist')
+            """if j == 0:
+                ax1.scatter((semi_nn[j][tgw_nn[j] > self.tH]), ecc_nn[j][tgw_nn[j] > self.tH], s = 8, color = 'black', label = 'Nearest Neighbour')
+                ax1.scatter((semi_t[j][tgw_t[j] > self.tH]), ecc_t[j][tgw_t[j] > self.tH], s = 8, color = 'purple', label = 'Tertiary')
+                ax1.scatter((semi_nn[j][tgw_nn[j] < self.tH]), ecc_nn[j][tgw_nn[j] < self.tH], s = 8, color = 'black', marker = 'X', label = r'$t_{\rm{GW}} < t_H$')
+                ax1.scatter((semi_t[j][tgw_t[j] < self.tH]), ecc_t[j][tgw_t[j] < self.tH], s = 8, color = 'purple', marker = 'X')
 
-        with open('figures/gravitational_waves/output/GW_IMBHmerger_time.txt', 'w') as file:
-            for int_ in range(2):
-                file.write('\nData for '+str(self.integrator[int_]))
-                file.write('\nAverage avg. GW timescales for IMBH-IMBH:           ' + str(np.mean(tgw_IMBH_avg[int_])) + ' Myr')
-                file.write('\nFive smallest avg. GW timescales for IMBH-IMBH: ' + str(np.sort(tgw_IMBH_avg[int_])[:5]) + ' Myr')
-                file.write('\nFive smallest GW timescales for IMBH-IMBH:     ' + str(np.sort(tgw_IMBH_min[int_])[:5]) + ' Myr')
-                file.write('\n========================================================================')
+            else:
+                ax1.scatter((semi_nn[j][tgw_nn[j] > self.tH]), ecc_nn[j][tgw_nn[j] > self.tH], s = 8, color = 'black')
+                ax1.scatter((semi_t[j][tgw_t[j] > self.tH]), ecc_t[j][tgw_t[j] > self.tH], s = 8, color = 'purple')
+                ax1.scatter((semi_nn[j][tgw_nn[j] < self.tH]), ecc_nn[j][tgw_nn[j] < self.tH], s = 8, color = 'black', marker = 'X')
+                ax1.scatter((semi_t[j][tgw_t[j] < self.tH]), ecc_t[j][tgw_t[j] < self.tH], s = 8, color = 'purple', marker = 'X')"""
+
+            self.forecast_interferometer(ax[j], self.mass_parti[j][0], self.mass_IMBH[j][0])
+            ax[j].plot(x_arr, const_tgw, color = 'white')
+            ax[j].text(-9.5, -3, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+8.7, color = 'white')
+            ax[j].text(-6.6, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+8.7, color = 'white')
+            ax[j].text(-2.55, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+18.5, color = 'white')
+            ax[j].text(-2.95, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+18.5, color = 'white')
+
+        plt.savefig('figures/gravitational_waves/ecc_semi_bins_IMBH_histogram.pdf', dpi=300, bbox_inches='tight')
+        plt.clf()
 
     def SMBH_tgw_plotter(self):
         """
@@ -659,10 +703,10 @@ class coupled_systems(object):
 
         for int_ in range(1):
             for i in range(len(self.semi_SMBH_avg[int_])):
-                grav_avg_time = self.gw_calc(self.semi_SMBH_avg[int_][i] * (1 | units.pc), self.ecc_SMBH_avg[int_][i], 
+                grav_avg_time = self.gw_timescale(self.semi_SMBH_avg[int_][i] * (1 | units.pc), self.ecc_SMBH_avg[int_][i], 
                                              self.mass_SMBH[int_][i][0], self.mass_SMBH[int_][i][1]).value_in(units.Myr)
                 tgw_SMBH_avg[int_].append(grav_avg_time)
-                grav_min_time = self.gw_calc(self.semi_SMBH_min[int_][i] * (1 | units.pc), self.ecc_SMBH_min[int_][i], 
+                grav_min_time = self.gw_timescale(self.semi_SMBH_min[int_][i] * (1 | units.pc), self.ecc_SMBH_min[int_][i], 
                                              self.mass_SMBH[int_][i][0], self.mass_SMBH[int_][i][1]).value_in(units.Myr)
                 tgw_SMBH_min[int_].append(grav_min_time)
 
@@ -724,11 +768,11 @@ class coupled_systems(object):
                                       c = np.log10(tgw_SMBH_min[int_][idx_merge]), marker = 'X', edgecolors='black')
             colour_axes = ax1.scatter(semi_SMBH_min[int_][idx_stab], ecc_SMBH_min[int_][idx_stab], norm = normalise,
                                       c = np.log10(tgw_SMBH_min[int_][idx_stab]), edgecolors='black')
-            self.forecast_interferometer(ax1, self.mass_SMBH[int_])
+            self.forecast_interferometer(ax1, self.mass_SMBH[int_][0], self.mass_parti[int_][0])
             plt.colorbar(colour_axes, ax = ax1, label = r'$\log_{10} \langle t_{GW}\rangle$ [Myr]')
             ax1.set_xlim(-10, 1.1*max(xmax_ecc_sem))
-            ax1.text(-8.95, -2, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+9.05, color = 'black')
-            ax1.text(-6.05, -2, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+9.05, color = 'black')
+            ax1.text(-8.95, -2, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+9.05, color = 'white')
+            ax1.text(-6.05, -2, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+9.05, color = 'white')
             plt.savefig('figures/gravitational_waves/ecc_semi_bins_SMBH_'+str(self.integrator[int_])+'_histogram.pdf', dpi=300, bbox_inches='tight')
 
         with open('figures/gravitational_waves/output/GW_SMBHmerger_time.txt', 'w') as file:
@@ -844,7 +888,7 @@ class coupled_systems(object):
             plot_ini.tickers(ax1, 'plot')
             plot_ini.tickers(ax2, 'plot')
             plot_ini.tickers(ax, 'plot')
-            ax.set_ylim(-26, -13.2)
+            ax.set_ylim(-30, -13.2)
             ax.set_xlim(-12.5, 1.5)
             ax.legend()
             plt.savefig('figures/gravitational_waves/'+str(self.integrator[int_])+'GW_freq_strain_maximise_diagram.pdf', dpi = 300, bbox_inches='tight')
@@ -961,3 +1005,12 @@ class coupled_systems(object):
 
         ax1.legend()
         plt.savefig('figures/gravitational_waves/events_time.pdf', dpi = 300, bbox_inches='tight')
+
+print('...tGW_plotters...')
+cst = coupled_systems()
+#cst.new_data_extractor()
+cst.combine_data()
+cst.IMBH_tgw_plotter()
+cst.SMBH_tgw_plotter()
+cst.strain_freq_plotter()
+cst.transient_events()

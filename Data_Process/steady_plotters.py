@@ -3,11 +3,10 @@ from file_logistics import *
 from spatial_plotters import *
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import lognorm
+from scipy.stats import iqr
 import scipy.optimize
 from scipy.optimize import OptimizeWarning
 from scipy.interpolate import make_interp_spline
-import statsmodels.api as sm
 
 class stability_plotters(object):
     """
@@ -65,7 +64,7 @@ class stability_plotters(object):
             return np.log(abs(slope.value_in(units.s)))/np.log(trlx_coeff.value_in(units.s**2/units.m**2))
             
         def log_fit(xval, slope, beta, log_c, y_int):
-            return slope * (xval/np.log(log_c*xval))**beta + y_int
+            return slope * (1/np.log(log_c*xval))**beta# + y_int
             
         plot_ini = plotter_setup()
         dirH = 'data/Hermite/no_addition/chaotic_simulation/*'
@@ -110,8 +109,9 @@ class stability_plotters(object):
 
                 N_parti_avg[int_].append(stability)
                 N_parti_std[int_].append((np.std(time_arr)))
-                std_max[int_].append(np.std(time_arr[stability < time_arr]))
-                std_min[int_].append(np.std(time_arr[stability > time_arr]))
+                q1, q3 = np.percentile(time_arr, [25, 75])
+                std_max[int_].append(q3)
+                std_min[int_].append(q1)
 
                 idx = np.where(time_arr == 100)[0]
                 ratio = len(idx)/len(time_arr)
@@ -138,9 +138,9 @@ class stability_plotters(object):
                     ax1.scatter(pop[int_], np.log10(N_parti_avg[int_]), color = colors[int_], edgecolor = 'black', zorder = 2, label = integrator[int_])
                 else:
                     ax1.scatter(pop[int_], np.log10(N_parti_avg[int_]), color = colors[int_], edgecolor = 'black', zorder = 2)
-            ax1.scatter(pop[int_], np.log10(N_parti_avg[int_]-std_min[int_]), color = colors[int_], marker = '_')
-            ax1.scatter(pop[int_], np.log10(N_parti_avg[int_]+std_max[int_]), color = colors[int_], marker = '_')
-            ax1.plot([pop[int_], pop[int_]], [np.log10(N_parti_avg[int_]-std_min[int_]), np.log10(N_parti_avg[int_]+std_max[int_])], color = colors[int_], zorder = 1)
+            ax1.scatter(pop[int_], np.log10(std_min[int_]), color = colors[int_], marker = '_')
+            ax1.scatter(pop[int_], np.log10(std_max[int_]), color = colors[int_], marker = '_')
+            ax1.plot([pop[int_], pop[int_]], [np.log10(std_min[int_]), np.log10(std_max[int_])], color = colors[int_], zorder = 1)
 
         p0 = (100, -5, 20, 40)
         params, cv = scipy.optimize.curve_fit(log_fit, pop[1][:-1], (N_parti_avg[1][:-1]), p0, maxfev = 10000, method = 'trf')
@@ -182,3 +182,9 @@ class stability_plotters(object):
                 file.write('\nThe final raw data:                                '+str(pop[int_].flatten()))
                 file.write('\nSimulated time [Myr]                               '+str(N_parti_avg[int_].flatten()))
                 file.write('\nStandard dev. [Myr]:                               '+str(N_parti_std[int_].flatten()))
+
+
+
+print('...steady_plotter...')
+cst = stability_plotters()
+cst.overall_steady_plotter()
