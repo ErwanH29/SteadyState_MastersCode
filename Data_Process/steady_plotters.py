@@ -51,20 +51,9 @@ class stability_plotters(object):
         """
         Function to plot stability time for constant distances
         """
-
-        def f(x, mu, sigma) :
-            return 1/(np.sqrt(2*np.pi)*sigma*x)*np.exp(-((np.log(x)-mu)**2)/(2*sigma**2))
-
-        def log_slope(slope):
-            rclust = 0.3 | units.pc
-            Mclust = 10**4 | units.MSun
-            slope = slope * (1 | units.Myr)
-            trlx_coeff = (rclust/(constants.G*Mclust)**1/3)
-
-            return np.log(abs(slope.value_in(units.s)))/np.log(trlx_coeff.value_in(units.s**2/units.m**2))
             
-        def log_fit(xval, slope, beta, log_c, y_int):
-            return slope * (1/np.log(log_c*xval))**beta# + y_int
+        def log_fit(xval, slope, beta, log_c):
+            return slope * (np.log(log_c*xval))**beta
             
         plot_ini = plotter_setup()
         dirH = 'data/Hermite/no_addition/chaotic_simulation/*'
@@ -142,18 +131,24 @@ class stability_plotters(object):
             ax1.scatter(pop[int_], np.log10(std_max[int_]), color = colors[int_], marker = '_')
             ax1.plot([pop[int_], pop[int_]], [np.log10(std_min[int_]), np.log10(std_max[int_])], color = colors[int_], zorder = 1)
 
-        p0 = (100, -5, 20, 40)
-        params, cv = scipy.optimize.curve_fit(log_fit, pop[1][:-1], (N_parti_avg[1][:-1]), p0, maxfev = 10000, method = 'trf')
-        slope, beta, log_c, yint = params
+        p0 = (100, -5, 20)
+        params, cv = scipy.optimize.curve_fit(log_fit, pop[0], (N_parti_avg[0]), p0, maxfev = 10000, method = 'trf')
+        slopeH, betaH, log_cH = params
+        params, cv = scipy.optimize.curve_fit(log_fit, pop[1], (N_parti_avg[1]), p0, maxfev = 10000, method = 'trf')
+        slope, beta, log_c = params
+
+        slope_arr = [slopeH, slope]
+        beta_arr = [betaH, beta]
+        log_carr = [log_cH, log_c]
         
         slope_str = str('{:.2f}'.format(slope))
         logc_str = str('{:.2f}'.format(log_c))
         beta_str = str('{:.2f}'.format(beta))
         xtemp = np.linspace(10, 100, 1000)
-        curve = [(log_fit(i, slope, beta, log_c, yint)) for i in xtemp]
+        curve = [(log_fit(i, slope, beta, log_c)) for i in xtemp]
 
         ax1.plot(xtemp, np.log10(curve), zorder = 1, color = 'black', ls = '-.')
-        ax1.text(72, 1.5, r'$t_{{\rm surv}} \approx{{{}}}(\frac{{N}}{{\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
+        ax1.text(72, 1.5, r'$t_{{\rm surv}} \approx{{{}}}(\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
         ax1.legend()
         plt.savefig('figures/steady_time/stab_time_mean.pdf', dpi = 300, bbox_inches='tight')
 
@@ -172,16 +167,27 @@ class stability_plotters(object):
         plt.savefig('figures/steady_time/stab_time_residuals.pdf', dpi = 300, bbox_inches='tight')
         plt.clf()
 
+        """max_slope = [std_max[1][0], N_parti_avg[1][1], std_min[1][2], std_min[1][3]]
+        min_slope = [std_min[1][0], std_max[1][1], std_max[1][2], std_max[1][3]]
+        """
+        params_max, cv = scipy.optimize.curve_fit(log_fit, pop[1], std_max[1], p0, maxfev = 10000, method = 'trf')
+        params_min, cv = scipy.optimize.curve_fit(log_fit, pop[1], std_min[1], p0, maxfev = 10000, method = 'trf')
+        mmax, betamax, log_cmax = params_max
+        mmin, betamin, log_cmin = params_min
+
+        print(slope, mmax, mmin)
+        print(betamax, betamin)
         with open('figures/steady_time/Sim_summary.txt', 'w') as file:
             for int_ in range(2):
                 file.write('\n\nFor'+str(integrator[int_])+', # of full simulations per population:  '+str(pop[int_].flatten()))
-                file.write('\n                                                   '+str(full_simul[int_]))
-                file.write('\nThe slope of the full curve goes as:               '+str(log_slope(slope)))
-                #file.write('\nwith errors:                                       '+str(errs_upper)+' '+str(errs_lower))
-                file.write('\nThe logarithmic prefactor goes as:                 '+str(log_c))
-                file.write('\nThe final raw data:                                '+str(pop[int_].flatten()))
-                file.write('\nSimulated time [Myr]                               '+str(N_parti_avg[int_].flatten()))
-                file.write('\nStandard dev. [Myr]:                               '+str(N_parti_std[int_].flatten()))
+                file.write('\n                                              '+str(full_simul[int_]))
+                file.write('\nThe slope of the curve goes as:               '+str(slope_arr[int_]))
+                file.write('\nThe power-law of the curve goes as:           '+str(beta_arr[int_]))
+                file.write('\nThe logarithmic factor goes as:               '+str(log_carr[int_]))
+                file.write('\nThe logarithmic prefactor goes as:            '+str(log_c))
+                file.write('\nThe final raw data:                           '+str(pop[int_].flatten()))
+                file.write('\nSimulated time [Myr]                          '+str(N_parti_avg[int_].flatten()))
+                file.write('\nStandard dev. [Myr]:                          '+str(N_parti_std[int_].flatten()))
 
 
 
