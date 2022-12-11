@@ -400,7 +400,7 @@ def ejected_evolution():
             with open(chaotic[file_], 'rb') as input_file:
                 print('Reading file : ', input_file)
                 chaotic_tracker = pkl.load(input_file)
-                if chaotic_tracker.iloc[0][6] %10 == 0 and chaotic_tracker.iloc[0][6] <= 40:     # TURN OFF TO FIND THE COMPLETE ECCENTRIC STATISTICS
+                if chaotic_tracker.iloc[0][6] <= 50:     # TURN OFF TO FIND THE COMPLETE ECCENTRIC STATISTICS
                     if chaotic_tracker.iloc[0][-4] > 0 or chaotic_tracker.iloc[0][5] > 0:
                         with open(data[file_], 'rb') as input_file:
                             ptracker = pkl.load(input_file)
@@ -727,7 +727,7 @@ def global_properties():
         for file_ in range(len(data)):
             with open(chaotic[file_], 'rb') as input_file:
                 chaotic_tracker = pkl.load(input_file)
-                if chaotic_tracker.iloc[0][6] %10 == 0 and chaotic_tracker.iloc[0][6] <= 40:
+                if chaotic_tracker.iloc[0][6] <= 50:
                     with open(data[file_], 'rb') as input_file:
                         print('Reading File :', input_file)
                         ptracker = pkl.load(input_file)

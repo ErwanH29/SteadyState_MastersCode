@@ -19,9 +19,9 @@ class ejection_stats(object):
         Function to extract newly simulated data into reduced manipulatable files
         """
 
-        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory_ejec_new/*'))
+        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
         chaotic_H = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[51:]) for i in Hermite_data]
-        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory_ejec_new/*'))
+        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory/*'))
         chaotic_G = ['data/GRX/no_addition/chaotic_simulation/'+str(i[47:]) for i in GRX_data]
 
         filest = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)] 
@@ -242,6 +242,7 @@ class ejection_stats(object):
             ax_.set_ylabel(r'$\langle v_{ej} \rangle$ [km/s]')
             ax_.axhline(vesc_MW, color = 'black', linestyle = ':')
             ax_.xaxis.labelpad = 30
+            ax_.set_ylim(175, 1.05*max(ymax))
             plot_ini.tickers_pop(ax_, self.tot_pop[0])
         for ax_ in [ax3, ax4]:
             ax_.set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
@@ -251,8 +252,6 @@ class ejection_stats(object):
             ax_.text(655, 0.2, r'$v_{\rm{esc, MW}}$', rotation = 270)
             plot_ini.tickers(ax_, 'plot')
 
-        for ax_ in [ax1, ax2]:
-            ax_.set_ylim(175, 1.05*max(ymax))
         cbar = plt.colorbar(colour_axes, ax=ax2, label = r'$\log_{10} \langle t_{\rm{ej}}\rangle$ [Myr]')
         plt.savefig('figures/ejection_stats/vejection.pdf', dpi = 300, bbox_inches='tight')
 

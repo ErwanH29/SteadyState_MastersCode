@@ -41,53 +41,54 @@ class loss_cone(object):
                     print('Reading file', file_, ': ', pfile[int_][file_])
                     data = pkl.load(input_file)
                     pop = 10*round(0.1*(np.shape(data))[0])
-                    for parti_ in range(np.shape(data)[0]):
-                        KE_arr = [ ]
-                        PE_arr = [ ]
-                        angL_arr = [ ]
-                        energy_arr = [ ]
-                        time = [ ]
-                        if parti_ != 0:
-                            self.init_pop[int_].append(pop)
-                            angL_val = 0
-                            for col_ in range(np.shape(data)[1]-1):
-                                KE = data.iloc[parti_][col_][4].value_in(units.J)
-                                PE = data.iloc[parti_][col_][5].value_in(units.J)
-                                tot_E = KE + PE
-                                KE_arr.append(KE)
-                                PE_arr.append(PE)
-                                energy_arr.append(abs(tot_E))
-                                time.append(col_*1000)
+                    if pop <= 50:
+                        for parti_ in range(np.shape(data)[0]):
+                            KE_arr = [ ]
+                            PE_arr = [ ]
+                            angL_arr = [ ]
+                            energy_arr = [ ]
+                            time = [ ]
+                            if parti_ != 0:
+                                self.init_pop[int_].append(pop)
+                                angL_val = 0
+                                for col_ in range(np.shape(data)[1]-1):
+                                    KE = data.iloc[parti_][col_][4].value_in(units.J)
+                                    PE = data.iloc[parti_][col_][5].value_in(units.J)
+                                    tot_E = KE + PE
+                                    KE_arr.append(KE)
+                                    PE_arr.append(PE)
+                                    energy_arr.append(abs(tot_E))
+                                    time.append(col_*1000)
 
-                                semi_val = data.iloc[parti_][col_][7][0]
-                                ecc_val = (1-data.iloc[parti_][col_][8][0])
-                                angL_arr.append(self.ang_momentum(semi_val, ecc_val))
-                                angL_val += self.ang_momentum(semi_val, ecc_val)
-                            
-                            if not isinstance(data.iloc[parti_][col_+1][0], np.uint64) or data.iloc[parti_][col_+1][1] > 4*10**6 | units.MSun:
-                                self.ejec_part[int_].append(1)
-                            else:
-                                self.ejec_part[int_].append(0)
+                                    semi_val = data.iloc[parti_][col_][7][0]
+                                    ecc_val = (1-data.iloc[parti_][col_][8][0])
+                                    angL_arr.append(self.ang_momentum(semi_val, ecc_val))
+                                    angL_val += self.ang_momentum(semi_val, ecc_val)
+                                
+                                if not isinstance(data.iloc[parti_][col_+1][0], np.uint64) or data.iloc[parti_][col_+1][1] > 4*10**6 | units.MSun:
+                                    self.ejec_part[int_].append(1)
+                                else:
+                                    self.ejec_part[int_].append(0)
 
-                            sem_init = data.iloc[parti_][0][7][0]
-                            ecc_init = 1-data.iloc[parti_][0][8][0]
-                            semi_fin = data.iloc[parti_][-2][7][0]
-                            ecc_fin = 1-data.iloc[parti_][-2][8][0]
+                                sem_init = data.iloc[parti_][0][7][0]
+                                ecc_init = 1-data.iloc[parti_][0][8][0]
+                                semi_fin = data.iloc[parti_][-2][7][0]
+                                ecc_fin = 1-data.iloc[parti_][-2][8][0]
 
-                            angL_val -= self.ang_momentum(sem_init, ecc_init)
-                            angL_val /= np.shape(data)[1] - 1                # Average change per kyr
-                            self.dangL_avg[int_].append(angL_val)
+                                angL_val -= self.ang_momentum(sem_init, ecc_init)
+                                angL_val /= np.shape(data)[1] - 1                # Average change per kyr
+                                self.dangL_avg[int_].append(angL_val)
 
-                            angL_init_val = self.ang_momentum(sem_init, ecc_init)
-                            angL_fin_val = self.ang_momentum(semi_fin, ecc_fin)
-                            self.angL_init[int_].append(angL_init_val)
-                            self.angL_fin[int_].append(angL_fin_val)
+                                angL_init_val = self.ang_momentum(sem_init, ecc_init)
+                                angL_fin_val = self.ang_momentum(semi_fin, ecc_fin)
+                                self.angL_init[int_].append(angL_init_val)
+                                self.angL_fin[int_].append(angL_fin_val)
 
-                            self.KE[int_].append(KE_arr)
-                            self.PE[int_].append(PE_arr)
-                            self.energy[int_].append(energy_arr)
-                            self.angL_evol[int_].append(angL_arr)
-                            self.time[int_].append(time)
+                                self.KE[int_].append(KE_arr)
+                                self.PE[int_].append(PE_arr)
+                                self.energy[int_].append(energy_arr)
+                                self.angL_evol[int_].append(angL_arr)
+                                self.time[int_].append(time)
 
             self.dangL_avg[int_] = np.asarray(self.dangL_avg[int_])
             self.angL_init[int_] = np.asarray(self.angL_init[int_])

@@ -9,6 +9,15 @@ from spatial_plotters import *
 start_time = cpu_time.time()
 
 
+print('...tGW_plotters...')
+cst = gw_calcs()
+cst.new_data_extractor()
+STOP
+
+print('...steady_plotter...')
+cst = stability_plotters()
+cst.overall_steady_plotter()
+
 print('... ejection_Stat_plotters ...')
 cst = event_tracker()
 cst = ejection_stats()
@@ -16,11 +25,6 @@ cst.new_data_extractor()
 cst.combine_data()
 cst.energy_plotters()
 cst.vejec_plotters()
-
-print('...steady_plotter...')
-cst = stability_plotters()
-cst.overall_steady_plotter()
-STOP
 
 print('...spatial_plotters...')
 ejected_evolution()
