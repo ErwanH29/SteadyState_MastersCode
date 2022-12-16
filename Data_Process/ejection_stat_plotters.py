@@ -19,10 +19,10 @@ class ejection_stats(object):
         Function to extract newly simulated data into reduced manipulatable files
         """
 
-        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
-        chaotic_H = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[51:]) for i in Hermite_data]
-        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory/*'))
-        chaotic_G = ['data/GRX/no_addition/chaotic_simulation/'+str(i[47:]) for i in GRX_data]
+        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory_ejec_new/*'))
+        chaotic_H = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[60:]) for i in Hermite_data]
+        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory_ejec_new/*'))
+        chaotic_G = ['data/GRX/no_addition/chaotic_simulation/'+str(i[56:]) for i in GRX_data]
 
         filest = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)] 
         filesc = [natsort.natsorted(chaotic_H), natsort.natsorted(chaotic_G)] 
@@ -36,7 +36,7 @@ class ejection_stats(object):
                             count = len(fnmatch.filter(os.listdir('data/ejection_stats/'), '*.*'))
                             ptracker = pkl.load(input_file)
 
-                            ex, ey, ez, vesc, ejec_KE, ejec_PE, Nclose, ebool = ejected_extract_final(ptracker, ctracker, 'E')
+                            ex, ey, ez, vesc, ejec_KE, ejec_PE, Nclose, ebool = ejected_extract_final(ptracker, ctracker)
 
                             path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/ejection_stats/'
                             stab_tracker = pd.DataFrame()
@@ -218,11 +218,11 @@ class ejection_stats(object):
                 vels.append(max(vesc))
 
                 file.write('\nData for '+str(self.integrator[int_]))
-                file.write('\nPopulations average escape velocity ' + str(in_pop) + ' : ' + str(avg_vesc) + ' kms')
-                file.write('\nPopulations average escape distance ' + str(in_pop) + ' : ' + str(avg_pos[int_]) + ' pc')
-                file.write('\nPopulations min. escape velocity    ' + str(in_pop) + ' : ' + str(minvel) + ' kms')
-                file.write('\nPopulations max. escape velocity    ' + str(in_pop) + ' : ' + str(maxvel) + ' kms')
-                file.write('\nPopulations average escape time     ' + str(in_pop) + ' : ' + str(avg_surv) + ' Myr')
+                file.write('\nPopulations average escape velocity          ' + str(in_pop) + ' : ' + str(avg_vesc) + ' kms')
+                file.write('\nPopulations average escape location distance ' + str(in_pop) + ' : ' + str(avg_pos[int_]) + ' pc')
+                file.write('\nPopulations min. escape velocity             ' + str(in_pop) + ' : ' + str(minvel) + ' kms')
+                file.write('\nPopulations max. escape velocity             ' + str(in_pop) + ' : ' + str(maxvel) + ' kms')
+                file.write('\nPopulations average escape time              ' + str(in_pop) + ' : ' + str(avg_surv) + ' Myr')
                 file.write('\n========================================================================')
 
                 colour_axes = ax[int_].scatter(pops, avg_vesc, edgecolors='black', c = np.log10(avg_surv), norm = normalise, zorder = 3)

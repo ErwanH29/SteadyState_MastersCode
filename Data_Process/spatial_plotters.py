@@ -403,129 +403,133 @@ def ejected_evolution():
                 if chaotic_tracker.iloc[0][6] <= 50:     # TURN OFF TO FIND THE COMPLETE ECCENTRIC STATISTICS
                     if chaotic_tracker.iloc[0][-4] > 0 or chaotic_tracker.iloc[0][5] > 0:
                         with open(data[file_], 'rb') as input_file:
-                            ptracker = pkl.load(input_file)
+                            file_size = os.path.getsize(data[file_])
+                            if file_size < 2.8e9:
+                                ptracker = pkl.load(input_file)
 
-                        with open(energy[file_], 'rb') as input_file:
-                            etracker = pkl.load(input_file)
-                            
-                        col_len = np.shape(ptracker)[1]-1
-                        smoothing = round(0.1 * col_len)
-                        focus_idx, res = ejected_index(ptracker, chaotic_tracker, int_)
-                        if res == 'merger' or res == 'ejected' and focus_idx != 0:
-                            filter += 1
-                            ejec_particle = ptracker.iloc[focus_idx]
-                            SMBH_data = ptracker.iloc[0]
+                                with open(energy[file_], 'rb') as input_file:
+                                    etracker = pkl.load(input_file)
+                                    
+                                col_len = np.shape(ptracker)[1]-1
+                                smoothing = round(0.1 * col_len)
+                                focus_idx, res = ejected_index(ptracker, chaotic_tracker)
+                                if res == 'merger' or res == 'ejected':
+                                    if focus_idx != 0:
+                                        if res == 'merger':
+                                            filter += 1
+                                        ejec_particle = ptracker.iloc[focus_idx]
+                                        SMBH_data = ptracker.iloc[0]
 
-                            time = np.empty(col_len)
-                            neigh_key = np.empty((3, col_len))
-                            NN = np.empty(col_len)
-                            SMBH_dist = np.empty(col_len)
-                            pvel = np.empty(col_len)
-                            ejec_KE = np.empty(col_len)
-                            ejec_ecc_SMBH = np.empty(col_len)
+                                        time = np.empty(col_len)
+                                        neigh_key = np.empty((3, col_len))
+                                        NN = np.empty(col_len)
+                                        SMBH_dist = np.empty(col_len)
+                                        pvel = np.empty(col_len)
+                                        ejec_KE = np.empty(col_len)
+                                        ejec_ecc_SMBH = np.empty(col_len)
 
-                            for j in range(col_len):
-                                time_step = ejec_particle.iloc[j]
-                                time_arr = etracker.iloc[j]
-                                SMBH_coords = SMBH_data.iloc[j]
+                                        for j in range(col_len):
+                                            time_step = ejec_particle.iloc[j]
+                                            time_arr = etracker.iloc[j]
+                                            SMBH_coords = SMBH_data.iloc[j]
 
-                                ejec_KE[j] = time_step[4].value_in(units.J)
-                                ejec_ecc_SMBH[j] = np.log10(1-time_step[8][0])
+                                            ejec_KE[j] = time_step[4].value_in(units.J)
+                                            ejec_ecc_SMBH[j] = np.log10(1-time_step[8][0])
 
-                                for i in range(3):
-                                    neigh_key[i][j] = time_step[6][i]
+                                            for i in range(3):
+                                                neigh_key[i][j] = time_step[6][i]
 
-                                NN[j] = np.log10(time_step[-1])
-                                time[j] = time_arr[6].value_in(units.Myr)
-                                
-                                line_x = (time_step[2][0] - SMBH_coords[2][0])
-                                line_y = (time_step[2][1] - SMBH_coords[2][1])
-                                line_z = (time_step[2][2] - SMBH_coords[2][2])
-                                SMBH_dist[j] = np.log10(np.sqrt(line_x**2+line_y**2+line_z**2).value_in(units.pc))
+                                            NN[j] = np.log10(time_step[-1])
+                                            time[j] = time_arr[6].value_in(units.Myr)
+                                            
+                                            line_x = (time_step[2][0] - SMBH_coords[2][0])
+                                            line_y = (time_step[2][1] - SMBH_coords[2][1])
+                                            line_z = (time_step[2][2] - SMBH_coords[2][2])
+                                            SMBH_dist[j] = np.log10(np.sqrt(line_x**2+line_y**2+line_z**2).value_in(units.pc))
 
-                                vel_x = (time_step[3][0] - SMBH_coords[3][0])
-                                vel_y = (time_step[3][1] - SMBH_coords[3][1])
-                                vel_z = (time_step[3][2] - SMBH_coords[3][2])
-                                vel = np.log10(np.sqrt(vel_x**2+vel_y**2+vel_z**2).value_in(units.kms))
-                                pvel[j] = vel
+                                            vel_x = (time_step[3][0] - SMBH_coords[3][0])
+                                            vel_y = (time_step[3][1] - SMBH_coords[3][1])
+                                            vel_z = (time_step[3][2] - SMBH_coords[3][2])
+                                            vel = np.log10(np.sqrt(vel_x**2+vel_y**2+vel_z**2).value_in(units.kms))
+                                            pvel[j] = vel
 
-                                SMBHx.append(SMBH_coords[2][0].value_in(units.pc))
-                                SMBHy.append(SMBH_coords[2][1].value_in(units.pc))
-                                SMBHz.append(SMBH_coords[2][2].value_in(units.pc))
-                                if file_ == 0:
-                                    SMBH_sample[0].append(SMBH_coords[2][0].value_in(units.pc))
-                                    SMBH_sample[1].append(SMBH_coords[2][1].value_in(units.pc))
-                                    SMBH_sample[2].append(SMBH_coords[2][2].value_in(units.pc))
+                                            SMBHx.append(SMBH_coords[2][0].value_in(units.pc))
+                                            SMBHy.append(SMBH_coords[2][1].value_in(units.pc))
+                                            SMBHz.append(SMBH_coords[2][2].value_in(units.pc))
+                                            if file_ == 0:
+                                                SMBH_sample[0].append(SMBH_coords[2][0].value_in(units.pc))
+                                                SMBH_sample[1].append(SMBH_coords[2][1].value_in(units.pc))
+                                                SMBH_sample[2].append(SMBH_coords[2][2].value_in(units.pc))
 
-                            ejec_KE /= ejec_KE[0]
-                            ejec_ecc_SMBH = np.asarray(ejec_ecc_SMBH)
+                                        ejec_KE /= ejec_KE[0]
+                                        ejec_ecc_SMBH = np.asarray(ejec_ecc_SMBH)
 
-                            ejec_KE_smooth = plot_ini.moving_average(ejec_KE, smoothing)
-                            ejec_ecc_SMBH_smooth = plot_ini.moving_average(ejec_ecc_SMBH, smoothing)
-                            pvel_smooth = plot_ini.moving_average(pvel, smoothing)
-                            time_smooth = plot_ini.moving_average(time, smoothing)
-                            nearest_smooth = plot_ini.moving_average(NN, smoothing)
-                            SMBH_dist_smooth = plot_ini.moving_average(SMBH_dist, smoothing)
+                                        ejec_KE_smooth = plot_ini.moving_average(ejec_KE, smoothing)
+                                        ejec_ecc_SMBH_smooth = plot_ini.moving_average(ejec_ecc_SMBH, smoothing)
+                                        pvel_smooth = plot_ini.moving_average(pvel, smoothing)
+                                        time_smooth = plot_ini.moving_average(time, smoothing)
+                                        nearest_smooth = plot_ini.moving_average(NN, smoothing)
+                                        SMBH_dist_smooth = plot_ini.moving_average(SMBH_dist, smoothing)
 
-                            fig = plt.figure(figsize=(12.5, 10))
-                            ax1 = fig.add_subplot(221)
-                            ax2 = fig.add_subplot(222)
-                            ax3 = fig.add_subplot(223)
-                            ax4 = fig.add_subplot(224)
+                                        fig = plt.figure(figsize=(12.5, 10))
+                                        ax1 = fig.add_subplot(221)
+                                        ax2 = fig.add_subplot(222)
+                                        ax3 = fig.add_subplot(223)
+                                        ax4 = fig.add_subplot(224)
 
-                            ax1.set_title('Time vs. Eccentricity')
-                            ax2.set_title('Time vs. Kinetic Energy')
-                            ax3.set_title('Time vs. Inclination')
-                            ax4.set_title('Time vs. Distance to Nearest Neighbour')
-                            ax1.set_ylabel(r'$\log_{10}(1-e)$')
-                            ax2.set_ylabel(r'$K_E / K_{E,0}$ [J]')
-                            ax3.set_ylabel(r'$\log_{10} |v|$ [km s$^{-1}$]')
-                            ax4.set_ylabel(r'$r_{nn}$ [pc]')
-                            ax1.set_ylim(-6.5, 0)
-                            for ax_ in [ax1, ax2, ax3, ax4]:
-                                ax_.set_xlabel('Time [Myr]')
-                                plot_ini.tickers(ax_, 'plot')
+                                        ax1.set_title('Time vs. Eccentricity')
+                                        ax2.set_title('Time vs. Kinetic Energy')
+                                        ax3.set_title('Time vs. Inclination')
+                                        ax4.set_title('Time vs. Distance to Nearest Neighbour')
+                                        ax1.set_ylabel(r'$\log_{10}(1-e)$')
+                                        ax2.set_ylabel(r'$K_E / K_{E,0}$ [J]')
+                                        ax3.set_ylabel(r'$\log_{10} |v|$ [km s$^{-1}$]')
+                                        ax4.set_ylabel(r'$r_{nn}$ [pc]')
+                                        ax1.set_ylim(-6.5, 0)
+                                        for ax_ in [ax1, ax2, ax3, ax4]:
+                                            ax_.set_xlabel('Time [Myr]')
+                                            plot_ini.tickers(ax_, 'plot')
 
-                            ax1.plot(time, ejec_ecc_SMBH, color = 'black', alpha = 0.35, linestyle = ':')
-                            ax1.plot(time_smooth, ejec_ecc_SMBH_smooth, color = 'black')
-                            ax2.plot(time, ejec_KE, color = 'black', alpha = 0.35, linestyle = ':')
-                            ax2.plot(time_smooth, ejec_KE_smooth, color = 'black')
-                            ax3.plot(time, pvel, color = 'black', alpha = 0.35, linestyle = ':')
-                            ax3.plot(time_smooth, pvel_smooth, color = 'black')
-                            ax4.plot(time, SMBH_dist, color = 'black', alpha = 0.35, linestyle = ':')
-                            ax4.plot(time_smooth, SMBH_dist_smooth, color = 'black', label = 'w.r.t SMBH')
-                            ax4.plot(time, NN, color = 'purple', alpha = 0.35, linestyle = ':')
-                            ax4.plot(time_smooth, nearest_smooth, color = 'purple', label = 'w.r.t NN')
+                                        ax1.plot(time, ejec_ecc_SMBH, color = 'black', alpha = 0.35, linestyle = ':')
+                                        ax1.plot(time_smooth, ejec_ecc_SMBH_smooth, color = 'black')
+                                        ax2.plot(time, ejec_KE, color = 'black', alpha = 0.35, linestyle = ':')
+                                        ax2.plot(time_smooth, ejec_KE_smooth, color = 'black')
+                                        ax3.plot(time, pvel, color = 'black', alpha = 0.35, linestyle = ':')
+                                        ax3.plot(time_smooth, pvel_smooth, color = 'black')
+                                        ax4.plot(time, SMBH_dist, color = 'black', alpha = 0.35, linestyle = ':')
+                                        ax4.plot(time_smooth, SMBH_dist_smooth, color = 'black', label = 'w.r.t SMBH')
+                                        ax4.plot(time, NN, color = 'purple', alpha = 0.35, linestyle = ':')
+                                        ax4.plot(time_smooth, nearest_smooth, color = 'purple', label = 'w.r.t NN')
 
-                            ax4.legend()
-                            if focus_idx == 0:
-                                plt.savefig('figures/system_evolution/'+str(int_)+'_Merger/ejec_bin_trip_evol_'+str(file_)
-                                            +'_pop_'+str(np.shape(ptracker)[0])+'_'+str(res)+'_SMBH_merged.pdf', dpi=300, bbox_inches='tight')
-                            else:
-                                plt.savefig('figures/system_evolution/'+str(int_)+'_Merger/ejec_bin_trip_evol_'+str(file_)
-                                            +'_pop_'+str(np.shape(ptracker)[0])+'_'+str(res)+'.pdf', dpi=300, bbox_inches='tight')
-                            plt.clf()
+                                        ax4.legend()
+                                        if focus_idx == 0:
+                                            plt.savefig('figures/system_evolution/'+str(int_)+'_Merger/indiv/ejec_bin_trip_evol_'+str(file_)
+                                                        +'_pop_'+str(np.shape(ptracker)[0])+'_'+str(res)+'_SMBH_merged.pdf', dpi=300, bbox_inches='tight')
+                                        else:
+                                            plt.savefig('figures/system_evolution/'+str(int_)+'_Merger/indiv/ejec_bin_trip_evol_'+str(file_)
+                                                        +'_pop_'+str(np.shape(ptracker)[0])+'_'+str(res)+'.pdf', dpi=300, bbox_inches='tight')
+                                        plt.clf()
 
-                            ejec_ecc.append(ejec_ecc_SMBH)
-                            distSMBH.append(SMBH_dist)
-                            ejec_time.append(time)
-                            vel_arr.append(pvel)
-                            NNdist.append(NN)
-                            ejec_ecc_smooth.append(ejec_ecc_SMBH_smooth)
-                            distSMBH_smooth.append(SMBH_dist_smooth)
-                            ejec_time_smooth.append(time_smooth)
-                            vel_smooth.append(pvel_smooth)
-                            NNdist_smooth.append(nearest_smooth)
-                            if res == 'merger':
-                                if len(ejec_ecc_SMBH[ejec_ecc_SMBH < 10**-6]) != 0:
-                                    high_ecc += 1
-                                    if max(time) < 5:
-                                        cropped_idx.append(filter-1)
-                                    all_idx.append(filter-1)
-                                ejec_ecc_arr[iter].append(ejec_ecc_SMBH)
-                                ejec_distSMBH_arr[iter].append(SMBH_dist)
-                                ejec_vel_arr[iter].append(pvel)
-                                ejec_NNdist_arr[iter].append(NN)
+                                        ejec_ecc.append(ejec_ecc_SMBH)
+                                        distSMBH.append(SMBH_dist)
+                                        ejec_time.append(time)
+                                        vel_arr.append(pvel)
+                                        NNdist.append(NN)
+                                        ejec_ecc_smooth.append(ejec_ecc_SMBH_smooth)
+                                        distSMBH_smooth.append(SMBH_dist_smooth)
+                                        ejec_time_smooth.append(time_smooth)
+                                        vel_smooth.append(pvel_smooth)
+                                        NNdist_smooth.append(nearest_smooth)
+                                        if res == 'merger':
+                                            if len(ejec_ecc_SMBH[ejec_ecc_SMBH < 10**-6]) != 0:
+                                                high_ecc += 1
+                                                if max(time) < 5:
+                                                    cropped_idx.append(filter-1)
+                                                all_idx.append(filter-1)
+                                            ejec_ecc_arr[iter].append(ejec_ecc_SMBH)
+                                            ejec_distSMBH_arr[iter].append(SMBH_dist)
+                                            ejec_vel_arr[iter].append(pvel)
+                                            ejec_NNdist_arr[iter].append(NN)
                         
         save_file = ['All', 'Cropped']
         idx = [all_idx, cropped_idx]
@@ -627,7 +631,6 @@ def ejected_evolution():
         ejec_NNdist_sort = np.sort(ejec_NNdist_flat[j])
         ejec_NNdist_index = np.asarray([i for i in enumerate(ejec_NNdist_sort)])
         ax4.plot(ejec_NNdist_sort, ejec_NNdist_index[:,0]/ejec_NNdist_index[-1,0], color = c_hist[j])
-    ax1.plot(ejec_ecc_sort, [10**(2*i) for i in ejec_ecc_sort], color = 'black', linestyle = ':', label = 'Thermal Distribution')
     ax1.legend(loc='upper left')
     plt.savefig('figures/system_evolution/merged_properties_cdf_histogram.pdf', dpi=300, bbox_inches='tight')
 
@@ -729,67 +732,66 @@ def global_properties():
                 chaotic_tracker = pkl.load(input_file)
                 if chaotic_tracker.iloc[0][6] <= 50:
                     with open(data[file_], 'rb') as input_file:
-                        print('Reading File :', input_file)
-                        ptracker = pkl.load(input_file)
+                        file_size = os.path.getsize(data[file_])
+                        if file_size < 2.8e9:
+                            print('Reading File :', input_file)
+                            ptracker = pkl.load(input_file)
+                            with open(energy[file_], 'rb') as input_file:
+                                etracker = pkl.load(input_file)
 
-                    with open(energy[file_], 'rb') as input_file:
-                        etracker = pkl.load(input_file)
+                            col_len = np.shape(ptracker)[1]-1
+                            for parti_ in range(np.shape(ptracker)[0]):
+                                if parti_ != 0:
+                                    particle = ptracker.iloc[parti_]
+                                    SMBH_data = ptracker.iloc[0]
 
-                    col_len = np.shape(ptracker)[1]-1
-                    for parti_ in range(np.shape(ptracker)[0]):
-                        if parti_ == 0:
-                            pass
-                        else:
-                            particle = ptracker.iloc[parti_]
-                            SMBH_data = ptracker.iloc[0]
+                                    time = np.empty(col_len)
+                                    neigh_key = np.empty((3, col_len))
+                                    NN = np.empty(col_len)
+                                    SMBH_dist = np.empty(col_len)
+                                    pvel = np.empty(col_len)
+                                    KE = np.empty(col_len)
+                                    ecc_SMBH = np.empty(col_len)
 
-                            time = np.empty(col_len)
-                            neigh_key = np.empty((3, col_len))
-                            NN = np.empty(col_len)
-                            SMBH_dist = np.empty(col_len)
-                            pvel = np.empty(col_len)
-                            KE = np.empty(col_len)
-                            ecc_SMBH = np.empty(col_len)
+                                    for j in range(col_len):
+                                        time_step = particle.iloc[j]
+                                        time_arr = etracker.iloc[j]
+                                        SMBH_coords = SMBH_data.iloc[j]
 
-                            for j in range(col_len):
-                                time_step = particle.iloc[j]
-                                time_arr = etracker.iloc[j]
-                                SMBH_coords = SMBH_data.iloc[j]
+                                        KE[j] = np.log10(time_step[4].value_in(units.J))
+                                        ecc_SMBH[j] = np.log10(1-time_step[8][0])
 
-                                KE[j] = np.log10(time_step[4].value_in(units.J))
-                                ecc_SMBH[j] = np.log10(1-time_step[8][0])
+                                        for i in range(3):
+                                            neigh_key[i][j] = time_step[6][i]
 
-                                for i in range(3):
-                                    neigh_key[i][j] = time_step[6][i]
+                                        NN[j] = np.log10(time_step[-1])
+                                        time[j] = time_arr[6].value_in(units.Myr)
+                                        
+                                        line_x = (time_step[2][0] - SMBH_coords[2][0])
+                                        line_y = (time_step[2][1] - SMBH_coords[2][1])
+                                        line_z = (time_step[2][2] - SMBH_coords[2][2])
+                                        SMBH_dist[j] = np.log10(np.sqrt(line_x**2+line_y**2+line_z**2).value_in(units.pc))
 
-                                NN[j] = np.log10(time_step[-1])
-                                time[j] = time_arr[6].value_in(units.Myr)
-                                
-                                line_x = (time_step[2][0] - SMBH_coords[2][0])
-                                line_y = (time_step[2][1] - SMBH_coords[2][1])
-                                line_z = (time_step[2][2] - SMBH_coords[2][2])
-                                SMBH_dist[j] = np.log10(np.sqrt(line_x**2+line_y**2+line_z**2).value_in(units.pc))
+                                        vel_x = (time_step[3][0] - SMBH_coords[3][0])
+                                        vel_y = (time_step[3][1] - SMBH_coords[3][1])
+                                        vel_z = (time_step[3][2] - SMBH_coords[3][2])
+                                        pvel[j] = np.log10(np.sqrt(vel_x**2+vel_y**2+vel_z**2).value_in(units.kms))
 
-                                vel_x = (time_step[3][0] - SMBH_coords[3][0])
-                                vel_y = (time_step[3][1] - SMBH_coords[3][1])
-                                vel_z = (time_step[3][2] - SMBH_coords[3][2])
-                                pvel[j] = np.log10(np.sqrt(vel_x**2+vel_y**2+vel_z**2).value_in(units.kms))
+                                        SMBHx.append(SMBH_coords[2][0].value_in(units.pc))
+                                        SMBHy.append(SMBH_coords[2][1].value_in(units.pc))
+                                        SMBHz.append(SMBH_coords[2][2].value_in(units.pc))
+                                        if file_ == 0:
+                                            SMBH_sample[0].append(SMBH_coords[2][0].value_in(units.pc))
+                                            SMBH_sample[1].append(SMBH_coords[2][1].value_in(units.pc))
+                                            SMBH_sample[2].append(SMBH_coords[2][2].value_in(units.pc))
 
-                                SMBHx.append(SMBH_coords[2][0].value_in(units.pc))
-                                SMBHy.append(SMBH_coords[2][1].value_in(units.pc))
-                                SMBHz.append(SMBH_coords[2][2].value_in(units.pc))
-                                if file_ == 0:
-                                    SMBH_sample[0].append(SMBH_coords[2][0].value_in(units.pc))
-                                    SMBH_sample[1].append(SMBH_coords[2][1].value_in(units.pc))
-                                    SMBH_sample[2].append(SMBH_coords[2][2].value_in(units.pc))
+                                    ecc_SMBH = np.asarray(ecc_SMBH)
 
-                            ecc_SMBH = np.asarray(ecc_SMBH)
-
-                            ecc_arr[iter].append(ecc_SMBH)
-                            distSMBH_arr[iter].append(SMBH_dist)
-                            NNdist_arr[iter].append(NN)
-                            vel_arr[iter].append(pvel)
-                            KE_arr[iter].append(KE)
+                                    ecc_arr[iter].append(ecc_SMBH)
+                                    distSMBH_arr[iter].append(SMBH_dist)
+                                    NNdist_arr[iter].append(NN)
+                                    vel_arr[iter].append(pvel)
+                                    KE_arr[iter].append(KE)
             
     c_hist = ['red', 'blue']
 
@@ -853,7 +855,7 @@ def global_properties():
     ax1.plot(ecc_sort, [10**(2*i) for i in ecc_sort], color = 'black', linestyle = ':', label = 'Thermal Distribution')
     ax1.legend(loc='upper left')
     ax2.legend(loc='upper left')
-    plt.savefig('figures/system_evolution/global_properties_N=20_cdf_histogram.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/system_evolution/global_properties_lt50_cdf_histogram.pdf', dpi=300, bbox_inches='tight')
 
 def spatial_plotter(int_string):
     """
@@ -871,137 +873,139 @@ def spatial_plotter(int_string):
     for file_ in range(len(ptracker_files)):
         iter_file += 1
         with open(ctracker_files[file_], 'rb') as input_file:
-            print('Reading File ', file_, ' : ', input_file)
             ctracker = pkl.load(input_file)
             if ctracker.iloc[0][5] > 0:
                 with open(ptracker_files[file_], 'rb') as input_file:
-                    ptracker = pkl.load(input_file)
-                with open(etracker_files[file_], 'rb') as input_file:
-                    etracker = pkl.load(input_file)
+                    file_size = os.path.getsize(ptracker_files[file_])
+                    if file_size < 2.8e9:
+                        print('Reading File ', file_, ' : ', input_file)
+                        ptracker = pkl.load(input_file)
+                        with open(etracker_files[file_], 'rb') as input_file:
+                            etracker = pkl.load(input_file)
 
-                col_len_raw = np.shape(ptracker)[1]
-                col_len = round(col_len_raw**0.6)
-                parti_size = 20+len(ptracker)**-0.5
+                        col_len_raw = np.shape(ptracker)[1]
+                        col_len = round(col_len_raw**0.6)
+                        parti_size = 20+len(ptracker)**-0.5
 
-                line_x = np.empty((len(ptracker), col_len))
-                line_y = np.empty((len(ptracker), col_len))
-                line_z = np.empty((len(ptracker), col_len))
+                        line_x = np.empty((len(ptracker), col_len))
+                        line_y = np.empty((len(ptracker), col_len))
+                        line_z = np.empty((len(ptracker), col_len))
 
-                for i in range(len(ptracker)):
-                    tptracker = ptracker.iloc[i]
-                    for j in range(col_len):
-                        coords = tptracker.iloc[j][2]
-                        if len(coords) == 1:
-                            pass
-                        else:
-                            line_x[i][j] = coords[0].value_in(units.pc)
-                            line_y[i][j] = coords[1].value_in(units.pc)
-                            line_z[i][j] = coords[2].value_in(units.pc)
+                        for i in range(len(ptracker)):
+                            tptracker = ptracker.iloc[i]
+                            for j in range(col_len):
+                                coords = tptracker.iloc[j][2]
+                                if len(coords) == 1:
+                                    pass
+                                else:
+                                    line_x[i][j] = coords[0].value_in(units.pc)
+                                    line_y[i][j] = coords[1].value_in(units.pc)
+                                    line_z[i][j] = coords[2].value_in(units.pc)
 
-                time = np.empty((col_len_raw - 1))
-                dE_array = np.empty((col_len_raw - 1))
+                        time = np.empty((col_len_raw - 1))
+                        dE_array = np.empty((col_len_raw - 1))
 
-                for i in range(col_len_raw):
-                    if i == 0:
-                        pass
-                    else:
-                        vals = etracker.iloc[i]
-                        time[i-1] = vals[6].value_in(units.Myr)
-                        dE_array[i-1] = vals[7]
+                        for i in range(col_len_raw):
+                            if i == 0:
+                                pass
+                            else:
+                                vals = etracker.iloc[i]
+                                time[i-1] = vals[6].value_in(units.Myr)
+                                dE_array[i-1] = vals[7]
 
-                c = colour_picker()
-                fig = plt.figure(figsize=(12.5, 15))
-                ax1 = fig.add_subplot(321)
-                ax2 = fig.add_subplot(322)
-                ax3 = fig.add_subplot(323)
-                ax4 = fig.add_subplot(324)
-                
-                ax1.set_title('Overall System')
-                ax2.set_title('Energy Error vs. Time')
-                ax1.xaxis.set_major_locator(plt.MaxNLocator(3))
-                ax1.yaxis.set_major_locator(plt.MaxNLocator(3))
-                for ax_ in [ax1, ax2, ax3, ax4]:
-                    plot_ini.tickers(ax_, 'plot') 
-
-                xaxis_lim = 1.05*np.nanmax(abs(line_x-line_x[0]))
-                yaxis_lim = 1.05*np.nanmax(abs(line_y-line_y[0]))
-                zaxis_lim = 1.05*np.nanmax(abs(line_z-line_z[0]))
-
-                ax1.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
-                ax1.set_ylim(-abs(yaxis_lim), yaxis_lim)
-                ax3.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
-                ax3.set_ylim(-abs(zaxis_lim), zaxis_lim)
-                ax4.set_xlim(-abs(yaxis_lim), abs(yaxis_lim))
-                ax4.set_ylim(-abs(zaxis_lim), zaxis_lim)
-                ax2.set_yscale('log')
-
-                ax1.set_xlabel(r'$x$ [pc]')
-                ax1.set_ylabel(r'$y$ [pc]')
-                ax2.set_xlabel(r'Time [Myr]')
-                ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
-                ax3.set_xlabel(r'$x$ [pc]')
-                ax3.set_ylabel(r'$z$ [pc]')
-                ax4.set_xlabel(r'$y$ [pc]')
-                ax4.set_ylabel(r'$z$ [pc]')
-                iter = -1
-                
-                for i in range(len(ptracker)):
-                    iter += 1
-                    if iter > len(c):
-                        iter = 0
-
-                    if i == 0:
-                        adapt_c = 'black'
-                        ax1.scatter((line_x[i]-line_x[0]), (line_y[i]-line_y[0]), 
-                                    c = adapt_c, zorder = 1, s = 250)
-                        ax3.scatter((line_x[i]-line_x[0]), (line_z[i]-line_z[0]), 
-                                    c = adapt_c, zorder = 1, s = 250)
-                        ax4.scatter((line_z[i]-line_z[0]), (line_y[i]-line_y[0]), 
-                                    c = adapt_c, zorder = 1, s = 250)
+                        c = colour_picker()
+                        fig = plt.figure(figsize=(12.5, 15))
+                        ax1 = fig.add_subplot(321)
+                        ax2 = fig.add_subplot(322)
+                        ax3 = fig.add_subplot(323)
+                        ax4 = fig.add_subplot(324)
                         
-                    else:
-                        ax1.scatter(line_x[i][-1]-line_x[0][-1], line_y[i][-1]-line_y[0][-1], 
-                                    c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
-                        ax1.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], 
-                                    c = c[iter-2], s = 1, zorder = 1) 
+                        ax1.set_title('Overall System')
+                        ax2.set_title('Energy Error vs. Time')
+                        ax1.xaxis.set_major_locator(plt.MaxNLocator(3))
+                        ax1.yaxis.set_major_locator(plt.MaxNLocator(3))
+                        for ax_ in [ax1, ax2, ax3, ax4]:
+                            plot_ini.tickers(ax_, 'plot') 
 
-                        ax3.scatter(line_x[i][-1]-line_x[0][-1], line_z[i][-1]-line_z[0][-1], 
-                                    c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
-                        ax3.scatter(line_x[i]-line_x[0], line_z[i]-line_z[0], 
-                                    c = c[iter-2], s = 1, zorder = 1) 
+                        xaxis_lim = 1.05*np.nanmax(abs(line_x-line_x[0]))
+                        yaxis_lim = 1.05*np.nanmax(abs(line_y-line_y[0]))
+                        zaxis_lim = 1.05*np.nanmax(abs(line_z-line_z[0]))
 
-                        ax4.scatter(line_y[i][-1]-line_y[0][-1], line_z[i][-1]-line_z[0][-1], 
-                                    c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
-                        ax4.scatter(line_y[i]-line_y[0], line_z[i]-line_z[0], 
-                                    c = c[iter-2], s = 1, zorder = 1) 
+                        ax1.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
+                        ax1.set_ylim(-abs(yaxis_lim), yaxis_lim)
+                        ax3.set_xlim(-abs(xaxis_lim), abs(xaxis_lim))
+                        ax3.set_ylim(-abs(zaxis_lim), zaxis_lim)
+                        ax4.set_xlim(-abs(yaxis_lim), abs(yaxis_lim))
+                        ax4.set_ylim(-abs(zaxis_lim), zaxis_lim)
+                        ax2.set_yscale('log')
+
+                        ax1.set_xlabel(r'$x$ [pc]')
+                        ax1.set_ylabel(r'$y$ [pc]')
+                        ax2.set_xlabel(r'Time [Myr]')
+                        ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
+                        ax3.set_xlabel(r'$x$ [pc]')
+                        ax3.set_ylabel(r'$z$ [pc]')
+                        ax4.set_xlabel(r'$y$ [pc]')
+                        ax4.set_ylabel(r'$z$ [pc]')
+                        iter = -1
                         
-                ax2.plot(time[:-5], dE_array[:-5], color = 'black')
-                plt.savefig('figures/system_evolution/Overall_System/simulation_evolution_'+str(iter_file)+'.pdf', dpi=300, bbox_inches='tight')
-                plt.clf()
-                plt.close()     
+                        for i in range(len(ptracker)):
+                            iter += 1
+                            if iter > len(c):
+                                iter = 0
 
-                fig = plt.figure(figsize=(8, 8))
-                ax3D = fig.add_subplot(121, projection="3d")
-                iter = -1
-                for i in range(len(ptracker)):
-                    iter += 1
-                    if iter > len(c):
-                        iter = 0
-                    if i == 0:
-                        pass
-                    else:
-                        ax3D.scatter(line_x[i]-line_x[0], 
-                                    line_y[i]-line_y[0], 
-                                    line_z[i]-line_z[0], 
-                                    c = c[iter-2], s = 1, zorder = 1)
-                ax3D.scatter(0, 0, 0, color = 'black', s = 150, zorder = 2)
-                ax3D.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-                ax3D.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-                ax3D.zaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
-                ax3D.set_xlabel(r'$x$ [pc]')
-                ax3D.set_ylabel(r'$y$ [pc]')
-                ax3D.set_zlabel(r'$z$ [pc]')
-                ax3D.view_init(30, 160)
-                plt.savefig('figures/system_evolution/Overall_System/simulation_evolution_3D_'+str(iter_file)+'.pdf', dpi=300, bbox_inches='tight')
+                            if i == 0:
+                                adapt_c = 'black'
+                                ax1.scatter((line_x[i]-line_x[0]), (line_y[i]-line_y[0]), 
+                                            c = adapt_c, zorder = 1, s = 250)
+                                ax3.scatter((line_x[i]-line_x[0]), (line_z[i]-line_z[0]), 
+                                            c = adapt_c, zorder = 1, s = 250)
+                                ax4.scatter((line_z[i]-line_z[0]), (line_y[i]-line_y[0]), 
+                                            c = adapt_c, zorder = 1, s = 250)
+                                
+                            else:
+                                ax1.scatter(line_x[i][-1]-line_x[0][-1], line_y[i][-1]-line_y[0][-1], 
+                                            c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+                                ax1.scatter(line_x[i]-line_x[0], line_y[i]-line_y[0], 
+                                            c = c[iter-2], s = 1, zorder = 1) 
+
+                                ax3.scatter(line_x[i][-1]-line_x[0][-1], line_z[i][-1]-line_z[0][-1], 
+                                            c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+                                ax3.scatter(line_x[i]-line_x[0], line_z[i]-line_z[0], 
+                                            c = c[iter-2], s = 1, zorder = 1) 
+
+                                ax4.scatter(line_y[i][-1]-line_y[0][-1], line_z[i][-1]-line_z[0][-1], 
+                                            c = c[iter-2], edgecolors = 'black', s = parti_size, zorder = 3)
+                                ax4.scatter(line_y[i]-line_y[0], line_z[i]-line_z[0], 
+                                            c = c[iter-2], s = 1, zorder = 1) 
+                                
+                        ax2.plot(time[:-5], dE_array[:-5], color = 'black')
+                        plt.savefig('figures/system_evolution/Overall_System/simulation_evolution_'+str(iter_file)+'.pdf', dpi=300, bbox_inches='tight')
+                        plt.clf()
+                        plt.close()     
+
+                        fig = plt.figure(figsize=(8, 8))
+                        ax3D = fig.add_subplot(121, projection="3d")
+                        iter = -1
+                        for i in range(len(ptracker)):
+                            iter += 1
+                            if iter > len(c):
+                                iter = 0
+                            if i == 0:
+                                pass
+                            else:
+                                ax3D.scatter(line_x[i]-line_x[0], 
+                                            line_y[i]-line_y[0], 
+                                            line_z[i]-line_z[0], 
+                                            c = c[iter-2], s = 1, zorder = 1)
+                        ax3D.scatter(0, 0, 0, color = 'black', s = 150, zorder = 2)
+                        ax3D.xaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+                        ax3D.yaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+                        ax3D.zaxis.set_major_formatter(mtick.FormatStrFormatter('%0.2f'))
+                        ax3D.set_xlabel(r'$x$ [pc]')
+                        ax3D.set_ylabel(r'$y$ [pc]')
+                        ax3D.set_zlabel(r'$z$ [pc]')
+                        ax3D.view_init(30, 160)
+                        plt.savefig('figures/system_evolution/Overall_System/simulation_evolution_3D_'+str(iter_file)+'.pdf', dpi=300, bbox_inches='tight')
 
     return

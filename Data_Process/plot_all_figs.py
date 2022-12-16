@@ -9,39 +9,26 @@ from spatial_plotters import *
 start_time = cpu_time.time()
 
 
-print('...tGW_plotters...')
-cst = gw_calcs()
-cst.new_data_extractor()
-STOP
-
 print('...steady_plotter...')
 cst = stability_plotters()
 cst.overall_steady_plotter()
+STOP
 
-print('... ejection_Stat_plotters ...')
-cst = event_tracker()
-cst = ejection_stats()
+print('...tGW_plotters...')
+cst = gw_calcs()
 cst.new_data_extractor()
 cst.combine_data()
-cst.energy_plotters()
-cst.vejec_plotters()
+cst.orbital_hist_plotter()
+cst.Nenc_tgw_plotter()
+cst.strain_freq_plotter()
+cst.transient_events()
 
 print('...spatial_plotters...')
 ejected_evolution()
 global_properties()
-#spatial_plotter('Hermite')
 energy_plotter('Hermite')
+spatial_plotter('Hermite')
 #chaos_deviate()
-end_time = cpu_time.time()
-
-print('...tGW_plotters...')
-cst = gw_calcs()
-cst.new_data_extractor()
-#cst.combine_data()
-#cst.orbital_hist_plotter()
-#cst.Nenc_tgw_plotter()
-#cst.strain_freq_plotter()
-#cst.transient_events()
 
 print('...loss_cone_plotters...')
 cst = loss_cone()
@@ -52,6 +39,16 @@ cst.lcone_fininit_plotter()
 print('...sustainable_bintert_plotters...')
 cst = sustainable_sys()
 cst.system_formation_plotter()
+
+
+print('... ejection_Stat_plotters ...')
+cst = event_tracker()
+cst = ejection_stats()
+cst.new_data_extractor()
+cst.combine_data()
+cst.energy_plotters()
+cst.vejec_plotters()
+
 
 ##########################
 #### NO UPDATE NEEDED ####

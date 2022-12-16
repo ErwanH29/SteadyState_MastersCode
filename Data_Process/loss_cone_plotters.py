@@ -17,8 +17,12 @@ class loss_cone(object):
         Hermite_data = glob.glob(('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
         GRX_data = glob.glob(('/media/erwanh/Elements/GRX/particle_trajectory/*'))
         pfile = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)]
-        self.no_data = [len(Hermite_data), len(GRX_data)]
 
+        cfile = [[], []]
+        cfile[0] = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[51:]) for i in pfile[0]]
+        cfile[1] = ['data/GRX/no_addition/chaotic_simulation/'+str(i[47:]) for i in pfile[1]]
+
+        self.no_data = [len(Hermite_data), len(GRX_data)]
         with open(pfile[0][0], 'rb') as input_file:
             data = pkl.load(input_file)
         self.SMBH_mass = data.iloc[0][1][1]
@@ -37,58 +41,62 @@ class loss_cone(object):
 
         for int_ in range(2):
             for file_ in range(len(pfile[int_])):
-                with open(pfile[int_][file_], 'rb') as input_file:
-                    print('Reading file', file_, ': ', pfile[int_][file_])
-                    data = pkl.load(input_file)
-                    pop = 10*round(0.1*(np.shape(data))[0])
+                with open(cfile[int_][file_], 'rb') as input_file:
+                    chaotic_tracker = pkl.load(input_file)
+                    pop = chaotic_tracker.iloc[0][6]
                     if pop <= 50:
-                        for parti_ in range(np.shape(data)[0]):
-                            KE_arr = [ ]
-                            PE_arr = [ ]
-                            angL_arr = [ ]
-                            energy_arr = [ ]
-                            time = [ ]
-                            if parti_ != 0:
-                                self.init_pop[int_].append(pop)
-                                angL_val = 0
-                                for col_ in range(np.shape(data)[1]-1):
-                                    KE = data.iloc[parti_][col_][4].value_in(units.J)
-                                    PE = data.iloc[parti_][col_][5].value_in(units.J)
-                                    tot_E = KE + PE
-                                    KE_arr.append(KE)
-                                    PE_arr.append(PE)
-                                    energy_arr.append(abs(tot_E))
-                                    time.append(col_*1000)
+                        with open(pfile[int_][file_], 'rb') as input_file:
+                            file_size = os.path.getsize(data[file_])
+                            if file_size < 2.8e9:
+                                print('Reading file', file_, ': ', pfile[int_][file_])
+                                data = pkl.load(input_file)
+                                for parti_ in range(np.shape(data)[0]):
+                                    KE_arr = [ ]
+                                    PE_arr = [ ]
+                                    angL_arr = [ ]
+                                    energy_arr = [ ]
+                                    time = [ ]
+                                    if parti_ != 0:
+                                        self.init_pop[int_].append(pop)
+                                        angL_val = 0
+                                        for col_ in range(np.shape(data)[1]-1):
+                                            KE = data.iloc[parti_][col_][4].value_in(units.J)
+                                            PE = data.iloc[parti_][col_][5].value_in(units.J)
+                                            tot_E = KE + PE
+                                            KE_arr.append(KE)
+                                            PE_arr.append(PE)
+                                            energy_arr.append(abs(tot_E))
+                                            time.append(col_*1000)
 
-                                    semi_val = data.iloc[parti_][col_][7][0]
-                                    ecc_val = (1-data.iloc[parti_][col_][8][0])
-                                    angL_arr.append(self.ang_momentum(semi_val, ecc_val))
-                                    angL_val += self.ang_momentum(semi_val, ecc_val)
-                                
-                                if not isinstance(data.iloc[parti_][col_+1][0], np.uint64) or data.iloc[parti_][col_+1][1] > 4*10**6 | units.MSun:
-                                    self.ejec_part[int_].append(1)
-                                else:
-                                    self.ejec_part[int_].append(0)
+                                            semi_val = data.iloc[parti_][col_][7][0]
+                                            ecc_val = (1-data.iloc[parti_][col_][8][0])
+                                            angL_arr.append(self.ang_momentum(semi_val, ecc_val))
+                                            angL_val += self.ang_momentum(semi_val, ecc_val)
+                                        
+                                        if not isinstance(data.iloc[parti_][col_+1][0], np.uint64) or data.iloc[parti_][col_+1][1] > 4*10**6 | units.MSun:
+                                            self.ejec_part[int_].append(1)
+                                        else:
+                                            self.ejec_part[int_].append(0)
 
-                                sem_init = data.iloc[parti_][0][7][0]
-                                ecc_init = 1-data.iloc[parti_][0][8][0]
-                                semi_fin = data.iloc[parti_][-2][7][0]
-                                ecc_fin = 1-data.iloc[parti_][-2][8][0]
+                                        sem_init = data.iloc[parti_][0][7][0]
+                                        ecc_init = 1-data.iloc[parti_][0][8][0]
+                                        semi_fin = data.iloc[parti_][-2][7][0]
+                                        ecc_fin = 1-data.iloc[parti_][-2][8][0]
 
-                                angL_val -= self.ang_momentum(sem_init, ecc_init)
-                                angL_val /= np.shape(data)[1] - 1                # Average change per kyr
-                                self.dangL_avg[int_].append(angL_val)
+                                        angL_val -= self.ang_momentum(sem_init, ecc_init)
+                                        angL_val /= np.shape(data)[1] - 1                # Average change per kyr
+                                        self.dangL_avg[int_].append(angL_val)
 
-                                angL_init_val = self.ang_momentum(sem_init, ecc_init)
-                                angL_fin_val = self.ang_momentum(semi_fin, ecc_fin)
-                                self.angL_init[int_].append(angL_init_val)
-                                self.angL_fin[int_].append(angL_fin_val)
+                                        angL_init_val = self.ang_momentum(sem_init, ecc_init)
+                                        angL_fin_val = self.ang_momentum(semi_fin, ecc_fin)
+                                        self.angL_init[int_].append(angL_init_val)
+                                        self.angL_fin[int_].append(angL_fin_val)
 
-                                self.KE[int_].append(KE_arr)
-                                self.PE[int_].append(PE_arr)
-                                self.energy[int_].append(energy_arr)
-                                self.angL_evol[int_].append(angL_arr)
-                                self.time[int_].append(time)
+                                        self.KE[int_].append(KE_arr)
+                                        self.PE[int_].append(PE_arr)
+                                        self.energy[int_].append(energy_arr)
+                                        self.angL_evol[int_].append(angL_arr)
+                                        self.time[int_].append(time)
 
             self.dangL_avg[int_] = np.asarray(self.dangL_avg[int_])
             self.angL_init[int_] = np.asarray(self.angL_init[int_])
@@ -139,26 +147,29 @@ class loss_cone(object):
             colours = ['black', 'white']
             iter = -1
 
+            idx_ejec = np.where(self.ejec_part[int_] == 1)[0]
+            idx_stab = np.where(self.ejec_part[int_] != 1)[0]
+            normalise = plt.Normalize(10, 50)
+
             xmax = 1.01*np.log10(max(max(angL_init[0]), max(angL_init[1])))
             ymax = 1.01*np.log10(max(max(angL_fin[0]), max(angL_fin[1])))
             plot_ini.tickers(ax2, 'hist')
             plot_ini.tickers(ax1, 'plot')
 
-            idx_ejec = np.where(self.ejec_part[int_] == 1)[0]
-            idx_stab = np.where(self.ejec_part[int_] != 1)[0]
-            normalise = plt.Normalize(10, 100)
-        
-            bin2d_sim, xed, yed, image = ax2.hist2d(np.log10(angL_init[int_]), np.log10(angL_fin[int_]), bins=(100, 100),
+            bin2d_sim, xed, yed, image = ax2.hist2d(np.log10(angL_init[int_]), 
+                                                    np.log10(angL_fin[int_]), bins=(100, 100),
                                                     range=([17.8, 1.01*xmax], [17.8, 1.01*ymax]))
             bin2d_sim /= np.max(bin2d_sim)
             extent = [17.8, 1.01*(xmax), 17.8, 1.01*(ymax)]
             contours = ax2.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
             for idx in idx_ejec:
-                colour_axes = ax1.scatter(np.log10(angL_init[int_][idx]), np.log10(angL_fin[int_][idx]), 
+                colour_axes = ax1.scatter(np.log10(angL_init[int_][idx]), 
+                                          np.log10(angL_fin[int_][idx]), 
                                           c = init_pop[int_][idx], norm = normalise,
                                           marker = 'X', edgecolors='black')
             for idx in idx_stab:
-                colour_axes = ax1.scatter(np.log10(angL_init[int_][idx]), np.log10(angL_fin[int_][idx]), 
+                colour_axes = ax1.scatter(np.log10(angL_init[int_][idx]), 
+                                          np.log10(angL_fin[int_][idx]), 
                                           c = init_pop[int_][idx], norm = normalise,
                                           edgecolors='black')
             for ax_ in [ax1, ax2]:
@@ -187,7 +198,7 @@ class loss_cone(object):
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax = [ax1, ax2]
-        normalise = plt.Normalize(0, 6)
+        normalise = plt.Normalize(0, 8)
 
         for int_ in range(2):
             idx_ejec = np.where(self.ejec_part[int_] == 1)[0]
@@ -211,7 +222,7 @@ class loss_cone(object):
             ax_.axvline(np.log10(self.SMBH_angL), color = 'black')
         ax1.text(18.85, 43.4, r'$L_{\rm{crit}}$', rotation = -90)
         
-        plt.colorbar(colour_axes, ax = ax2, label = r'$\log_{10} t$ [Myr]')
+        plt.colorbar(colour_axes, ax = ax2, label = r'$\log_{10} t$ [yr]')
         plt.savefig('figures/loss_cone/LC_evol.pdf', dpi=300, bbox_inches='tight')
 
     def lcone_timescale(self):

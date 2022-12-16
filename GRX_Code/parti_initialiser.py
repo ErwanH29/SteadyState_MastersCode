@@ -141,5 +141,7 @@ class IMBH_init(object):
         particles[0].mass = SMBH_parti.mass
         particles.radius = self.IMBH_radius(particles.mass)
         particles.collision_radius = self.coll_radius(particles.radius)
+
+        print(particles.velocity.in_(units.kms))
         
         return particles, rhmass

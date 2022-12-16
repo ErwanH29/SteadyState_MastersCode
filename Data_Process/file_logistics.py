@@ -101,83 +101,48 @@ def bulk_stat_extractor(file_string, rewrite):
 
     return data
 
-def ejected_extract_final(set, ejected, ejec_merge):
+def ejected_extract_final(set, ejected):
     """
     Extracts the final info on the ejected particle into an array
     
     Inputs:
     set:        The complete particle set plotting
     ejected:    The ejected particle
-    ejec_merge: String whether we care for ejection simulations (E) or want to account for all simulations (else)
     """
 
     Nclose = 0
-    if ejec_merge == 'E':
-        for i in range(len(set)):
-            if set.iloc[i][0][0] == ejected.iloc[0][4]: 
-                ejec_data = set.iloc[i]   #Make data set of only ejected particle
-                ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
-                ejec_vel = []
-                tot_steps = min(round(len(ejec_data)**0.5), 10)
+    for parti_ in range(len(set)):
+        if set.iloc[parti_][0][0] == ejected.iloc[0][4]: 
+            ejec_data = set.iloc[parti_]   #Make data set of only ejected particle
+            ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
+            ejec_vel = []
+            tot_steps = min(round(len(ejec_data)**0.5), 10)
+            
+            for steps_ in range(tot_steps):
+                vel_ = ejec_data.iloc[(-steps_)][3].value_in(units.kms)
+                vx = vel_[0] - set.iloc[0][(-steps_)][3][0].value_in(units.kms)
+                vy = vel_[1] - set.iloc[0][(-steps_)][3][1].value_in(units.kms)
+                vz = vel_[2] - set.iloc[0][(-steps_)][3][2].value_in(units.kms)
+                ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
                 
-                for steps_ in range(tot_steps):
-                    vel_ = ejec_data.iloc[(-steps_)][3].value_in(units.kms)
-                    vx = vel_[0] - set.iloc[0][(-steps_)][3][0].value_in(units.kms)
-                    vy = vel_[1] - set.iloc[0][(-steps_)][3][1].value_in(units.kms)
-                    vz = vel_[2] - set.iloc[0][(-steps_)][3][2].value_in(units.kms)
-                    ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
-                    
-                idx = np.where(ejec_vel == np.nanmax(ejec_vel))[0]
-                idx -= tot_steps
-                ejec_vel = np.asarray(ejec_vel)
-                esc_vel = ejec_vel[idx]
+            idx = np.where(ejec_vel == np.nanmax(ejec_vel))[0]
+            idx -= tot_steps
+            ejec_vel = np.asarray(ejec_vel)
+            esc_vel = ejec_vel[idx]
 
-                xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
-                ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
-                zpos = (ejec_data.iloc[idx][0][2][2]-set.iloc[0][idx][0][2][2]).value_in(units.pc)
+            xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
+            ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
+            zpos = (ejec_data.iloc[idx][0][2][2]-set.iloc[0][idx][0][2][2]).value_in(units.pc)
 
-                KE = ejec_data.iloc[-1][4].value_in(units.J)
-                PE = ejec_data.iloc[-1][5].value_in(units.J)
+            KE = ejec_data.iloc[-1][4].value_in(units.J)
+            PE = ejec_data.iloc[-1][5].value_in(units.J)
 
-                for j in range(len(ejec_data)):
-                    if abs(ejec_data.iloc[j][-1]) < 1e-2:
-                        Nclose += 1
-                Nmerge = ejected.iloc[0][10]
-                            
-                return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
-
-    else:
-        for i in range(len(set)):
-            if set.iloc[i][0][0] == ejected.iloc[0][4]: 
-                ejec_data = set.iloc[i]   #Make data set of only ejected particle
-                ejec_data = ejec_data.replace(np.NaN, "[Np.NaN, [np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]")
-                ejec_vel = []
-                tot_steps = round(len(ejec_data)/2)
-                
-                for steps_ in range(tot_steps):
-                    vel_ = ejec_data.iloc[(-steps_)][3].value_in(units.kms)
-                    vx = vel_[0] - set.iloc[0][(-steps_)][3][0].value_in(units.kms)
-                    vy = vel_[1] - set.iloc[0][(-steps_)][3][1].value_in(units.kms)
-                    vz = vel_[2] - set.iloc[0][(-steps_)][3][2].value_in(units.kms)
-                    ejec_vel.append(np.sqrt(vx**2+vy**2+vz**2))
-                idx = np.argwhere(ejec_vel == max(ejec_vel))[0]
-                idx -= tot_steps
-                ejec_vel = np.asarray(ejec_vel)
-                esc_vel = ejec_vel[idx]
-
-                xpos = (ejec_data.iloc[idx][0][2][0]-set.iloc[0][idx][0][2][0]).value_in(units.pc)
-                ypos = (ejec_data.iloc[idx][0][2][1]-set.iloc[0][idx][0][2][1]).value_in(units.pc)
-                zpos = (ejec_data.iloc[idx][0][2][2]-set.iloc[0][idx][0][2][2]).value_in(units.pc)
-
-                KE = ejec_data.iloc[idx][0][4].value_in(units.J)
-                PE = ejec_data.iloc[idx][0][5].value_in(units.J)
-
-                for j in range(len(ejec_data)):
-                    if abs(ejec_data.iloc[j][-1]) < 1e-2:
-                        Nclose += 1
-                Nmerge = ejected.iloc[0][10]
-
-                return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
+            for j in range(len(ejec_data)):
+                if abs(ejec_data.iloc[j][-1]) < 1e-2:
+                    Nclose += 1
+            Nmerge = ejected.iloc[0][10]
+                        
+            return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
 
 def ejected_stat_extractor(chaos_dir, int):
     """
@@ -196,8 +161,7 @@ def ejected_stat_extractor(chaos_dir, int):
     if int == 'Hermite':
         lbound = 97
         ubound = 107
-        #lbound = 95
-        #ubound = 105
+        
     else:
         lbound = 91
         ubound = 101
@@ -218,33 +182,70 @@ def ejected_stat_extractor(chaos_dir, int):
 
     return filt_IMBH, filt_Chaotic
 
-def ejected_index(pset, ejected, int):
+def ejected_index(pset, ejected):
     """
     Extracts index of the ejected particle
     
     Inputs:
     pset:     The complete particle pset plotting
     ejected:  The ejected particle
-    int:      The integrator used
     """
 
     merger = False
     eject = False
-    end = False
 
-    if int == 'Hermite':
-        for i in range(len(pset)):
-            part_mass = pset.iloc[i][0][1]
-            SMBH_mass = pset.iloc[0][0][1]
-            tot_mass = part_mass + SMBH_mass
-            if not (isinstance(pset.iloc[i][-1][0], np.uint64)) or pset.iloc[i][-1][1] == tot_mass:
-                ejec_idx = i
-                merger = True
-                string = 'merger'
+    for parti_ in range(len(pset)):
+        part_mass = pset.iloc[parti_][0][1]
+        SMBH_mass = pset.iloc[0][0][1]
+        tot_mass = part_mass + SMBH_mass
 
-                if ejec_idx == 0:
-                    print('SMBH gets absorbed')
+        if not (isinstance(pset.iloc[parti_][-1][0], np.uint64)) or pset.iloc[parti_][-1][1] == tot_mass:
+            ejec_idx = parti_
+            merger = True
+            string = 'merger'
 
+            if ejec_idx == 0:
+                print('SMBH gets absorbed')
+                com_px = 0 | units.MSun * units.kms
+                com_py = 0 | units.MSun * units.kms
+                com_pz = 0 | units.MSun * units.kms
+                mass = 0 | units.MSun
+
+                for j in range(len(pset)):
+                    com_px += pset.iloc[j][0][1] * pset.iloc[j][-2][3][0]
+                    com_py += pset.iloc[j][0][1] * pset.iloc[j][-2][3][1]
+                    com_pz += pset.iloc[j][0][1] * pset.iloc[j][-2][3][2]
+                    mass += pset.iloc[j][0][1]
+                com_px /= mass
+                com_py /= mass
+                com_pz /= mass
+
+                velx_SMBH = pset.iloc[0][-2][3][0]
+                vely_SMBH = pset.iloc[0][-2][3][1]
+                velz_SMBH = pset.iloc[0][-2][3][2]
+                vel_SMBH = ((velx_SMBH-com_px)**2 + (vely_SMBH-com_py)**2 + (velz_SMBH-com_pz)**2).sqrt()
+                
+                for j in range(len(pset)):
+                    if pset.iloc[j][-1][1] > 4*10**6 | units.MSun:
+                        ejec_idx = parti_
+
+                        IMBH_mass = pset.iloc[j][0][1]
+                        velx_IMBH = pset.iloc[j][-2][3][0]
+                        vely_IMBH = pset.iloc[j][-2][3][1]
+                        velz_IMBH = pset.iloc[j][-2][3][2]
+                        vel_IMBH = ((velx_IMBH-com_px)**2 + (vely_IMBH-com_py)**2 + (velz_IMBH-com_pz)**2**2).sqrt()
+                        vel_merger = (IMBH_mass*vel_IMBH + SMBH_mass*vel_SMBH)/(IMBH_mass+SMBH_mass)
+
+                        print('SMBH com velocity:    ', vel_SMBH.in_(units.kms))
+                        print('remnant com velocity: ', vel_merger.in_(units.kms))
+
+    if not (merger) and np.shape(pset)[1] <= 10**6: 
+        for parti_ in range(len(pset)):   
+            if pset.iloc[parti_][-1][0] == ejected.iloc[0][4]:
+                ejec_idx = parti_
+                eject = True
+                string = 'ejected'
+                if parti_ == 0:
                     com_px = 0 | units.MSun * units.kms
                     com_py = 0 | units.MSun * units.kms
                     com_pz = 0 | units.MSun * units.kms
@@ -263,124 +264,12 @@ def ejected_index(pset, ejected, int):
                     vely_SMBH = pset.iloc[0][-2][3][1]
                     velz_SMBH = pset.iloc[0][-2][3][2]
                     vel_SMBH = ((velx_SMBH-com_px)**2 + (vely_SMBH-com_py)**2 + (velz_SMBH-com_pz)**2).sqrt()
-                    
-                    for j in range(len(pset)):
-                        if pset.iloc[j][-1][1] > 4*10**6 | units.MSun:
-                            ejec_idx = i
-
-                            IMBH_mass = pset.iloc[j][0][1]
-                            velx_IMBH = pset.iloc[j][-2][3][0]
-                            vely_IMBH = pset.iloc[j][-2][3][1]
-                            velz_IMBH = pset.iloc[j][-2][3][2]
-                            vel_IMBH = ((velx_IMBH-com_px)**2 + (vely_IMBH-com_py)**2 + (velz_IMBH-com_pz)**2**2).sqrt()
-                            vel_merger = (IMBH_mass*vel_IMBH + SMBH_mass*vel_SMBH)/(IMBH_mass+SMBH_mass)
-
-                            print('SMBH com velocity:    ', vel_SMBH.in_(units.kms))
-                            print('remnant com velocity: ', vel_merger.in_(units.kms))
-
-        if not (merger) and np.shape(pset)[1] < 100000: 
-            for i in range(len(pset)):   
-                if pset.iloc[i][-1][0] == ejected.iloc[0][4]:
-                    ejec_idx = i
-                    eject = True
-                    string = 'ejected'
-                    if i == 0:
-                        com_px = 0 | units.MSun * units.kms
-                        com_py = 0 | units.MSun * units.kms
-                        com_pz = 0 | units.MSun * units.kms
-                        mass = 0 | units.MSun
-                        for j in range(len(pset)):
-                            com_px += pset.iloc[j][0][1] * pset.iloc[j][-2][3][0]
-                            com_py += pset.iloc[j][0][1] * pset.iloc[j][-2][3][1]
-                            com_pz += pset.iloc[j][0][1] * pset.iloc[j][-2][3][2]
-                            mass += pset.iloc[j][0][1]
-                        com_px /= mass
-                        com_py /= mass
-                        com_pz /= mass
-
-                        SMBH_mass = pset.iloc[0][0][1]
-                        velx_SMBH = pset.iloc[0][-2][3][0]
-                        vely_SMBH = pset.iloc[0][-2][3][1]
-                        velz_SMBH = pset.iloc[0][-2][3][2]
-                        vel_SMBH = ((velx_SMBH-com_px)**2 + (vely_SMBH-com_py)**2 + (velz_SMBH-com_pz)**2).sqrt()
-                    
-                        print('SMBH ejected with velocity: ', vel_SMBH.in_(units.kms))
-        
-        if not (eject) and not (merger):
-            ejec_idx = 5 
-            string = 'over time'
-
-    else:
-        if np.shape(pset)[1] > 10**6: 
-            ejec_idx = 5 
-            string = 'over time'
-            end = True
-
-        if not (end):
-            for i in range(len(pset)):
-                part_mass = pset.iloc[i][0][1]
-                SMBH_mass = pset.iloc[0][0][1]
-                tot_mass = part_mass + SMBH_mass
-                if not (isinstance(pset.iloc[i][-1][0], np.uint64)) or pset.iloc[i][-1][1] == tot_mass:
-                    ejec_idx = i
-                    merger = True
-                    string = 'merger'
-
-                    if ejec_idx == 0:
-                        print('SMBH gets absorbed')
-
-                        com_px = 0 | units.MSun * units.kms
-                        com_py = 0 | units.MSun * units.kms
-                        com_pz = 0 | units.MSun * units.kms
-                        mass = 0 | units.MSun
-                        for j in range(len(pset)):
-                            com_px += pset.iloc[j][0][1] * pset.iloc[j][-2][3][0]
-                            com_py += pset.iloc[j][0][1] * pset.iloc[j][-2][3][1]
-                            com_pz += pset.iloc[j][0][1] * pset.iloc[j][-2][3][2]
-                            mass += pset.iloc[j][0][1]
-                        com_px /= mass
-                        com_py /= mass
-                        com_pz /= mass
-
-                        SMBH_mass = pset.iloc[0][0][1]
-                        velx_SMBH = pset.iloc[0][-2][3][0]
-                        vely_SMBH = pset.iloc[0][-2][3][1]
-                        velz_SMBH = pset.iloc[0][-2][3][2]
-                        vel_SMBH = ((velx_SMBH-com_px)**2 + (vely_SMBH-com_py)**2 + (velz_SMBH-com_pz)**2).sqrt()
-                    
-                        for i in range(len(pset)):
-                            if pset.iloc[i][-1][1] > 4*10**6 | units.MSun:
-                                ejec_idx = i
-
-                                IMBH_mass = pset.iloc[i][0][1]
-                                velx_IMBH = pset.iloc[i][-2][3][0]
-                                vely_IMBH = pset.iloc[i][-2][3][1]
-                                velz_IMBH = pset.iloc[i][-2][3][2]
-                                vel_IMBH = ((velx_IMBH-com_px)**2 + (vely_IMBH-com_py)**2 + (velz_IMBH-com_pz)**2).sqrt()
-                                vel_merger = (IMBH_mass*vel_IMBH + SMBH_mass*vel_SMBH)/(IMBH_mass+SMBH_mass)
-
-                                print('SMBH com velocity:    ', vel_SMBH.in_(units.kms))
-                                print('remnant com velocity: ', vel_merger.in_(units.kms))
-
-        if not (merger) and not (end): 
-            for i in range(len(pset)):
-                if pset.iloc[i][-1][0] == ejected.iloc[0][4]:
-                    ejec_idx = i
-                    eject = True
-                    string = 'ejected'
-                    if i == 0:
-                        vel = [0, 0, 0] | units.MSun * units.kms
-                        mass = 0 | units.MSun
-                        for j in range(len(pset)):
-                            vel += pset.iloc[j][0][1] * pset.iloc[j][-2]
-                            mass += pset.iloc[j][0][1]
-                        vel /= mass
-                        
-                        velx = pset.iloc[i][-1][3][0]
-                        vely = pset.iloc[i][-1][3][1]
-                        velz = pset.iloc[i][-1][3][2]
-                        vel = ((velx-vel[0])**2 + (vely-vel[1])**2 + (velz-vel[2])**2).sqrt().in_(units.kms)
-                        print('SMBH ejected with velocity: ', vel)
+                
+                    print('SMBH ejected with velocity: ', vel_SMBH.in_(units.kms))
+    
+    if not (eject) and not (merger):
+        ejec_idx = 5 
+        string = 'over time'
 
     return ejec_idx, string
 

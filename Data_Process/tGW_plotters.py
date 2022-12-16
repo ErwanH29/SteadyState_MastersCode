@@ -36,16 +36,23 @@ class gw_calcs(object):
         print('!!!!!! WARNING THIS WILL TAKE A WHILE !!!!!!!')
         Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
         GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory/*'))
-        filename = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)] 
+        filename = [natsort.natsorted(Hermite_data)[107:], natsort.natsorted(GRX_data)] 
         for int_ in range(2):
             for file_ in range(len(filename[int_])):
                 with open(filename[int_][file_], 'rb') as input_file:
                     print('Reading file', file_, ': ', filename[int_][file_])
                     data = pkl.load(input_file)
                     sim_time = np.shape(data)[1]-1
+                    SMBH_sys_mass = data.iloc[0][0][1]
 
                     for parti_ in range(np.shape(data)[0]):
                         count = len(fnmatch.filter(os.listdir('data/tGW/'), '*.*'))
+                        mass1 = data.iloc[parti_][0][1]
+                        tot_mass = SMBH_sys_mass + mass1
+                        if not (isinstance(data.iloc[parti_][-1][0], np.uint64)) or data.iloc[parti_][-1][1] == tot_mass:
+                            merge_Bool = 1
+                        else: 
+                            merge_Bool = 0
 
                         mass_IMBH = []
                         semi_SMBH_GW_indiv = []
@@ -58,8 +65,6 @@ class gw_calcs(object):
                         nharm_NN_GW_indiv = []
                         nharm_t_GW_indiv = []
 
-                        mass1 = data.iloc[parti_][0][1]
-                        SMBH_sys_mass = data.iloc[0][0][1]
                         Nclose_indiv = 0
                         Nfbnn_indiv = 0
                         Nfbt_indiv = 0
@@ -181,7 +186,8 @@ class gw_calcs(object):
                                                      'Flyby Tertiary Time': time_t_GW_indiv,
                                                      'Flyby Tertiary Semi major': semi_t_GW_indiv,
                                                      'Flyby Tertiary Eccentricity': ecc_t_GW_indiv,
-                                                     'Tertiary SMBH Event': SMBH_t_event})
+                                                     'Tertiary SMBH Event': SMBH_t_event,
+                                                     'Merger Boolean': merge_Bool})
                             stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
                             stab_tracker.to_pickle(os.path.join(path, 'IMBH_'+str(self.integrator[int_])+'_tGW_data_indiv_parti_'+str(count)+'.pkl'))
 
@@ -292,7 +298,7 @@ class gw_calcs(object):
         
             with open('figures/gravitational_waves/output/event_rate.txt', 'w') as file:
                 for int_ in range(1):
-                    pop_idx = np.where(self.pop[int_] == 10)
+                    pop_idx = np.where(self.pop[int_] > 10)
 
                     tot_events = 0
                     tot_IMBH_nn = 0
@@ -362,10 +368,11 @@ class gw_calcs(object):
                     obs_event_nn /= max(1, samples_nn)
                     obs_event_t /= max(1, samples_t)
                     obs_event_SMBH /= max(1, samples_SMBH)
-                    no_strain_nn /= no_data
-                    no_strain_t /= no_data
-                    no_strain_S /= no_data
+                    no_strain_nn /= max(1, no_data)
+                    no_strain_t /= max(1, no_data)
+                    no_strain_S /= max(1, no_data)
 
+                    print(no_data)
                     fb_nn_events = self.fb_nn_events[int_][pop_idx]
                     fb_t_events = self.fb_t_events[int_][pop_idx]
                     sim_time = self.sim_time[int_][pop_idx]
@@ -377,10 +384,10 @@ class gw_calcs(object):
                     file.write('\nAverage total events per Myr:                       ' + str(tot_events/no_data * 10**6))
                     file.write('\nAverage total flyby events per Myr:                 ' + str(np.mean(fb_nn_events/sim_time) * 10**6))
                     file.write('\nAverage total tertiary events per Myr:              ' + str(np.mean(fb_t_events/sim_time) * 10**6))
-                    file.write('\nAverage IMBH-IMBH nn events per Myr:                ' + str(tot_IMBH_nn/no_data * 10**6))
-                    file.write('\nAverage SMBH-IMBH nn events per Myr:                ' + str(tot_SMBH_nn/no_data * 10**6))
-                    file.write('\nAverage IMBH-IMBH tertiary events per Myr:          ' + str(tot_IMBH_t/no_data * 10**6))
-                    file.write('\nAverage SMBH-IMBH tertiary events per Myr:          ' + str(tot_SMBH_t/no_data * 10**6))
+                    file.write('\nAverage IMBH-IMBH nn events per Myr:                ' + str(tot_IMBH_nn/max(1, no_data) * 10**6))
+                    file.write('\nAverage SMBH-IMBH nn events per Myr:                ' + str(tot_SMBH_nn/max(1, no_data) * 10**6))
+                    file.write('\nAverage IMBH-IMBH tertiary events per Myr:          ' + str(tot_IMBH_t/max(1, no_data) * 10**6))
+                    file.write('\nAverage SMBH-IMBH tertiary events per Myr:          ' + str(tot_SMBH_t/max(1, no_data) * 10**6))
                     file.write('\nAverage detectable nn IMBH-IMBH per Myr:            ' + str(obs_event_nn * 10**6))
                     file.write('\nAverage detectable tertiary IMBH-IMBH per Myr:      ' + str(obs_event_t * 10**6))
                     file.write('\nAverage detectable IMBH-IMBH per Myr:               ' + str((obs_event_nn + obs_event_t) * 10**6))
@@ -527,7 +534,7 @@ class gw_calcs(object):
         tgw = (5/256) * (constants.c)**5/(constants.G**3)*(semi**4*(1-ecc**2)**3.5)/(red_mass*tot_mass**2)
         return tgw
 
-    def scatter_hist(self, x1, y1, x2, y2, ax, ax_histf, ax_histh):
+    def scatter_hist(self, x1, y1, x2, y2, ax, ax_histf, ax_histh, label1, label2):
         """
         Function to plot the frequency/strain histogram along its scatter plot.
         Use of: https://arxiv.org/pdf/2007.04241.pdf and https://arxiv.org/pdf/1408.0740.pdf 
@@ -540,6 +547,8 @@ class gw_calcs(object):
         ax_histh: axis where the frequency histogram is placed
         len_arr:  Length of SMBH data array
         """
+
+        ######## PLOT {ALL | ONLY SMBH | ONLY NN | ONLY TERT}
 
         # the scatter plot:
         ax.scatter(np.log10(x1), np.log10(y1), color = 'blueviolet', s = 0.75)
@@ -556,9 +565,9 @@ class gw_calcs(object):
         kdef_IMBH.fit()
         kdef_IMBH.density = (kdef_IMBH.density / max(kdef_IMBH.density))
 
-        ax_histf.plot(kdef_SMBH.support, kdef_SMBH.density, color = 'blueviolet', label = 'SMBH-IMBH')
+        ax_histf.plot(kdef_SMBH.support, kdef_SMBH.density, color = 'blueviolet', label = label1)
         ax_histf.fill_between(kdef_SMBH.support, kdef_SMBH.density, alpha = 0.35, color = 'blueviolet')
-        ax_histf.plot(kdef_IMBH.support, kdef_IMBH.density, color = 'orange', label = 'IMBH-IMBH')
+        ax_histf.plot(kdef_IMBH.support, kdef_IMBH.density, color = 'orange', label = label2)
         ax_histf.fill_between(kdef_IMBH.support, kdef_IMBH.density, alpha = 0.35, color = 'orange')
         ax_histf.set_ylim(0, 1.05)
         ax_histf.set_ylabel(r'$\rho/\rho_{\rm{max}}$')
@@ -603,10 +612,10 @@ class gw_calcs(object):
         ax.plot(np.log10(x_temp), np.log10(np.sqrt(x_temp*Sn)), color = 'slateblue')
         ax.plot(np.log10(BBO_freq), np.log10(np.sqrt(BBO_freq*BBO_strain)), linewidth='1.5', color='blue')
         ax.plot(np.log10(Ares_freq), np.log10(np.sqrt(Ares_freq*Ares_strain)), linewidth='1.5', color='red')
-        ax.plot(np.log10(SKA_freq), np.log10(np.sqrt(SKA_freq*SKA_strain)), linewidth='1.5', color='salmon')
-        ax.text(-9.2, -16, 'SKA', fontsize ='small', rotation = 322, color = 'salmon')
+        ax.plot(np.log10(SKA_freq), np.log10(np.sqrt(SKA_freq*SKA_strain)), linewidth='1.5', color='orangered')
+        ax.text(-9.25, -15.8, 'SKA', fontsize ='small', rotation = 322, color = 'orangered')
         ax.text(-4.28, -18.2, 'LISA', fontsize ='small', rotation = 309, color = 'slateblue')
-        ax.text(-6.15, -19, r'$\mu$Ares', fontsize ='small', rotation = 312, color = 'red')
+        ax.text(-6.13, -19, r'$\mu$Ares', fontsize ='small', rotation = 312, color = 'red')
         ax.text(-1.32, -24, 'BBO', fontsize ='small', rotation = 321, color = 'blue')
         
     def orbital_hist_plotter(self):
@@ -634,7 +643,7 @@ class gw_calcs(object):
                             if np.asarray(self.fb_nn_SMBH[int_][parti_][event_]) < 0:
                                 ecc_fb_nn = self.ecc_flyby_nn[int_][parti_][event_]
                                 gwtime_nn = self.gw_timescale(semi_fb_nn, ecc_fb_nn, self.mass_IMBH[int_][parti_], 
-                                                            self.mass_parti[int_][parti_]).value_in(units.Myr)
+                                                              self.mass_parti[int_][parti_]).value_in(units.Myr)
 
                                 IMBH_tgw[int_].append(gwtime_nn)
                                 IMBH_sem[int_].append(semi_fb_nn.value_in(units.pc))
@@ -642,7 +651,7 @@ class gw_calcs(object):
                             else:
                                 ecc_fb_nn = self.ecc_flyby_nn[int_][parti_][event_]
                                 gwtime_nn = self.gw_timescale(semi_fb_nn, ecc_fb_nn, self.mass_SMBH[int_][parti_], 
-                                                            self.mass_parti[int_][parti_]).value_in(units.Myr)
+                                                              self.mass_parti[int_][parti_]).value_in(units.Myr)
 
                                 SMBH_tgw[int_].append(gwtime_nn)
                                 SMBH_sem[int_].append(semi_fb_nn.value_in(units.pc))
@@ -656,7 +665,7 @@ class gw_calcs(object):
                             if np.asarray(self.fb_t_SMBH[int_][parti_][event_]) < 0:
                                 ecc_fb_t = self.ecc_flyby_t[int_][parti_][event_]
                                 gwtime_t = self.gw_timescale(semi_fb_t, ecc_fb_t, self.mass_parti[int_][parti_], 
-                                                            self.mass_IMBH[int_][parti_]).value_in(units.Myr)
+                                                             self.mass_IMBH[int_][parti_]).value_in(units.Myr)
 
                                 IMBH_tgw[int_].append(gwtime_t)
                                 IMBH_sem[int_].append(semi_fb_t.value_in(units.pc))
@@ -664,7 +673,7 @@ class gw_calcs(object):
                             else:
                                 ecc_fb_t = self.ecc_flyby_t[int_][parti_][event_]
                                 gwtime_t = self.gw_timescale(semi_fb_t, ecc_fb_t, self.mass_parti[int_][parti_], 
-                                                            self.mass_SMBH[int_][parti_]).value_in(units.Myr)
+                                                             self.mass_SMBH[int_][parti_]).value_in(units.Myr)
 
                                 SMBH_tgw[int_].append(gwtime_t)
                                 SMBH_sem[int_].append(semi_fb_t.value_in(units.pc))
@@ -701,6 +710,12 @@ class gw_calcs(object):
 
         red_mass2 = (self.mass_parti[0][0]*self.mass_SMBH[0][0])*(self.mass_parti[0][0]+self.mass_SMBH[0][0])
         const_tgw2 = [np.log10(1-np.sqrt(1-((256*self.tH*(constants.G**3)/(5*constants.c**5)*red_mass2*(10**(i) * (1 | units.pc)) **-4)) **(1/3.5))) for i in x_arr]
+
+        ecc_l = np.linspace(0, 1, 1000)
+        const_semi = [np.log10((1-i)**-1/10)-1 for i in ecc_l]
+        const_semi2 = [np.log10((1-i)**-2/10)-2 for i in ecc_l]
+        print(const_semi[0], const_semi2[0])
+        ecc_lx = [np.log10(1-i)+1 for i in ecc_l]
 
         fig = plt.figure(figsize=(15, 12))
         ax1 = fig.add_subplot(221)
@@ -743,8 +758,10 @@ class gw_calcs(object):
             ax_bot[j].text(-5.5, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
             ax_bot[j].text(-0.85, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+4, color = 'white')
             ax_bot[j].text(-1.23, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+4, color = 'white')
-
-        plt.savefig('figures/gravitational_waves/ecc_semi_bins_IMBH_histogram.png', dpi=300, bbox_inches='tight')
+        ax_top[1].plot(ecc_lx, const_semi)
+        ax_top[0].plot(ecc_lx, const_semi)
+        ax_top[0].plot(ecc_lx, const_semi2, color = 'white')
+        plt.savefig('figures/gravitational_waves/ecc_semi_bins_IMBH_histogram_t.png', dpi=500, bbox_inches='tight')
         plt.clf()
 
         with open('figures/gravitational_waves/output/GW_merger_time.txt', 'w') as file:
@@ -880,7 +897,7 @@ class gw_calcs(object):
         for int_ in range(1):
             self.scatter_hist(SMBH_freq[int_], SMBH_strain[int_],
                               IMBH_freq[int_], IMBH_strain[int_], 
-                              ax, ax1, ax2)
+                              ax, ax1, ax2, 'SMBH-IMBH', 'IMBH-IMBH')
             ax.set_xlabel(r'$\log_{10}f$ [Hz]')
             ax.set_ylabel(r'$\log_{10}h$')
             ax1.set_title(str(self.integrator[int_]))
@@ -889,11 +906,11 @@ class gw_calcs(object):
             plot_ini.tickers(ax2, 'plot')
             ax.set_ylim(-30, -12.2)
             ax.set_xlim(-12.5, 0.1)
-            plt.savefig('figures/gravitational_waves/'+str(self.integrator[int_])+'GW_freq_strain_maximise_diagram.png', dpi = 300, bbox_inches='tight')
+            plt.savefig('figures/gravitational_waves/'+str(self.integrator[int_])+'GW_freq_strain_maximise_diagram.png', dpi = 500, bbox_inches='tight')
             plt.clf()
 
         SMBH_mass = self.mass_SMBH[0][0][0]
-        IMBH_mass = self.mass_SMBH[0][1][0]
+        IMBH_mass = self.mass_IMBH[0][0][0]
         sem_SMBH = self.coll_radius(SMBH_mass)
         sem_IMBH = self.coll_radius(IMBH_mass)
 
@@ -919,8 +936,8 @@ class gw_calcs(object):
                 file.write('\nFor eccentric events @ z ~ 3.5, IMBH-IMBH max. freq is:   ' + str(np.nanmax(IMBH_freq[int_]) * (1/7015)))
                 file.write('\nFor eccentric events @ z ~ 3.5, SMBH-IMBH min. freq is:   ' + str(np.nanmin(SMBH_freq[int_][SMBH_freq[int_] > 0]) * (1/7015)))
                 file.write('\nFor eccentric events @ z ~ 3.5, SMBH-IMBH max. freq is:   ' + str(np.nanmax(SMBH_freq[int_][SMBH_freq[int_] > 0]) * (1/7015)))
-                file.write('\nInspiral IMBH-IMBH freq is: ' + str(max_freq_IMBH.value_in(units.Hz)) + ' with corresponding strain at 1 Mpc: ' + str(max_strain_IMBH))
-                file.write('\nInspiral SMBH-IMBH freq is: ' + str(max_freq_SMBH.value_in(units.Hz)) + ' with corresponding strain at 1 Mpc: ' + str(max_strain_SMBH))
+                file.write('\nInspiral IMBH-IMBH freq is: ' + str(max_freq_IMBH.value_in(units.Hz)) + ' with strain at 1 Mpc: ' + str(max_strain_IMBH))
+                file.write('\nInspiral SMBH-IMBH freq is: ' + str(max_freq_SMBH.value_in(units.Hz)) + ' with strain at 1 Mpc: ' + str(max_strain_SMBH))
                 file.write('\n========================================================================')
 
     def transient_events(self):
@@ -938,7 +955,7 @@ class gw_calcs(object):
             for parti_ in range(len(self.time_flyby_nn[int_])):
                 if self.pop[int_][parti_] == 10:
                     for event_ in range(len(self.time_flyby_nn[int_][parti_])):
-                        if self.freq_flyby_nn[int_][parti_][event_] < 0:
+                        if self.fb_nn_SMBH[int_][parti_][event_] < 0:
                             time_IMBH_arr.append(self.time_flyby_nn[int_][parti_][event_])
                             freq_IMBH_arr.append(self.freq_flyby_nn[int_][parti_][event_])
                         else:
@@ -948,7 +965,7 @@ class gw_calcs(object):
             for parti_ in range(len(self.time_flyby_t[int_])):
                 if self.pop[int_][parti_] == 10:
                     for event_ in range(len(self.time_flyby_t[int_][parti_])):
-                        if self.freq_flyby_t[int_][parti_][event_] < 0:
+                        if self.fb_t_SMBH[int_][parti_][event_] < 0:
                             time_IMBH_arr.append(self.time_flyby_t[int_][parti_][event_])
                             freq_IMBH_arr.append(self.freq_flyby_t[int_][parti_][event_])
                         else:
@@ -1000,3 +1017,13 @@ class gw_calcs(object):
             ax.plot(np.log10(semi_major), np.log10(strains), label = r'$e = $'+str(ecc[ecc_]), color = colors[ecc_])
         ax.legend()
         plt.savefig('figures/gravitational_waves/strain_dependence.pdf', dpi = 300, bbox_inches='tight')
+
+
+print('...tGW_plotters...')
+cst = gw_calcs()
+#cst.new_data_extractor()
+#cst.combine_data()
+#cst.orbital_hist_plotter()
+#cst.Nenc_tgw_plotter()
+#cst.strain_freq_plotter()
+#cst.transient_events()

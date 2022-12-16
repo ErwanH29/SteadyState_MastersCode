@@ -12,7 +12,7 @@ def potential_plotters():
     MWG_code  = MWpotentialBovy2015()
 
     dist_range = np.linspace(-2, 2, 10000) | units.parsec
-    test_mass  = 100 | units.MSun
+    test_mass  = 1000 | units.MSun
     r = 0.1 | units.parsec
 
     SMBH_potential = [(-test_mass*(-constants.G*(4*10**6 | units.MSun))/(abs(i))).value_in(units.J) for i in dist_range]
@@ -34,7 +34,7 @@ def potential_plotters():
     ax.tick_params(axis="y", which = 'both', direction="in")
     ax.tick_params(axis="x", which = 'both', direction="in") 
 
-    ax.set_title('Potential Wells Used in the Simulation')
+    ax.set_title('Milky Way Core Potential Wells')
     ax.plot(dist_range.value_in(units.parsec), SMBH_potential, color = 'blue', label = r'SMBH (m = $4\times10^6 M_{\odot}$)')
     ax.plot(dist_range.value_in(units.parsec), MWG_potential, color = 'red', label = 'Milky Way [Bovy (2015)]')
     ax.plot(dist_range.value_in(units.parsec), cum_potential, color = 'black', label = 'Cumulative Potential')
