@@ -18,7 +18,7 @@ class sustainable_sys(object):
 
         GW_calcs = gw_calcs()
 
-        filenameH = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
+        filenameH = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory_temp/*'))
         filenameGRX = glob.glob('/media/erwanh/Elements/GRX/particle_trajectory_temp/*')
         filename = [natsort.natsorted(filenameH), natsort.natsorted(filenameGRX)]
 
@@ -48,6 +48,8 @@ class sustainable_sys(object):
         self.GW_timet = [[ ], [ ]]
         self.GW_bmass = [[ ], [ ]]
         self.GW_tmass = [[ ], [ ]]
+        self.hard_bin = [[ ], [ ]]
+        self.hard_ter = [[ ], [ ]]
         
         for int_ in range(2):
             for file_ in range(len(filename[int_])):
@@ -85,67 +87,82 @@ class sustainable_sys(object):
                                 for col_ in range(np.shape(data)[1]-1):
                                     nn_semi = data.iloc[parti_][col_][7][1]
                                     nn_ecc = data.iloc[parti_][col_][8][1]
-                                    if abs(nn_ecc) < 1 and nn_semi < 0.02 | units.parsec:
-                                        mass1 = data.iloc[parti_][0][1]
-                                        for part_ in range(np.shape(data)[0]):
-                                            if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
-                                                mass2 = data.iloc[part_][0][1]
-                                                bin_BE = ((constants.G*mass1*mass2)/(nn_semi)).value_in(units.J) 
-                                                if bin_BE > (150000)**2*(1+mass1/mass2):   #Hard binary conditions based on Quinlan 1996b
-                                                    if not (bin_sys):                      #First formation time
-                                                        formation_time = col_*1000
-                                                        self.bform_time[int_][-1] = formation_time
-                                                        bin_sys = True
-                                                    bin_val += 1
-                                                    bin_key.append(data.iloc[parti_][col_][6][1])
-                                                    bsys_time.append(col_)
-                                                    semi_nn_avg.append(nn_semi.value_in(units.pc))
-                                                    self.pop_bin[int_].append(pop)
+                                    mass1 = data.iloc[parti_][0][1]
+                                    for part_ in range(np.shape(data)[0]):
+                                        if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][1]:
+                                            mass2 = data.iloc[part_][0][1]
+                                            mass = max(mass1, mass2)
+                                            hard = False
+                                            bin = False
+                                            
+                                            if  nn_semi < (constants.G*mass)/(4*(150000*(1 | units.ms))**2):   #Hard binary conditions based on Quinlan 1996b
+                                                hard = True
+                                                bin = True
+                                                self.hard_bin[int_].append(1)
+                                            if not (hard) and nn_semi < 0.005 | units.pc and abs(nn_ecc) < 1:  #Value chosen for 1000AU
+                                                self.hard_bin[int_].append(-5)
+                                                bin = True
+                                            if (bin):
+                                                if not (bin_sys):  #First formation time
+                                                    formation_time = col_*1000
+                                                    self.bform_time[int_][-1] = formation_time
+                                                    bin_sys = True
+                                                bin_val += 1
+                                                bin_key.append(data.iloc[parti_][col_][6][1])
+                                                bsys_time.append(col_)
+                                                semi_nn_avg.append(nn_semi.value_in(units.pc))
+                                                self.pop_bin[int_].append(pop)
 
-                                                    strain = GW_calcs.gw_strain(nn_semi, nn_ecc, mass1, mass2)
-                                                    freq = GW_calcs.gw_freq(nn_semi, nn_ecc, mass1, mass2)
-                                                    GW_time = GW_calcs.gw_timescale(nn_semi, nn_ecc, mass1, mass2)
-                                                    self.GW_strainbin[int_].append(strain)
-                                                    self.GW_freqbin[int_].append(freq)
-                                                    self.GW_timeb[int_].append(float(GW_time.value_in(units.Myr)))
+                                                strain = GW_calcs.gw_strain(nn_semi, nn_ecc, mass1, mass2)
+                                                freq = GW_calcs.gw_freq(nn_semi, nn_ecc, mass1, mass2)
+                                                GW_time = GW_calcs.gw_timescale(nn_semi, nn_ecc, mass1, mass2)
+                                                self.GW_strainbin[int_].append(strain)
+                                                self.GW_freqbin[int_].append(freq)
+                                                self.GW_timeb[int_].append(float(GW_time.value_in(units.Myr)))
 
-                                                    velx = data.iloc[parti_][col_][3][0]
-                                                    vely = data.iloc[parti_][col_][3][1]
-                                                    velz = data.iloc[parti_][col_][3][2]
-                                                    vel = np.sqrt(velx**2+vely**2+velz**2)
-                                                    self.parti_velb[int_].append(float(vel.value_in(units.kms)))
-                                                    self.GW_bmass[int_].append(mass2.value_in(units.MSun))
+                                                velx = data.iloc[parti_][col_][3][0]
+                                                vely = data.iloc[parti_][col_][3][1]
+                                                velz = data.iloc[parti_][col_][3][2]
+                                                vel = np.sqrt(velx**2+vely**2+velz**2)
+                                                self.parti_velb[int_].append(float(vel.value_in(units.kms)))
+                                                self.GW_bmass[int_].append(mass2.value_in(units.MSun))
 
-                                                    semi_outer = data.iloc[parti_][col_][7][2]
-                                                    ecc_outer = data.iloc[parti_][col_][8][2]
-                                                    #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
-                                                    if ecc_outer < 1 and semi_outer < 0.1 | units.parsec:
-                                                        for part_ in range(np.shape(data)[0]):
-                                                            if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
-                                                                mass_outer = data.iloc[part_][0][1]
+                                                semi_outer = data.iloc[parti_][col_][7][2]
+                                                ecc_outer = data.iloc[parti_][col_][8][2]
 
-                                                        semi_ratio = semi_outer / nn_semi
-                                                        equality = 2.8 * ((1+mass_outer/(mass1+mass2))*(1+ecc_outer)/(1-ecc_outer)**0.5)**0.4
-                                                        if semi_ratio > equality:
-                                                            if not (ter_sys):
-                                                                formation_time = col_*1000
-                                                                self.tform_time[int_][-1] = formation_time
-                                                                ter_sys = True
-                                                            ter_val += 1
-                                                            ter_key.append([i for i in data.iloc[parti_][col_][6][2]][0])
-                                                            tsys_time.append(col_)
-                                                            semi_t_avg.append(semi_outer.value_in(units.pc))
-                                                            self.pop_ter[int_].append(pop)
+                                                #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
+                                                if ecc_outer < 1 and semi_outer < 0.1 | units.parsec:
+                                                    for part_ in range(np.shape(data)[0]):
+                                                        if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
+                                                            mass_outer = data.iloc[part_][0][1]
 
-                                                            GW_time = GW_calcs.gw_timescale(semi_outer, ecc_outer, mass1, mass_outer)
+                                                    semi_ratio = semi_outer / nn_semi
+                                                    equality = 2.8 * ((1+mass_outer/(mass1+mass2))*(1+ecc_outer)/(1-ecc_outer)**0.5)**0.4
+                                                    if semi_ratio > equality:
+                                                        if not (ter_sys):
+                                                            formation_time = col_*1000
+                                                            self.tform_time[int_][-1] = formation_time
+                                                            ter_sys = True
+                                                        ter_val += 1
+                                                        ter_key.append([i for i in data.iloc[parti_][col_][6][2]][0])
+                                                        tsys_time.append(col_)
+                                                        semi_t_avg.append(semi_outer.value_in(units.pc))
+                                                        self.pop_ter[int_].append(pop)
 
-                                                            strain = GW_calcs.gw_strain(semi_outer, ecc_outer, mass1, mass_outer)
-                                                            freq = GW_calcs.gw_freq(semi_outer, ecc_outer, mass1, mass_outer)
-                                                            self.GW_strainter[int_].append(strain)
-                                                            self.GW_freqter[int_].append(freq)
-                                                            self.parti_velt[int_].append(float(vel.value_in(units.kms)))
-                                                            self.GW_timet[int_].append(float(GW_time.value_in(units.Myr)))
-                                                            self.GW_tmass[int_].append([mass2.value_in(units.MSun), mass_outer.value_in(units.MSun)])
+                                                        GW_time = GW_calcs.gw_timescale(semi_outer, ecc_outer, mass1, mass_outer)
+
+                                                        strain = GW_calcs.gw_strain(semi_outer, ecc_outer, mass1, mass_outer)
+                                                        freq = GW_calcs.gw_freq(semi_outer, ecc_outer, mass1, mass_outer)
+                                                        self.GW_strainter[int_].append(strain)
+                                                        self.GW_freqter[int_].append(freq)
+                                                        self.parti_velt[int_].append(float(vel.value_in(units.kms)))
+                                                        self.GW_timet[int_].append(float(GW_time.value_in(units.Myr)))
+                                                        self.GW_tmass[int_].append([mass2.value_in(units.MSun), mass_outer.value_in(units.MSun)])
+
+                                                        if (hard):
+                                                            self.hard_ter[int_].append(1)
+                                                        else:
+                                                            self.hard_ter[int_].append(-5)
 
                             if len(semi_nn_avg) > 0:
                                 self.semi_NN_avg[int_].append(np.mean(semi_nn_avg))
@@ -195,10 +212,14 @@ class sustainable_sys(object):
             self.GW_freqbin[int_] = np.asarray(self.GW_freqbin[int_])
             self.GW_strainbin[int_] = np.asarray(self.GW_strainbin[int_])
             self.GW_timeb[int_] = np.asarray(self.GW_timeb[int_])
+            self.GW_bmass[int_] = np.asarray(self.GW_bmass[int_])
             self.parti_velt[int_] = np.asarray(self.parti_velt[int_])
             self.GW_freqter[int_] = np.asarray(self.GW_freqter[int_])
             self.GW_strainter[int_] = np.asarray(self.GW_strainter[int_])
             self.GW_timet[int_] = np.asarray(self.GW_timet[int_])
+            self.GW_tmass[int_] = np.asarray(self.GW_tmass[int_])
+            self.hard_ter[int_] = np.asarray(self.hard_ter[int_])
+            self.hard_bin[int_] = np.asarray(self.hard_bin[int_])
 
         self.semi_NN_max = []
         self.semi_t_max = []
@@ -283,7 +304,7 @@ class sustainable_sys(object):
             file.write('\n# Binary systems at initialisation:             '+str(bform_ini[pop_]))
             file.write('\n5 shortest binary GW merger time_scales [Myr]:  ')
             for i in range(5):
-                file.write('{:.2f}'.format(np.sort(self.GW_timeb[int_])[i])+',   ')
+                file.write('{:.2f}'.format(np.sort(self.GW_timeb[int_][self.GW_timeb[int_] > 0])[i])+',   ')
             file.write('\nFraction of mergers within Hubble time:         '+str(len(self.GW_timeb[int_][self.GW_timeb[int_] < tH.value_in(units.Myr)])) +'/'+str(len(self.GW_timeb[int_])))
             file.write('\nFraction of IMBH-IMBH binaries:                 '+str(len(self.GW_bmass[int_][self.GW_bmass[int_] < 10**6])) +'/'+str(len(self.GW_bmass[int_])))
 
@@ -293,11 +314,11 @@ class sustainable_sys(object):
             file.write('\n# Tertiary systems at initialisation:            '+str(tform_ini[pop_]))
             file.write('\n5 shortest tertiary GW merger time scales [Myr]: ')
             for i in range(5):
-                file.write('{:.2f}'.format(np.sort(self.GW_timet[int_])[i])+',   ')
+                file.write('{:.2f}'.format(np.sort(self.GW_timet[int_][self.GW_timet[int_] > 0])[i])+',   ')
             file.write('\nFraction of mergers within Hubble time:          '+str(len(self.GW_timet[int_][self.GW_timet[int_] < tH.value_in(units.Myr)])) +'/'+str(len(self.GW_timet[int_])))
-            file.write('\nFraction of (IMBH-IMBH)-SMBH tertiaries:         '+str(len(self.GW_tmass[int_][(self.GW_tmass[int_][0] < 10**6) & (self.GW_tmass[int_][1] > 10**6)])) +'/'+str(len(self.GW_tmass[int_])))
-            file.write('\nFraction of (IMBH-SMBH)-IMBH tertiaries:         '+str(len(self.GW_tmass[int_][(self.GW_tmass[int_][1] < 10**6) & (self.GW_tmass[int_][0] > 10**6)])) +'/'+str(len(self.GW_tmass[int_])))
-            file.write('\nFraction of (IMBH-IMBH)-IMBH tertiaries:         '+str(len(self.GW_tmass[int_][(self.GW_tmass[int_][1] < 10**6) & (self.GW_tmass[int_][0] < 10**6)])) +'/'+str(len(self.GW_tmass[int_])))
+            file.write('\nFraction of (IMBH-IMBH)-SMBH tertiaries:         '+str(len(self.GW_tmass[int_][0][(self.GW_tmass[int_][0] < 10**6) & (self.GW_tmass[int_][1] > 10**6)])) +'/'+str(np.shape(self.GW_tmass[int_])[1]))
+            file.write('\nFraction of (IMBH-SMBH)-IMBH tertiaries:         '+str(len(self.GW_tmass[int_][0][(self.GW_tmass[int_][1] < 10**6) & (self.GW_tmass[int_][0] > 10**6)])) +'/'+str(np.shape(self.GW_tmass[int_])[1]))
+            file.write('\nFraction of (IMBH-IMBH)-IMBH tertiaries:         '+str(len(self.GW_tmass[int_][0][(self.GW_tmass[int_][1] < 10**6) & (self.GW_tmass[int_][0] < 10**6)])) +'/'+str(np.shape(self.GW_tmass[int_])[1]))
 
         return bin_formed, ter_formed, bsys_time, tsys_time, semi_major_bin, semi_major_bin
     

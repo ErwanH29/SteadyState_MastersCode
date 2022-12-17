@@ -233,7 +233,7 @@ def ejected_index(pset, ejected):
                         velx_IMBH = pset.iloc[j][-2][3][0]
                         vely_IMBH = pset.iloc[j][-2][3][1]
                         velz_IMBH = pset.iloc[j][-2][3][2]
-                        vel_IMBH = ((velx_IMBH-com_px)**2 + (vely_IMBH-com_py)**2 + (velz_IMBH-com_pz)**2**2).sqrt()
+                        vel_IMBH = ((velx_IMBH-com_px)**2 + (vely_IMBH-com_py)**2 + (velz_IMBH-com_pz)**2).sqrt()
                         vel_merger = (IMBH_mass*vel_IMBH + SMBH_mass*vel_SMBH)/(IMBH_mass+SMBH_mass)
 
                         print('SMBH com velocity:    ', vel_SMBH.in_(units.kms))
