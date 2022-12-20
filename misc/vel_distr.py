@@ -7,7 +7,7 @@ def MB_distr(vel):
     return np.sqrt(2/np.pi)*(vel**2/sigmaV**3)*np.exp(-vel**2/(2*sigmaV**2))
 
 fig, ax = plt.subplots()
-vel_list = np.linspace(0,700,100)
+vel_list = np.linspace(0,700,1000)
 vel_prob = [MB_distr(i) for i in vel_list]
 vel_prob /= max(vel_prob)
 ax.plot(vel_list, vel_prob, color = 'black')
@@ -22,7 +22,6 @@ ax.tick_params(axis="y", which = 'both', direction="in")
 ax.tick_params(axis="x", which = 'both', direction="in")
 plt.savefig('figures/velocity_distribution.pdf',  dpi=500, bbox_inches='tight')
 plt.clf()
-
 
 #Cluster mass distribution from Rodriguez et al. 2016a
 

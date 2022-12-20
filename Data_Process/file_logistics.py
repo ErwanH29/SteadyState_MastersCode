@@ -38,21 +38,26 @@ class plotter_setup(object):
 
         return ax
 
-    def tickers_pop(self, ax, pop):
+    def tickers_pop(self, ax, pop, int_str):
         """
         Function to setup axis for population plots
         """
-
-        xints = [i for i in range(1+int(max(pop))) if i % 10 == 0]
 
         ax.set_xlabel(r'IMBH Population [$N$]')
         ax.yaxis.set_ticks_position('both')
         ax.xaxis.set_ticks_position('both')
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.tick_params(axis="y", which = 'both', direction="in")
-        ax.tick_params(axis="x", which = 'both', direction="in")     
+        ax.tick_params(axis="x", which = 'both', direction="in")    
+        
+        if int_str == 'Hermite':
+            xints = [i for i in range(1+int(max(pop))) if i % 10 == 0 and i > 5]
+            ax.set_xlim(5, 105)
+        else:
+            xints = [i for i in range(1+int(max(pop))) if i % 5 == 0 and i > 5]
+            ax.set_xlim(5, 55)
+ 
         ax.set_xticks(xints)
-        ax.set_xlim(5, 105)
 
         return ax
         
@@ -141,6 +146,8 @@ def ejected_extract_final(set, ejected):
                 if abs(ejec_data.iloc[j][-1]) < 1e-2:
                     Nclose += 1
             Nmerge = ejected.iloc[0][10]
+
+            print(xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge)
                         
             return xpos, ypos, zpos, esc_vel, KE, PE, Nclose, Nmerge
 

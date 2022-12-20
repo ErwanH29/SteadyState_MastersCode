@@ -30,7 +30,7 @@ class ejection_stats(object):
             for file_ in range(len(filest[int_])):
                 with open(filesc[int_][file_], 'rb') as input_file:
                     ctracker = pkl.load(input_file)
-                    if ctracker.iloc[0][5] > 0:
+                    if ctracker.iloc[0][5] > 0 and ctracker.iloc[0][6] > 5:
                         with open(filest[int_][file_], 'rb') as input_file:
                             print('Reading File :', input_file)
                             count = len(fnmatch.filter(os.listdir('data/ejection_stats/'), '*.*'))
@@ -161,7 +161,11 @@ class ejection_stats(object):
         avg_surv = [ ]
         avg_pos = [[ ], [ ]]
         for int_ in range(2):
-            tot_pop = np.asarray([10*round(0.1*i) for i in self.tot_pop[int_]])
+            if int_ == 0:
+                tot_pop = np.asarray([10*round(0.1*i) for i in self.tot_pop[int_]])
+            else:
+                tot_pop = np.asarray([5*round(i/5) for i in self.tot_pop[int_]])
+                
             in_pop = np.unique(tot_pop)
             for pop_ in in_pop:
                 idx = np.where((tot_pop == pop_))[0]
@@ -189,7 +193,11 @@ class ejection_stats(object):
         with open('figures/ejection_stats/output/ejec_stats.txt', 'w') as file:
             for int_ in range(2):
                 ax_iter += 1
-                tot_pop = np.asarray([10*round(0.1*i) for i in self.tot_pop[int_]])
+                if int_ == 0:
+                    tot_pop = np.asarray([10*round(0.1*i) for i in self.tot_pop[int_]])
+                else:
+                    tot_pop = np.asarray([5*round(i/5) for i in self.tot_pop[int_]])
+
                 sim_time = np.asarray(self.sim_time[int_])
                 vesc = np.asarray(self.vesc[int_])
 
@@ -229,7 +237,10 @@ class ejection_stats(object):
                 ax[int_].set_title(ax_title[int_])
                 for j, xpos in enumerate(pops):
                     ax[int_].text(pops[j], 150, str(self.integrator[int_])+'\n'+str('{:.0f}'.format(samples[j])), fontsize = 'xx-small', ha = 'center' )
-                plot_ini.tickers_pop(ax[ax_iter], pops)
+                if ax_iter == 0:
+                    plot_ini.tickers_pop(ax[ax_iter], pops, 'Hermite')
+                else:
+                    plot_ini.tickers_pop(ax[ax_iter], pops, 'GRX')
                 
                 n1, bins, patches = ax[(int_+2)].hist(vesc, 20)
                 ax[int_+2].clear()
@@ -243,7 +254,9 @@ class ejection_stats(object):
             ax_.axhline(vesc_MW, color = 'black', linestyle = ':')
             ax_.xaxis.labelpad = 30
             ax_.set_ylim(175, 1.05*max(ymax))
-            plot_ini.tickers_pop(ax_, self.tot_pop[0])
+        plot_ini.tickers_pop(ax1, self.tot_pop[0], 'Hermite')
+        plot_ini.tickers_pop(ax2, self.tot_pop[1], 'GRX')
+
         for ax_ in [ax3, ax4]:
             ax_.set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
             ax_.set_ylabel(r'Frequency')
@@ -292,6 +305,15 @@ class event_tracker(object):
                 frac_merge[int_].append(np.mean(temp_frac))
 
             ax.scatter(in_pop[int_], frac_merge[int_], color = colours[int_], edgecolors = 'black', label = labels[int_])
-        plot_ini.tickers_pop(ax, in_pop[0])
+        plot_ini.tickers_pop(ax, in_pop[0], 'Hermite')
         plt.legend()
         plt.savefig('figures/ejection_stats/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')
+
+
+print('... ejection_Stat_plotters ...')
+cst = event_tracker()
+cst = ejection_stats()
+cst.new_data_extractor()
+cst.combine_data()
+cst.energy_plotters()
+cst.vejec_plotters()

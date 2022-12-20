@@ -34,18 +34,19 @@ class gw_calcs(object):
         """
 
         print('!!!!!! WARNING THIS WILL TAKE A WHILE !!!!!!!')
-        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
-        chaoticH = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[51:]) for i in Hermite_data]
-        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory/*'))
-        chaoticG = ['data/GRX/no_addition/chaotic_simulation/'+str(i[47:]) for i in GRX_data]
+        Hermite_data = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory_tGW_new/*'))
+        chaoticH = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[59:]) for i in Hermite_data]
+        GRX_data = glob.glob(os.path.join('/media/erwanh/Elements/GRX/particle_trajectory_tGW_new/*'))
+        chaoticG = ['data/GRX/no_addition/chaotic_simulation/'+str(i[55:]) for i in GRX_data]
 
-        filename = [natsort.natsorted(Hermite_data)[6:], natsort.natsorted(GRX_data)] 
-        filenameC = [natsort.natsorted(chaoticH)[6:], natsort.natsorted(chaoticG)] 
-        for int_ in range(2):
+        filename = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)] 
+        filenameC = [natsort.natsorted(chaoticH), natsort.natsorted(chaoticG)] #CRASHED AT SIM30, 181
+        
+        for int_ in range(1):
             for file_ in range(len(filename[int_])):
                 with open(filenameC[int_][file_], 'rb') as input_file:
                     chaotic_tracker = pkl.load(input_file)
-                    if chaotic_tracker.iloc[0][6] <= 50:
+                    if chaotic_tracker.iloc[0][6] <= 50 and chaotic_tracker.iloc[0][6] > 5:
                         with open(filename[int_][file_], 'rb') as input_file:
                             print('Reading file', file_, ': ', filename[int_][file_])
                             data = pkl.load(input_file)
@@ -196,7 +197,7 @@ class gw_calcs(object):
                                                             'Tertiary SMBH Event': SMBH_t_event,
                                                             'Merger Boolean': merge_Bool})
                                     stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
-                                    stab_tracker.to_pickle(os.path.join(path, 'IMBH_'+str(self.integrator[int_])+'_tGW_data_indiv_parti_'+str(count)+'_'+str(parti_)+'_local1.pkl'))
+                                    stab_tracker.to_pickle(os.path.join(path, 'IMBH_'+str(self.integrator[int_])+'_tGW_data_indiv_parti_'+str(count)+'_'+str(parti_)+'_local2.pkl'))
 
     def combine_data(self):
         """
@@ -997,6 +998,7 @@ class gw_calcs(object):
                 ax_.set_xlabel('Time [Myr]')
                 ax_.set_ylabel(r' $\log_{10} f_{\rm{GW}}$ [Hz]')
                 ax_.set_title(plot_title[iter])
+                ax_.set_ylim(-5, 0)
                 iter += 1
             ax1.scatter(time_SMBH_arr,  np.log10(freq_SMBH_arr), 
                         edgecolors = 'black', color = colours[int_])
@@ -1026,9 +1028,9 @@ class gw_calcs(object):
         plt.savefig('figures/gravitational_waves/strain_dependence.pdf', dpi = 300, bbox_inches='tight')
 
 
-print('...tGW_plotters...')
-cst = gw_calcs()
-cst.new_data_extractor()
+#print('...tGW_plotters...')
+#cst = gw_calcs()
+#cst.new_data_extractor()
 #cst.combine_data()
 #cst.orbital_hist_plotter()
 #cst.Nenc_tgw_plotter()

@@ -416,7 +416,7 @@ def ejected_evolution():
             with open(chaotic[file_], 'rb') as input_file:
                 print('Reading file : ', input_file)
                 chaotic_tracker = pkl.load(input_file)
-                if chaotic_tracker.iloc[0][6] <= 50:
+                if chaotic_tracker.iloc[0][6] <= 50 and chaotic_tracker.iloc[0][6] > 5:
                     if chaotic_tracker.iloc[0][-4] > 0 or chaotic_tracker.iloc[0][5] > 0:
                         with open(data[file_], 'rb') as input_file:
                             file_size = os.path.getsize(data[file_])
@@ -768,13 +768,13 @@ def global_properties():
     iter = -1
     for int_ in integrator:   
         iter += 1
-        data = natsort.natsorted(glob.glob('/media/erwanh/Elements/'+(int_)+'/particle_trajectory_temp/*'))
+        data = natsort.natsorted(glob.glob('/media/erwanh/Elements/'+(int_)+'/particle_trajectory/*'))
         if int_ == 'GRX':
-            energy = ['data/GRX/energy_temp/'+str(i[52:]) for i in data]
-            chaotic = ['data/GRX/no_addition_temp/chaotic_simulation/'+str(i[52:]) for i in data]
+            energy = ['data/GRX/energy/'+str(i[47:]) for i in data]
+            chaotic = ['data/GRX/no_addition/chaotic_simulation/'+str(i[47:]) for i in data]
         else:
-            energy = ['data/Hermite/energy_temp/'+str(i[56:]) for i in data]
-            chaotic = ['data/Hermite/no_addition_temp/chaotic_simulation/'+str(i[56:]) for i in data]
+            energy = ['data/Hermite/energy/'+str(i[51:]) for i in data]
+            chaotic = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[51:]) for i in data]
 
         SMBHx = []
         SMBHy = []
@@ -784,7 +784,7 @@ def global_properties():
         for file_ in range(len(data)):
             with open(chaotic[file_], 'rb') as input_file:
                 chaotic_tracker = pkl.load(input_file)
-                if chaotic_tracker.iloc[0][6] <= 50:
+                if chaotic_tracker.iloc[0][6] <= 50 and chaotic_tracker.iloc[0][6] >= 10:
                     with open(data[file_], 'rb') as input_file:
                         file_size = os.path.getsize(data[file_])
                         if file_size < 2.8e9:
@@ -1016,7 +1016,7 @@ def spatial_plotter(int_string):
         iter_file += 1
         with open(ctracker_files[file_], 'rb') as input_file:
             ctracker = pkl.load(input_file)
-            if ctracker.iloc[0][5] > 0:
+            if ctracker.iloc[0][5] > 0 and ctracker.iloc[0][6] >= 10:
                 with open(ptracker_files[file_], 'rb') as input_file:
                     file_size = os.path.getsize(ptracker_files[file_])
                     if file_size < 2.8e9:
@@ -1151,10 +1151,10 @@ def spatial_plotter(int_string):
                         plt.savefig('figures/system_evolution/Overall_System/simulation_evolution_3D_'+str(iter_file)+'.pdf', dpi=300, bbox_inches='tight')
 
     return
-
+"""
 print('...spatial_plotters...')
 #ejected_evolution()
 global_properties()
 #energy_plotter('Hermite')
 #spatial_plotter('Hermite')
-#chaos_deviate()
+#chaos_deviate()"""

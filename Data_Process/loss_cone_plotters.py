@@ -22,6 +22,23 @@ class loss_cone(object):
         cfile[0] = ['data/Hermite/no_addition/chaotic_simulation/'+str(i[51:]) for i in pfile[0]]
         cfile[1] = ['data/GRX/no_addition/chaotic_simulation/'+str(i[47:]) for i in pfile[1]]
 
+        dir = os.path.join('/home/erwanh/Desktop/SteadyStateBH/Data_Process/figures/steady_time/Sim_summary.txt')
+        with open(dir) as f:
+            line = f.readlines()
+
+            popG = line[14][48:-2] 
+            avgG = line[21][48:-2]
+            avgG2 = line[22][3:-2] 
+
+            popG_data = popG.split()
+            avgG_data = avgG.split()
+            avgG2_data = avgG2.split()
+
+            popG = np.asarray([float(i) for i in popG_data])
+            avgG = np.asarray([float(i) for i in avgG_data])
+            avgG2 = np.asarray([float(i) for i in avgG2_data])
+            avgG = np.concatenate((avgG, avgG2))
+
         self.no_data = [len(Hermite_data), len(GRX_data)]
         with open(pfile[0][0], 'rb') as input_file:
             data = pkl.load(input_file)
@@ -44,12 +61,20 @@ class loss_cone(object):
                 with open(cfile[int_][file_], 'rb') as input_file:
                     chaotic_tracker = pkl.load(input_file)
                     pop = chaotic_tracker.iloc[0][6]
-                    if pop <= 50:
+                    if pop <= 50 and pop > 5:
                         with open(pfile[int_][file_], 'rb') as input_file:
-                            file_size = os.path.getsize(data[file_])
+                            file_size = os.path.getsize(pfile[int_][file_])
                             if file_size < 2.8e9:
                                 print('Reading file', file_, ': ', pfile[int_][file_])
-                                data = pkl.load(input_file)
+                                ptracker = pkl.load(input_file)
+
+                                ###### KEEP THIS FOR COMPARISON PLOTS - FOR EVOLUTION TURN OFF
+                                if 10*round(0.1*chaotic_tracker.iloc[0][6]) in popG:
+                                    idx = np.where(popG == 10*round(0.1*chaotic_tracker.iloc[0][6]))
+                                    col_len = int(min(np.round((avgG[idx])*10**3), np.shape(ptracker)[1])-1)
+                                else:
+                                    col_len = np.shape(ptracker)[1]-1
+
                                 for parti_ in range(np.shape(data)[0]):
                                     KE_arr = [ ]
                                     PE_arr = [ ]
@@ -59,7 +84,7 @@ class loss_cone(object):
                                     if parti_ != 0:
                                         self.init_pop[int_].append(pop)
                                         angL_val = 0
-                                        for col_ in range(np.shape(data)[1]-1):
+                                        for col_ in range(col_len):
                                             KE = data.iloc[parti_][col_][4].value_in(units.J)
                                             PE = data.iloc[parti_][col_][5].value_in(units.J)
                                             tot_E = KE + PE
@@ -251,8 +276,8 @@ class loss_cone(object):
         fig = plt.figure(figsize=(12.5, 5))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
-        for ax_ in [ax1, ax2]:
-            plot_ini.tickers_pop(ax_, init_pop[0])
+        plot_ini.tickers_pop(ax1, init_pop[0], 'Hermite')
+        plot_ini.tickers_pop(ax2, init_pop[1], 'GRX')
         ax1.set_ylabel(r'$\tau_{\rm{repl}}$ [Myr]')
         ax2.set_ylabel(r'$\langle t_{\rm{LC, repl}}\rangle$ [Myr]')
         for int_ in range(2):

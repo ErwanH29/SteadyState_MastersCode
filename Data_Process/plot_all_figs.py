@@ -12,6 +12,14 @@ start_time = cpu_time.time()
 print('...steady_plotter...')
 cst = stability_plotters()
 cst.overall_steady_plotter()
+
+print('... ejection_Stat_plotters ...')
+cst = event_tracker()
+cst = ejection_stats()
+cst.new_data_extractor()
+cst.combine_data()
+cst.energy_plotters()
+cst.vejec_plotters()
 STOP
 
 print('...tGW_plotters...')
@@ -41,13 +49,6 @@ cst = sustainable_sys()
 cst.system_formation_plotter()
 
 
-print('... ejection_Stat_plotters ...')
-cst = event_tracker()
-cst = ejection_stats()
-cst.new_data_extractor()
-cst.combine_data()
-cst.energy_plotters()
-cst.vejec_plotters()
 
 
 ##########################
