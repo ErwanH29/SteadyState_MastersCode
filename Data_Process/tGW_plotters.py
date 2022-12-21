@@ -42,7 +42,7 @@ class gw_calcs(object):
         filename = [natsort.natsorted(Hermite_data), natsort.natsorted(GRX_data)] 
         filenameC = [natsort.natsorted(chaoticH), natsort.natsorted(chaoticG)] #CRASHED AT SIM30, 181
         
-        for int_ in range(1):
+        for int_ in range(2):
             for file_ in range(len(filename[int_])):
                 with open(filenameC[int_][file_], 'rb') as input_file:
                     chaotic_tracker = pkl.load(input_file)
@@ -199,210 +199,248 @@ class gw_calcs(object):
                                     stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
                                     stab_tracker.to_pickle(os.path.join(path, 'IMBH_'+str(self.integrator[int_])+'_tGW_data_indiv_parti_'+str(count)+'_'+str(parti_)+'_local2.pkl'))
 
-    def combine_data(self):
+    def combine_data(self, filter, integ):
         """
         Function which extracts ALL data and provides 
         the merger rate of the system.
         """
 
-        self.sim_time =[[ ], [ ]]
-        self.pop = [[ ], [ ]]
-        self.close_enc = [[ ], [ ]]
-        self.mass_SMBH = [[ ], [ ]]
-        self.mass_parti = [[ ], [ ]]
-        self.mass_IMBH = [[ ], [ ]]
+        self.sim_time = [ ]
+        self.pop = [ ]
+        self.close_enc = [ ]
+        self.mass_SMBH = [ ]
+        self.mass_parti = [ ]
+        self.mass_IMBH = [ ]
 
-        self.freq_flyby_SMBH = [[ ], [ ]]
-        self.strain_flyby_SMBH = [[ ], [ ]]
-        self.time_flyby_SMBH = [[ ], [ ]]
-        self.semi_flyby_SMBH = [[ ], [ ]]
-        self.ecc_flyby_SMBH = [[ ], [ ]]
+        self.freq_flyby_SMBH = [ ]
+        self.strain_flyby_SMBH = [ ]
+        self.time_flyby_SMBH = [ ]
+        self.semi_flyby_SMBH = [ ]
+        self.ecc_flyby_SMBH = [ ]
 
-        self.freq_flyby_nn = [[ ], [ ]]
-        self.strain_flyby_nn = [[ ], [ ]]
-        self.time_flyby_nn = [[ ], [ ]]
-        self.semi_flyby_nn = [[ ], [ ]]
-        self.ecc_flyby_nn = [[ ], [ ]]
+        self.freq_flyby_nn = [ ]
+        self.strain_flyby_nn = [ ]
+        self.time_flyby_nn = [ ]
+        self.semi_flyby_nn = [ ]
+        self.ecc_flyby_nn = [ ]
 
-        self.freq_flyby_t = [[ ], [ ]]
-        self.strain_flyby_t = [[ ], [ ]]
-        self.time_flyby_t = [[ ], [ ]]
-        self.semi_flyby_t = [[ ], [ ]]
-        self.ecc_flyby_t = [[ ], [ ]]
+        self.freq_flyby_t = [ ]
+        self.strain_flyby_t = [ ]
+        self.time_flyby_t = [ ]
+        self.semi_flyby_t = [ ]
+        self.ecc_flyby_t = [ ]
 
-        self.tot_sim_time = [[ ], [ ]]
-        self.tot_events = [[ ], [ ]]
-        self.fb_nn_events = [[ ], [ ]]
-        self.fb_nn_SMBH = [[ ], [ ]]
-        self.fb_t_events = [[ ], [ ]]
-        self.fb_t_SMBH = [[ ], [ ]]
+        self.tot_sim_time = [ ]
+        self.tot_events = [ ]
+        self.fb_nn_events = [ ]
+        self.fb_nn_SMBH = [ ]
+        self.fb_t_events = [ ]
+        self.fb_t_SMBH = [ ]
 
-        tGW_data = natsort.natsorted(glob.glob('data/tGW_temp/*'))
-        for file_ in range(len(tGW_data)):
-            with open(tGW_data[file_], 'rb') as input_file:
-                data_file = pkl.load(input_file)
-                if data_file.iloc[0][0] == 'Hermite':
-                    int_idx = 0
-                else:
-                    int_idx = 1
+        if integ == 'Hermite':
+            int_idx = 0
+        else:
+            int_idx = 1
 
-                self.sim_time[int_idx].append(data_file.iloc[0][1])
-                self.pop[int_idx].append(int(data_file.iloc[0][2]))
-                self.mass_SMBH[int_idx].append(data_file.iloc[0][3])
-                self.mass_parti[int_idx].append(data_file.iloc[0][4])
-                self.mass_IMBH[int_idx].append(data_file.iloc[0][5])
-                self.fb_nn_events[int_idx].append(data_file.iloc[0][6])
-                self.fb_t_events[int_idx].append(data_file.iloc[0][7])
-                self.tot_events[int_idx].append(data_file.iloc[0][8])
-                self.close_enc[int_idx].append(data_file.iloc[0][9])
+        print('Extracting data for ', self.integrator[int_idx])
+        files = 0
+        tGW_data = natsort.natsorted(glob.glob('data/tGW/*'))
+        if filter == 'pop_filt':
+            for file_ in range(len(tGW_data)):
+                print(file_)
+                with open(tGW_data[file_], 'rb') as input_file:
+                    data_file = pkl.load(input_file)
+                    if data_file.iloc[0][2] <= 50:
+                        if data_file.iloc[0][0] == self.integrator[int_idx]:
+                            files += 1
+                            self.sim_time.append(data_file.iloc[0][1])
+                            self.pop.append(int(data_file.iloc[0][2]))
+                            self.mass_SMBH.append(data_file.iloc[0][3])
+                            self.mass_parti.append(data_file.iloc[0][4])
+                            self.mass_IMBH.append(data_file.iloc[0][5])
+                            self.fb_nn_events.append(data_file.iloc[0][6])
+                            self.fb_t_events.append(data_file.iloc[0][7])
+                            self.tot_events.append(data_file.iloc[0][8])
+                            self.close_enc.append(data_file.iloc[0][9])
 
-                self.freq_flyby_SMBH[int_idx].append(data_file.iloc[0][10])
-                self.strain_flyby_SMBH[int_idx].append(data_file.iloc[0][11])
-                self.time_flyby_SMBH[int_idx].append(data_file.iloc[0][12])
-                self.semi_flyby_SMBH[int_idx].append(data_file.iloc[0][13])
-                self.ecc_flyby_SMBH[int_idx].append(data_file.iloc[0][14])
+                            self.freq_flyby_SMBH.append(data_file.iloc[0][10])
+                            self.strain_flyby_SMBH.append(data_file.iloc[0][11])
+                            self.time_flyby_SMBH.append(data_file.iloc[0][12])
+                            self.semi_flyby_SMBH.append(data_file.iloc[0][13])
+                            self.ecc_flyby_SMBH.append(data_file.iloc[0][14])
 
-                self.freq_flyby_nn[int_idx].append(data_file.iloc[0][15])
-                self.strain_flyby_nn[int_idx].append(data_file.iloc[0][16])
-                self.time_flyby_nn[int_idx].append(data_file.iloc[0][17])
-                self.semi_flyby_nn[int_idx].append(data_file.iloc[0][18])
-                self.ecc_flyby_nn[int_idx].append(data_file.iloc[0][19])
-                self.fb_nn_SMBH[int_idx].append(data_file.iloc[0][20])
+                            self.freq_flyby_nn.append(data_file.iloc[0][15])
+                            self.strain_flyby_nn.append(data_file.iloc[0][16])
+                            self.time_flyby_nn.append(data_file.iloc[0][17])
+                            self.semi_flyby_nn.append(data_file.iloc[0][18])
+                            self.ecc_flyby_nn.append(data_file.iloc[0][19])
+                            self.fb_nn_SMBH.append(data_file.iloc[0][20])
 
-                self.freq_flyby_t[int_idx].append(data_file.iloc[0][21])
-                self.strain_flyby_t[int_idx].append(data_file.iloc[0][22])
-                self.time_flyby_t[int_idx].append(data_file.iloc[0][23])
-                self.semi_flyby_t[int_idx].append(data_file.iloc[0][24])
-                self.ecc_flyby_t[int_idx].append(data_file.iloc[0][25])
-                self.fb_t_SMBH[int_idx].append(data_file.iloc[0][26])
+                            self.freq_flyby_t.append(data_file.iloc[0][21])
+                            self.strain_flyby_t.append(data_file.iloc[0][22])
+                            self.time_flyby_t.append(data_file.iloc[0][23])
+                            self.semi_flyby_t.append(data_file.iloc[0][24])
+                            self.ecc_flyby_t.append(data_file.iloc[0][25])
+                            self.fb_t_SMBH.append(data_file.iloc[0][26])
 
-        for int_ in range(2):
-            self.sim_time[int_] = np.asarray(self.sim_time[int_], dtype = 'object')
-            self.pop[int_] = np.asarray(self.pop[int_], dtype = 'object')
-            self.mass_SMBH[int_] = np.asarray(self.mass_SMBH[int_], dtype = 'object')
-            self.mass_parti[int_] = np.asarray(self.mass_parti[int_], dtype = 'object')
-            self.mass_IMBH[int_] = np.asarray(self.mass_IMBH[int_], dtype = 'object')
-            self.fb_nn_events[int_] = np.asarray(self.fb_nn_events[int_], dtype = 'object')
-            self.fb_t_events[int_] = np.asarray(self.fb_t_events[int_], dtype = 'object')
-            self.tot_events[int_] = np.asarray(self.tot_events[int_], dtype = 'object')
-            self.close_enc[int_] = np.asarray(self.close_enc[int_], dtype = 'object')
-            self.freq_flyby_SMBH[int_] = np.asarray(self.freq_flyby_SMBH[int_], dtype = 'object')
-            self.strain_flyby_SMBH[int_] = np.asarray(self.strain_flyby_SMBH[int_], dtype = 'object')
-            self.time_flyby_SMBH[int_] = np.asarray(self.time_flyby_SMBH[int_], dtype = 'object')
-            self.semi_flyby_SMBH[int_] = np.asarray(self.semi_flyby_SMBH[int_], dtype = 'object')
-            self.ecc_flyby_SMBH[int_] = np.asarray(self.ecc_flyby_SMBH[int_], dtype = 'object')
-            self.freq_flyby_nn[int_] = np.asarray(self.freq_flyby_nn[int_], dtype = 'object')
-            self.strain_flyby_nn[int_] = np.asarray(self.strain_flyby_nn[int_], dtype = 'object')
-            self.time_flyby_nn[int_] = np.asarray(self.time_flyby_nn[int_], dtype = 'object')
-            self.semi_flyby_nn[int_] = np.asarray(self.semi_flyby_nn[int_], dtype = 'object')
-            self.ecc_flyby_nn[int_] = np.asarray(self.ecc_flyby_nn[int_], dtype = 'object')
-            self.fb_nn_SMBH[int_] = np.asarray(self.fb_nn_SMBH[int_], dtype = 'object')
-            self.freq_flyby_t[int_] = np.asarray(self.freq_flyby_t[int_], dtype = 'object')
-            self.strain_flyby_t[int_] = np.asarray(self.strain_flyby_t[int_], dtype = 'object')
-            self.time_flyby_t[int_] = np.asarray(self.time_flyby_t[int_], dtype = 'object')
-            self.semi_flyby_t[int_] = np.asarray(self.semi_flyby_t[int_], dtype = 'object')
-            self.ecc_flyby_t[int_] = np.asarray(self.ecc_flyby_t[int_], dtype = 'object')
-            self.fb_t_SMBH[int_] = np.asarray(self.fb_t_SMBH[int_], dtype = 'object')
-        
-            with open('figures/gravitational_waves/output/event_rate.txt', 'w') as file:
-                for int_ in range(1):
-                    pop_idx = np.where(self.pop[int_] > 10)
+        if filter == 'integrator':
+            for file_ in range(len(tGW_data)):
+                with open(tGW_data[file_], 'rb') as input_file:
+                    data_file = pkl.load(input_file)
+                    if data_file.iloc[0][0] == 'GRX':
+                        int_idx = 1
 
-                    tot_events = 0
-                    tot_IMBH_nn = 0
-                    tot_IMBH_t = 0
-                    tot_SMBH_nn = 0
-                    tot_SMBH_t = 0
-                    obs_event_nn = 0
-                    samples_nn = 0
-                    perc_SMBH_nn = 0
-                    obs_event_t = 0
-                    samples_t = 0
-                    perc_SMBH_t = 0
-                    obs_event_SMBH = 0
-                    samples_SMBH = 0
-                    no_strain_nn = 0
-                    no_strain_t = 0
-                    no_strain_S = 0
-                    
-                    no_data = np.shape(self.freq_flyby_nn[int_][pop_idx])[0]
-                    for parti_ in range(no_data):
-                        sim_time = self.sim_time[int_][pop_idx][parti_]
-                        parti_nn_filter = np.asarray(self.fb_nn_SMBH[int_][pop_idx][parti_])
-                        parti_t_filter = np.asarray(self.fb_t_SMBH[int_][pop_idx][parti_])
+                        self.sim_time.append(data_file.iloc[0][1])
+                        self.pop.append(int(data_file.iloc[0][2]))
+                        self.mass_SMBH.append(data_file.iloc[0][3])
+                        self.mass_parti.append(data_file.iloc[0][4])
+                        self.mass_IMBH.append(data_file.iloc[0][5])
+                        self.fb_nn_events.append(data_file.iloc[0][6])
+                        self.fb_t_events.append(data_file.iloc[0][7])
+                        self.tot_events.append(data_file.iloc[0][8])
+                        self.close_enc.append(data_file.iloc[0][9])
 
-                        no_IMBH_nn = len(np.asarray(self.freq_flyby_nn[int_][pop_idx][parti_])[parti_nn_filter < 0]) / sim_time
-                        no_SMBH_nn = len(np.asarray(self.freq_flyby_nn[int_][pop_idx][parti_])[parti_nn_filter > 0]) / sim_time
-                        no_IMBH_t = len(np.asarray(self.freq_flyby_t[int_][pop_idx][parti_])[parti_t_filter < 0]) / sim_time
-                        no_SMBH_t = len(np.asarray(self.freq_flyby_t[int_][pop_idx][parti_])[parti_t_filter > 0]) / sim_time
+                        self.freq_flyby_SMBH.append(data_file.iloc[0][10])
+                        self.strain_flyby_SMBH.append(data_file.iloc[0][11])
+                        self.time_flyby_SMBH.append(data_file.iloc[0][12])
+                        self.semi_flyby_SMBH.append(data_file.iloc[0][13])
+                        self.ecc_flyby_SMBH.append(data_file.iloc[0][14])
 
-                        tot_IMBH_nn += no_IMBH_nn / 2
-                        tot_IMBH_t += no_IMBH_t / 2
-                        tot_SMBH_nn += no_SMBH_nn
-                        tot_SMBH_t += no_SMBH_t
+                        self.freq_flyby_nn.append(data_file.iloc[0][15])
+                        self.strain_flyby_nn.append(data_file.iloc[0][16])
+                        self.time_flyby_nn.append(data_file.iloc[0][17])
+                        self.semi_flyby_nn.append(data_file.iloc[0][18])
+                        self.ecc_flyby_nn.append(data_file.iloc[0][19])
+                        self.fb_nn_SMBH.append(data_file.iloc[0][20])
 
-                        tot_events += len(np.asarray(self.freq_flyby_nn[int_][pop_idx][parti_])[parti_nn_filter < 0]) / sim_time
-                        tot_events += len(np.asarray(self.freq_flyby_t[int_][pop_idx][parti_])[parti_t_filter < 0]) / sim_time
-                        tot_events += len(self.freq_flyby_SMBH[int_][pop_idx][parti_]) / sim_time
+                        self.freq_flyby_t.append(data_file.iloc[0][21])
+                        self.strain_flyby_t.append(data_file.iloc[0][22])
+                        self.time_flyby_t.append(data_file.iloc[0][23])
+                        self.semi_flyby_t.append(data_file.iloc[0][24])
+                        self.ecc_flyby_t.append(data_file.iloc[0][25])
+                        self.fb_t_SMBH.append(data_file.iloc[0][26])
 
-                        freq_temp = np.asarray(self.freq_flyby_nn[int_][pop_idx][parti_])
-                        strain_temp = np.asarray(self.strain_flyby_nn[int_][pop_idx][parti_])
-                        fbb_IMBH = np.asarray(self.fb_nn_SMBH[int_][pop_idx][parti_])
-                        obs_fbnn = freq_temp[(freq_temp > 10**-4) & (fbb_IMBH < 0) & (strain_temp > 10**-27)]
-                        obs_event_nn += (len(obs_fbnn)/sim_time)
-                        perc_SMBH_nn += len(obs_fbnn)/len(freq_temp)
-                        if len(obs_fbnn) > 0:
-                            samples_nn += 1
-                            no_strain_nn += len(obs_fbnn) / len(freq_temp[(freq_temp > 10**-4) & (fbb_IMBH < 0)])
-                        
-                        freq_temp = np.asarray(self.freq_flyby_t[int_][pop_idx][parti_])
-                        strain_temp = np.asarray(self.strain_flyby_t[int_][pop_idx][parti_])
-                        fbt_IMBH = np.asarray(self.fb_t_SMBH[int_][pop_idx][parti_])
-                        obs_fbt = freq_temp[(freq_temp > 10**-4) & (fbt_IMBH < 0) & (strain_temp > 10**-27)]
-                        obs_event_t += (len(obs_fbt)/sim_time)
-                        perc_SMBH_t += len(obs_fbt)/len(freq_temp)
-                        if len(obs_fbt) > 0:
-                            samples_t += 1
-                            no_strain_t += len(obs_fbt) / len(freq_temp[(freq_temp > 10**-4) & (fbt_IMBH < 0)])
+        self.sim_time = np.asarray(self.sim_time, dtype = 'object')
+        self.pop = np.asarray(self.pop, dtype = 'object')
+        self.mass_SMBH = np.asarray(self.mass_SMBH, dtype = 'object')
+        self.mass_parti = np.asarray(self.mass_parti, dtype = 'object')
+        self.mass_IMBH = np.asarray(self.mass_IMBH, dtype = 'object')
+        self.fb_nn_events = np.asarray(self.fb_nn_events, dtype = 'object')
+        self.fb_t_events = np.asarray(self.fb_t_events, dtype = 'object')
+        self.tot_events = np.asarray(self.tot_events, dtype = 'object')
+        self.close_enc = np.asarray(self.close_enc, dtype = 'object')
+        self.freq_flyby_SMBH = np.asarray(self.freq_flyby_SMBH, dtype = 'object')
+        self.strain_flyby_SMBH = np.asarray(self.strain_flyby_SMBH, dtype = 'object')
+        self.time_flyby_SMBH = np.asarray(self.time_flyby_SMBH, dtype = 'object')
+        self.semi_flyby_SMBH = np.asarray(self.semi_flyby_SMBH, dtype = 'object')
+        self.ecc_flyby_SMBH = np.asarray(self.ecc_flyby_SMBH, dtype = 'object')
+        self.freq_flyby_nn = np.asarray(self.freq_flyby_nn, dtype = 'object')
+        self.strain_flyby_nn = np.asarray(self.strain_flyby_nn, dtype = 'object')
+        self.time_flyby_nn = np.asarray(self.time_flyby_nn, dtype = 'object')
+        self.semi_flyby_nn = np.asarray(self.semi_flyby_nn, dtype = 'object')
+        self.ecc_flyby_nn = np.asarray(self.ecc_flyby_nn, dtype = 'object')
+        self.fb_nn_SMBH = np.asarray(self.fb_nn_SMBH, dtype = 'object')
+        self.freq_flyby_t = np.asarray(self.freq_flyby_t, dtype = 'object')
+        self.strain_flyby_t = np.asarray(self.strain_flyby_t, dtype = 'object')
+        self.time_flyby_t = np.asarray(self.time_flyby_t, dtype = 'object')
+        self.semi_flyby_t = np.asarray(self.semi_flyby_t, dtype = 'object')
+        self.ecc_flyby_t = np.asarray(self.ecc_flyby_t, dtype = 'object')
+        self.fb_t_SMBH = np.asarray(self.fb_t_SMBH, dtype = 'object')
 
-                        freq_temp = np.asarray(self.freq_flyby_SMBH[int_][pop_idx][parti_])
-                        strain_temp = np.asarray(self.strain_flyby_SMBH[int_][pop_idx][parti_])
-                        obs_fbS = freq_temp[(freq_temp > 10**-4) & (strain_temp > 10**-27)]
-                        obs_event_SMBH += (len(obs_fbS))/sim_time
-                        if len(obs_fbS) > 0:
-                            samples_SMBH += 1
-                            no_strain_S += len(obs_fbS) / len(freq_temp[(freq_temp > 10**-4)])
+        with open('figures/gravitational_waves/output/event_rate_'+str(self.integrator[int_idx])+'.txt', 'w') as file:
+            tot_events = 0
+            tot_IMBH_nn = 0
+            tot_IMBH_t = 0
+            tot_SMBH_nn = 0
+            tot_SMBH_t = 0
+            obs_event_nn = 0
+            samples_nn = 0
+            perc_SMBH_nn = 0
+            obs_event_t = 0
+            samples_t = 0
+            perc_SMBH_t = 0
+            obs_event_SMBH = 0
+            samples_SMBH = 0
+            no_strain_nn = 0
+            no_strain_t = 0
+            no_strain_S = 0
+            
+            no_data = np.shape(self.freq_flyby_nn)[0]
+            for parti_ in range(no_data):
+                sim_time = self.sim_time[parti_]
+                parti_nn_filter = np.asarray(self.fb_nn_SMBH[parti_])
+                parti_t_filter = np.asarray(self.fb_t_SMBH[parti_])
 
-                    obs_event_nn /= max(1, samples_nn)
-                    obs_event_t /= max(1, samples_t)
-                    obs_event_SMBH /= max(1, samples_SMBH)
-                    no_strain_nn /= max(1, no_data)
-                    no_strain_t /= max(1, no_data)
-                    no_strain_S /= max(1, no_data)
+                no_IMBH_nn = len(np.asarray(self.freq_flyby_nn[parti_])[parti_nn_filter < 0]) / sim_time
+                no_SMBH_nn = len(np.asarray(self.freq_flyby_nn[parti_])[parti_nn_filter > 0]) / sim_time
+                no_IMBH_t = len(np.asarray(self.freq_flyby_t[parti_])[parti_t_filter < 0]) / sim_time
+                no_SMBH_t = len(np.asarray(self.freq_flyby_t[parti_])[parti_t_filter > 0]) / sim_time
 
-                    print(no_data)
-                    fb_nn_events = self.fb_nn_events[int_][pop_idx]
-                    fb_t_events = self.fb_t_events[int_][pop_idx]
-                    sim_time = self.sim_time[int_][pop_idx]
+                tot_IMBH_nn += no_IMBH_nn / 2
+                tot_IMBH_t += no_IMBH_t / 2
+                tot_SMBH_nn += no_SMBH_nn
+                tot_SMBH_t += no_SMBH_t
 
-                    if int_ == 0:
-                        file.write('Stats are for N = 10 and only looks at events with strain > 1e-30 and f > 1e-12 Hz')
-                        file.write('\nDetectable means f > 1e-4 Hz and strain > 1e-27 when observing a source 1Mpc away\n')
-                    file.write('\nData for '+str(self.integrator[int_]))
-                    file.write('\nAverage total events per Myr:                       ' + str(tot_events/no_data * 10**6))
-                    file.write('\nAverage total flyby events per Myr:                 ' + str(np.mean(fb_nn_events/sim_time) * 10**6))
-                    file.write('\nAverage total tertiary events per Myr:              ' + str(np.mean(fb_t_events/sim_time) * 10**6))
-                    file.write('\nAverage IMBH-IMBH nn events per Myr:                ' + str(tot_IMBH_nn/max(1, no_data) * 10**6))
-                    file.write('\nAverage SMBH-IMBH nn events per Myr:                ' + str(tot_SMBH_nn/max(1, no_data) * 10**6))
-                    file.write('\nAverage IMBH-IMBH tertiary events per Myr:          ' + str(tot_IMBH_t/max(1, no_data) * 10**6))
-                    file.write('\nAverage SMBH-IMBH tertiary events per Myr:          ' + str(tot_SMBH_t/max(1, no_data) * 10**6))
-                    file.write('\nAverage detectable nn IMBH-IMBH per Myr:            ' + str(obs_event_nn * 10**6))
-                    file.write('\nAverage detectable tertiary IMBH-IMBH per Myr:      ' + str(obs_event_t * 10**6))
-                    file.write('\nAverage detectable IMBH-IMBH per Myr:               ' + str((obs_event_nn + obs_event_t) * 10**6))
-                    file.write('\nAverage detectable SMBH-IMBH event rate per Myr:    ' + str(obs_event_SMBH * 10**6))
-                    file.write('\nObservable / Events in freq. range IMBH-IMBH:       ' + str((no_strain_nn+no_strain_t)/2))
-                    file.write('\nObservable / Events in freq. range SMBH-IMBH:       ' + str(no_strain_S))
-                    file.write('\n========================================================================')
+                tot_events += len(np.asarray(self.freq_flyby_nn[parti_])[parti_nn_filter < 0]) / sim_time
+                tot_events += len(np.asarray(self.freq_flyby_t[parti_])[parti_t_filter < 0]) / sim_time
+                tot_events += len(self.freq_flyby_SMBH[parti_]) / sim_time
+
+                freq_temp = np.asarray(self.freq_flyby_nn[parti_])
+                strain_temp = np.asarray(self.strain_flyby_nn[parti_])
+                fbb_IMBH = np.asarray(self.fb_nn_SMBH[parti_])
+                obs_fbnn = freq_temp[(freq_temp > 10**-4) & (fbb_IMBH < 0) & (strain_temp > 10**-27)]
+                obs_event_nn += (len(obs_fbnn)/sim_time)
+                perc_SMBH_nn += len(obs_fbnn)/len(freq_temp)
+                if len(obs_fbnn) > 0:
+                    samples_nn += 1
+                    no_strain_nn += len(obs_fbnn) / len(freq_temp[(freq_temp > 10**-4) & (fbb_IMBH < 0)])
+                
+                freq_temp = np.asarray(self.freq_flyby_t[parti_])
+                strain_temp = np.asarray(self.strain_flyby_t[parti_])
+                fbt_IMBH = np.asarray(self.fb_t_SMBH[parti_])
+                obs_fbt = freq_temp[(freq_temp > 10**-4) & (fbt_IMBH < 0) & (strain_temp > 10**-27)]
+                obs_event_t += (len(obs_fbt)/sim_time)
+                perc_SMBH_t += len(obs_fbt)/len(freq_temp)
+                if len(obs_fbt) > 0:
+                    samples_t += 1
+                    no_strain_t += len(obs_fbt) / len(freq_temp[(freq_temp > 10**-4) & (fbt_IMBH < 0)])
+
+                freq_temp = np.asarray(self.freq_flyby_SMBH[parti_])
+                strain_temp = np.asarray(self.strain_flyby_SMBH[parti_])
+                obs_fbS = freq_temp[(freq_temp > 10**-4) & (strain_temp > 10**-27)]
+                obs_event_SMBH += (len(obs_fbS))/sim_time
+                if len(obs_fbS) > 0:
+                    samples_SMBH += 1
+                    no_strain_S += len(obs_fbS) / len(freq_temp[(freq_temp > 10**-4)])
+
+            obs_event_nn /= max(1, samples_nn)
+            obs_event_t /= max(1, samples_t)
+            obs_event_SMBH /= max(1, samples_SMBH)
+            no_strain_nn /= max(1, no_data)
+            no_strain_t /= max(1, no_data)
+            no_strain_S /= max(1, no_data)
+
+            fb_nn_events = np.asarray(self.fb_nn_events)
+            fb_t_events = np.asarray(self.fb_t_events)
+            sim_time = np.asarray(self.sim_time)
+
+            file.write('Stats are for N = 10 and only looks at events with strain > 1e-30 and f > 1e-12 Hz')
+            file.write('\nDetectable means f > 1e-4 Hz and strain > 1e-27 when observing a source 1Mpc away\n')
+            file.write('\nData for '+str(self.integrator[int_idx]))
+            file.write('\nAverage total events per Myr:                       ' + str(tot_events/no_data * 10**6))
+            file.write('\nAverage total flyby events per Myr:                 ' + str(np.mean(fb_nn_events/sim_time) * 10**6))
+            file.write('\nAverage total tertiary events per Myr:              ' + str(np.mean(fb_t_events/sim_time) * 10**6))
+            file.write('\nAverage IMBH-IMBH nn events per Myr:                ' + str(tot_IMBH_nn/max(1, no_data) * 10**6))
+            file.write('\nAverage SMBH-IMBH nn events per Myr:                ' + str(tot_SMBH_nn/max(1, no_data) * 10**6))
+            file.write('\nAverage IMBH-IMBH tertiary events per Myr:          ' + str(tot_IMBH_t/max(1, no_data) * 10**6))
+            file.write('\nAverage SMBH-IMBH tertiary events per Myr:          ' + str(tot_SMBH_t/max(1, no_data) * 10**6))
+            file.write('\nAverage detectable nn IMBH-IMBH per Myr:            ' + str(obs_event_nn * 10**6))
+            file.write('\nAverage detectable tertiary IMBH-IMBH per Myr:      ' + str(obs_event_t * 10**6))
+            file.write('\nAverage detectable IMBH-IMBH per Myr:               ' + str((obs_event_nn + obs_event_t) * 10**6))
+            file.write('\nAverage detectable SMBH-IMBH event rate per Myr:    ' + str(obs_event_SMBH * 10**6))
+            file.write('\nObservable / Events in freq. range IMBH-IMBH:       ' + str((no_strain_nn+no_strain_t)/2))
+            file.write('\nObservable / Events in freq. range SMBH-IMBH:       ' + str(no_strain_S))
+            file.write('\n========================================================================')
 
     def coll_radius(self, mass_arr):
         return 3 * (2*constants.G*mass_arr)/(constants.c**2)
@@ -566,6 +604,7 @@ class gw_calcs(object):
         ax_histh.tick_params(axis="y", labelleft=False)
 
         kdef_SMBH = sm.nonparametric.KDEUnivariate(np.log10(x1))
+        print(np.log10(x1))
         kdef_SMBH.fit()
         kdef_SMBH.density = (kdef_SMBH.density/max(kdef_SMBH.density))
 
@@ -634,96 +673,9 @@ class gw_calcs(object):
 
         plot_init = plotter_setup()
 
-        IMBH_tgw = [[ ], [ ]]
-        IMBH_sem = [[ ], [ ]]
-        IMBH_ecc = [[ ], [ ]]
-
-        SMBH_tgw = [[ ], [ ]]
-        SMBH_sem = [[ ], [ ]]
-        SMBH_ecc = [[ ], [ ]]
-        
-        for int_ in range(1):
-            for parti_ in range(len(self.semi_flyby_nn[int_])): #Looping through every individual particle
-                if self.pop[int_][parti_] <= 50:
-                    for event_ in range(len(self.semi_flyby_nn[int_][parti_])): #Looping through every detected event
-                        semi_fb_nn = self.semi_flyby_nn[int_][parti_][event_]
-                        if semi_fb_nn < 1 | units.parsec:
-                            if np.asarray(self.fb_nn_SMBH[int_][parti_][event_]) < 0:
-                                ecc_fb_nn = self.ecc_flyby_nn[int_][parti_][event_]
-                                gwtime_nn = self.gw_timescale(semi_fb_nn, ecc_fb_nn, self.mass_IMBH[int_][parti_], 
-                                                              self.mass_parti[int_][parti_]).value_in(units.Myr)
-
-                                IMBH_tgw[int_].append(gwtime_nn)
-                                IMBH_sem[int_].append(semi_fb_nn.value_in(units.pc))
-                                IMBH_ecc[int_].append(np.log10(1-ecc_fb_nn))
-                            else:
-                                ecc_fb_nn = self.ecc_flyby_nn[int_][parti_][event_]
-                                gwtime_nn = self.gw_timescale(semi_fb_nn, ecc_fb_nn, self.mass_SMBH[int_][parti_], 
-                                                              self.mass_parti[int_][parti_]).value_in(units.Myr)
-
-                                SMBH_tgw[int_].append(gwtime_nn)
-                                SMBH_sem[int_].append(semi_fb_nn.value_in(units.pc))
-                                SMBH_ecc[int_].append(np.log10(1-ecc_fb_nn))
-
-            for parti_ in range(len(self.semi_flyby_t[int_])):
-                if self.pop[int_][parti_] <= 50:
-                    for event_ in range(len(self.semi_flyby_t[int_][parti_])):
-                        semi_fb_t = self.semi_flyby_t[int_][parti_][event_]
-                        if semi_fb_t < 1 | units.parsec:
-                            if np.asarray(self.fb_t_SMBH[int_][parti_][event_]) < 0:
-                                ecc_fb_t = self.ecc_flyby_t[int_][parti_][event_]
-                                gwtime_t = self.gw_timescale(semi_fb_t, ecc_fb_t, self.mass_parti[int_][parti_], 
-                                                             self.mass_IMBH[int_][parti_]).value_in(units.Myr)
-
-                                IMBH_tgw[int_].append(gwtime_t)
-                                IMBH_sem[int_].append(semi_fb_t.value_in(units.pc))
-                                IMBH_ecc[int_].append(np.log10(1-ecc_fb_t))
-                            else:
-                                ecc_fb_t = self.ecc_flyby_t[int_][parti_][event_]
-                                gwtime_t = self.gw_timescale(semi_fb_t, ecc_fb_t, self.mass_parti[int_][parti_], 
-                                                             self.mass_SMBH[int_][parti_]).value_in(units.Myr)
-
-                                SMBH_tgw[int_].append(gwtime_t)
-                                SMBH_sem[int_].append(semi_fb_t.value_in(units.pc))
-                                SMBH_ecc[int_].append(np.log10(1-ecc_fb_t))
-
-            for parti_ in range(len(self.semi_flyby_SMBH[int_])):
-                if self.pop[int_][parti_] <= 50:
-                    for event_ in range(len(self.semi_flyby_SMBH[int_][parti_])):
-                        semi_fb_SMBH = self.semi_flyby_SMBH[int_][parti_][event_]
-                        if semi_fb_SMBH < 1 | units.parsec:
-                            ecc_fb_SMBH = self.ecc_flyby_SMBH[int_][parti_][event_]
-                            gwtime_SMBH = self.gw_timescale(semi_fb_SMBH, ecc_fb_SMBH, self.mass_parti[int_][parti_], 
-                                                            self.mass_SMBH[int_][parti_]).value_in(units.Myr)
-
-                            SMBH_tgw[int_].append(gwtime_SMBH)
-                            SMBH_sem[int_].append(semi_fb_SMBH.value_in(units.pc))
-                            SMBH_ecc[int_].append(np.log10(1-ecc_fb_SMBH))
-
-            IMBH_tgw[int_] = np.asarray(IMBH_tgw[int_])
-            IMBH_ecc[int_] = np.asarray(IMBH_ecc[int_])
-            IMBH_sem[int_] = np.asarray(IMBH_sem[int_]) 
-            SMBH_tgw[int_] = np.asarray(SMBH_tgw[int_])
-            SMBH_ecc[int_] = np.asarray(SMBH_ecc[int_])
-            SMBH_sem[int_] = np.asarray(SMBH_sem[int_])
-        
-        ############### PLOTTING OF a vs. (1-e) FOR BIN ##############
         xmin = -10
         xmax = 0
         ymin = -4
-
-        red_mass = (self.mass_parti[0][0]**2)*(2*self.mass_parti[0][0])
-        x_arr = np.linspace(-10, 0, 2000)
-        const_tgw = [np.log10(1-np.sqrt(1-((256*self.tH*(constants.G**3)/(5*constants.c**5)*red_mass*(10**(i) * (1 | units.pc)) **-4)) **(1/3.5))) for i in x_arr]
-
-        red_mass2 = (self.mass_parti[0][0]*self.mass_SMBH[0][0])*(self.mass_parti[0][0]+self.mass_SMBH[0][0])
-        const_tgw2 = [np.log10(1-np.sqrt(1-((256*self.tH*(constants.G**3)/(5*constants.c**5)*red_mass2*(10**(i) * (1 | units.pc)) **-4)) **(1/3.5))) for i in x_arr]
-
-        ecc_l = np.linspace(0, 1, 1000)
-        const_semi = [np.log10((1-i)**-1/10)-1 for i in ecc_l]
-        const_semi2 = [np.log10((1-i)**-2/10)-2 for i in ecc_l]
-        print(const_semi[0], const_semi2[0])
-        ecc_lx = [np.log10(1-i)+1 for i in ecc_l]
 
         fig = plt.figure(figsize=(15, 12))
         ax1 = fig.add_subplot(221)
@@ -735,37 +687,122 @@ class gw_calcs(object):
         ax1.set_title('Hermite')
         ax2.set_title('GRX')
         extent = [1.1*xmin, 1.1*xmax, 1.1*ymin, 0]
-        for j in range(1):
-            bin2d_sim, xedg, xedg, image = ax_top[j].hist2d(np.log10(IMBH_sem[j]), IMBH_ecc[j], bins=(250, 250), 
-                                                            range=([1.1*xmin, 1.1*xmax], [1.1*ymin, 0]))
-            bin2d_sim /= np.max(bin2d_sim)
-            contours = ax_top[j].imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+        ecc_l = np.linspace(0, 1, 1000)
+        const_semi = [np.log10((1-i)**-1/10)-1 for i in ecc_l]
+        const_semi2 = [np.log10((1-i)**-2/10)-2 for i in ecc_l]
+        ecc_lx = [np.log10(1-i)+1 for i in ecc_l]
 
-            bin2d_sim, xedg, xedg, image = ax_bot[j].hist2d(np.log10(SMBH_sem[j]), SMBH_ecc[j], bins=(250, 250), 
+        IMBH_tgw = [[ ], [ ]]
+        IMBH_sem = [[ ], [ ]]
+        IMBH_ecc = [[ ], [ ]]
+
+        SMBH_tgw = [[ ], [ ]]
+        SMBH_sem = [[ ], [ ]]
+        SMBH_ecc = [[ ], [ ]]
+        
+        for int_ in range(2):
+            self.combine_data('pop_filt', self.integrator[int_])
+
+            for parti_ in range(len(self.semi_flyby_nn)): #Looping through every individual particle
+                for event_ in range(len(self.semi_flyby_nn[parti_])): #Looping through every detected event
+                    semi_fb_nn = self.semi_flyby_nn[parti_][event_]
+                    if semi_fb_nn < 1 | units.parsec:
+                        if np.asarray(self.fb_nn_SMBH[parti_][event_]) < 0:
+                            ecc_fb_nn = self.ecc_flyby_nn[parti_][event_]
+                            gwtime_nn = self.gw_timescale(semi_fb_nn, ecc_fb_nn, self.mass_IMBH[parti_], 
+                                                            self.mass_parti[parti_]).value_in(units.Myr)
+
+                            IMBH_tgw[int_].append(gwtime_nn)
+                            IMBH_sem[int_].append(semi_fb_nn.value_in(units.pc))
+                            IMBH_ecc[int_].append(np.log10(1-ecc_fb_nn))
+                        else:
+                            ecc_fb_nn = self.ecc_flyby_nn[parti_][event_]
+                            gwtime_nn = self.gw_timescale(semi_fb_nn, ecc_fb_nn, self.mass_SMBH[parti_], 
+                                                            self.mass_parti[parti_]).value_in(units.Myr)
+
+                            SMBH_tgw[int_].append(gwtime_nn)
+                            SMBH_sem[int_].append(semi_fb_nn.value_in(units.pc))
+                            SMBH_ecc[int_].append(np.log10(1-ecc_fb_nn))
+
+            for parti_ in range(len(self.semi_flyby_t)):
+                for event_ in range(len(self.semi_flyby_t[parti_])):
+                    semi_fb_t = self.semi_flyby_t[parti_][event_]
+                    if semi_fb_t < 1 | units.parsec:
+                        if np.asarray(self.fb_t_SMBH[parti_][event_]) < 0:
+                            ecc_fb_t = self.ecc_flyby_t[parti_][event_]
+                            gwtime_t = self.gw_timescale(semi_fb_t, ecc_fb_t, self.mass_parti[parti_], 
+                                                            self.mass_IMBH[parti_]).value_in(units.Myr)
+
+                            IMBH_tgw[int_].append(gwtime_t)
+                            IMBH_sem[int_].append(semi_fb_t.value_in(units.pc))
+                            IMBH_ecc[int_].append(np.log10(1-ecc_fb_t))
+                        else:
+                            ecc_fb_t = self.ecc_flyby_t[parti_][event_]
+                            gwtime_t = self.gw_timescale(semi_fb_t, ecc_fb_t, self.mass_parti[parti_], 
+                                                            self.mass_SMBH[parti_]).value_in(units.Myr)
+
+                            SMBH_tgw[int_].append(gwtime_t)
+                            SMBH_sem[int_].append(semi_fb_t.value_in(units.pc))
+                            SMBH_ecc[int_].append(np.log10(1-ecc_fb_t))
+
+            for parti_ in range(len(self.semi_flyby_SMBH)):
+                for event_ in range(len(self.semi_flyby_SMBH[parti_])):
+                    semi_fb_SMBH = self.semi_flyby_SMBH[parti_][event_]
+                    if semi_fb_SMBH < 1 | units.parsec:
+                        ecc_fb_SMBH = self.ecc_flyby_SMBH[parti_][event_]
+                        gwtime_SMBH = self.gw_timescale(semi_fb_SMBH, ecc_fb_SMBH, self.mass_parti[parti_], 
+                                                        self.mass_SMBH[parti_]).value_in(units.Myr)
+
+                        SMBH_tgw[int_].append(gwtime_SMBH)
+                        SMBH_sem[int_].append(semi_fb_SMBH.value_in(units.pc))
+                        SMBH_ecc[int_].append(np.log10(1-ecc_fb_SMBH))
+
+            IMBH_tgw[int_] = np.asarray(IMBH_tgw[int_])
+            IMBH_ecc[int_] = np.asarray(IMBH_ecc[int_])
+            IMBH_sem[int_] = np.asarray(IMBH_sem[int_]) 
+            SMBH_tgw[int_] = np.asarray(SMBH_tgw[int_])
+            SMBH_ecc[int_] = np.asarray(SMBH_ecc[int_])
+            SMBH_sem[int_] = np.asarray(SMBH_sem[int_])
+        
+            ############### PLOTTING OF a vs. (1-e) FOR BIN ##############
+
+            red_mass = (self.mass_parti[0][0]**2)*(2*self.mass_parti[0][0])
+            x_arr = np.linspace(-10, 0, 2000)
+            const_tgw = [np.log10(1-np.sqrt(1-((256*self.tH*(constants.G**3)/(5*constants.c**5)*red_mass*(10**(i) * (1 | units.pc)) **-4)) **(1/3.5))) for i in x_arr]
+
+            red_mass2 = (self.mass_parti[0][0]*self.mass_SMBH[0][0])*(self.mass_parti[0][0]+self.mass_SMBH[0][0])
+            const_tgw2 = [np.log10(1-np.sqrt(1-((256*self.tH*(constants.G**3)/(5*constants.c**5)*red_mass2*(10**(i) * (1 | units.pc)) **-4)) **(1/3.5))) for i in x_arr]
+
+            bin2d_sim, xedg, xedg, image = ax_top[int_].hist2d(np.log10(IMBH_sem[int_]), IMBH_ecc[int_], bins=(250, 250), 
                                                             range=([1.1*xmin, 1.1*xmax], [1.1*ymin, 0]))
             bin2d_sim /= np.max(bin2d_sim)
-            contours = ax_bot[j].imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+            contours = ax_top[int_].imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+
+            bin2d_sim, xedg, xedg, image = ax_bot[int_].hist2d(np.log10(SMBH_sem[int_]), SMBH_ecc[int_], bins=(250, 250), 
+                                                            range=([1.1*xmin, 1.1*xmax], [1.1*ymin, 0]))
+            bin2d_sim /= np.max(bin2d_sim)
+            contours = ax_bot[int_].imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
             
-            for ax_ in [ax_bot[j], ax_top[j]]:
+            for ax_ in [ax_bot[int_], ax_top[int_]]:
                 ax_.set_ylabel(r'$\log_{10}(1-e)$')
                 ax_.set_xlabel(r'$\log_{10} a$ [pc]')
                 ax_.set_xlim(xmin, xmax)
                 ax_.set_ylim(ymin, 0)
                 plot_init.tickers(ax_, 'hist')
 
-            self.forecast_interferometer(ax_top[j], self.mass_parti[j][0], self.mass_IMBH[j][0])
-            ax_top[j].plot(x_arr, const_tgw, color = 'white')
-            ax_top[j].text(-9.5, -3, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
-            ax_top[j].text(-6.6, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
-            ax_top[j].text(-2.55, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+2, color = 'white')
-            ax_top[j].text(-2.93, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+2, color = 'white')
+            self.forecast_interferometer(ax_top[int_], self.mass_parti[0][0], self.mass_IMBH[0][0])
+            ax_top[int_].plot(x_arr, const_tgw, color = 'white')
+            ax_top[int_].text(-9.5, -3, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
+            ax_top[int_].text(-6.6, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
+            ax_top[int_].text(-2.55, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+2, color = 'white')
+            ax_top[int_].text(-2.93, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+2, color = 'white')
 
-            self.forecast_interferometer(ax_bot[j], self.mass_parti[j][0], self.mass_SMBH[j][0])
-            ax_bot[j].plot(x_arr, const_tgw2, color = 'white')
-            ax_bot[j].text(-8.4, -3, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
-            ax_bot[j].text(-5.5, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
-            ax_bot[j].text(-0.85, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+4, color = 'white')
-            ax_bot[j].text(-1.23, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+4, color = 'white')
+            self.forecast_interferometer(ax_bot[int_], self.mass_parti[0][0], self.mass_SMBH[0][0])
+            ax_bot[int_].plot(x_arr, const_tgw2, color = 'white')
+            ax_bot[int_].text(-8.4, -3, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
+            ax_bot[int_].text(-5.5, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
+            ax_bot[int_].text(-0.85, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+4, color = 'white')
+            ax_bot[int_].text(-1.23, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+4, color = 'white')
         ax_top[1].plot(ecc_lx, const_semi)
         ax_top[0].plot(ecc_lx, const_semi)
         ax_top[0].plot(ecc_lx, const_semi2, color = 'white')
@@ -793,46 +830,45 @@ class gw_calcs(object):
 
         plot_init = plotter_setup()
         
-        tgw_SMBH = [[ ], [ ]]
-        for int_ in range(1):
-            for i in range(len(self.semi_flyby_SMBH[int_])):
-                if self.pop[int_][i] <= 50:
-                    tgw_SMBH_avg = []
-                    for parti_ in range(len(self.semi_flyby_SMBH[int_][i])):
-                        grav_avg_time = self.gw_timescale(self.semi_flyby_SMBH[int_][i][parti_], self.ecc_flyby_SMBH[int_][i][parti_], 
-                                                        self.mass_SMBH[int_][i], self.mass_SMBH[int_][i]).value_in(units.Myr)
-                        tgw_SMBH_avg.append(grav_avg_time)
-                data_pts = len(tgw_SMBH_avg)
-                tgw_SMBH[int_].append(np.nanmean(np.asarray(tgw_SMBH_avg[round(0.9*data_pts):])))
-
-            tgw_SMBH[int_] = np.asarray(tgw_SMBH[int_])
-
         fig = plt.figure(figsize=(14, 6))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax1.set_title('Hermite')
         ax2.set_title('GRX')
 
+        tgw_SMBH = [[ ], [ ]]
         Nenc = [[ ], [ ]]
-        for int_ in range(1):
-            for parti_ in range(len(self.close_enc[int_])): #Looping through every individual particle
-                Nenc[int_].append(self.close_enc[int_][parti_])
-        xmax = (max(Nenc[0]))
-        ymin = (np.nanmin(np.log10(tgw_SMBH[0])))
-        ymax = (np.nanmax(np.log10(tgw_SMBH[0])))
-        iter = -1
-        for ax_ in [ax1]:#, ax2]:
-            iter += 1
-            for int_ in range(1):
-                bin2d_sim, xedg, xedg, image = ax_.hist2d(Nenc[int_], np.log10(tgw_SMBH[iter]), 
-                                                    bins=(100,100), range=([0, 1.1*xmax], [0.9*ymin, 1.1*ymax]))
-            bin2d_sim /= np.max(bin2d_sim)
-            extent = [0, 1.1*xmax, 0.9*ymin, 1.1*ymax]
-            contours = ax_.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-            ax_.set_xlabel(r'$N_{\rm{enc}}$')
-            ax_.set_ylabel(r'$\log_{10}t_{\rm{GW, min}}$ [Myr]')
-            ax_.set_xlim(0, 1.1*xmax)
-            plot_init.tickers(ax_, 'hist')
+        for int_ in range(2):
+            self.combine_data('pop_filt', self.integrator[int_])
+            for i in range(len(self.semi_flyby_SMBH)):
+                tgw_SMBH_avg = []
+                for parti_ in range(len(self.semi_flyby_SMBH[i])):
+                    grav_avg_time = self.gw_timescale(self.semi_flyby_SMBH[i][parti_], self.ecc_flyby_SMBH[i][parti_], 
+                                                    self.mass_SMBH[i], self.mass_SMBH[i]).value_in(units.Myr)
+                    tgw_SMBH_avg.append(grav_avg_time)
+                data_pts = len(tgw_SMBH_avg)
+                tgw_SMBH[int_].append(np.nanmean(np.asarray(tgw_SMBH_avg[round(0.9*data_pts):])))
+            tgw_SMBH[int_] = np.asarray(tgw_SMBH[int_])
+
+            for parti_ in range(len(self.close_enc)): #Looping through every individual particle
+                Nenc[int_].append(self.close_enc[parti_])
+
+            xmax = (max(Nenc[0]))
+            ymin = (np.nanmin(np.log10(tgw_SMBH[0])))
+            ymax = (np.nanmax(np.log10(tgw_SMBH[0])))
+            iter = -1
+            for ax_ in [ax1, ax2]:
+                iter += 1
+                for int_ in range(2):
+                    bin2d_sim, xedg, xedg, image = ax_.hist2d(Nenc[int_], np.log10(tgw_SMBH[int_]), 
+                                                        bins=(100,100), range=([0, 1.1*xmax], [0.9*ymin, 1.1*ymax]))
+                bin2d_sim /= np.max(bin2d_sim)
+                extent = [0, 1.1*xmax, 0.9*ymin, 1.1*ymax]
+                contours = ax_.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+                ax_.set_xlabel(r'$N_{\rm{enc}}$')
+                ax_.set_ylabel(r'$\log_{10}t_{\rm{GW, min}}$ [Myr]')
+                ax_.set_xlim(0, 1.1*xmax)
+                plot_init.tickers(ax_, 'hist')
         plt.savefig('figures/gravitational_waves/Nenc_tgw_SMBH_evol_histogram.pdf', dpi=300, bbox_inches='tight')
         plt.clf()
 
@@ -842,58 +878,58 @@ class gw_calcs(object):
         """
         
         plot_ini = plotter_setup()
+        self.combine_data('integrator', self.integrator[1])
 
-        IMBH_strain = [[ ], [ ]]
-        IMBH_strain_nn = [[ ], [ ]]
-        IMBH_strain_t = [[ ], [ ]]
-        IMBH_freq = [[ ], [ ]]
-        IMBH_freq_nn = [[ ], [ ]]
-        IMBH_freq_t = [[ ], [ ]]
+        IMBH_strain = [ ]
+        IMBH_strain_nn = [ ]
+        IMBH_strain_t = [ ]
+        IMBH_freq = [ ]
+        IMBH_freq_nn = [ ]
+        IMBH_freq_t = [ ]
 
-        SMBH_strain = [[ ], [ ]]
-        SMBH_strain_nn = [[ ], [ ]]
-        SMBH_strain_t = [[ ], [ ]]
-        SMBH_freq = [[ ], [ ]]
-        SMBH_freq_nn = [[ ], [ ]]
-        SMBH_freq_t = [[ ], [ ]]
+        SMBH_strain = [ ]
+        SMBH_strain_nn = [ ]
+        SMBH_strain_t = [ ]
+        SMBH_freq = [ ]
+        SMBH_freq_nn = [ ]
+        SMBH_freq_t = [ ]
         
-        for int_ in range(1):
-            for parti_ in range(len(self.semi_flyby_nn[int_])): #Looping through every individual particle
-                for event_ in range(len(self.semi_flyby_nn[int_][parti_])): #Looping through every detected event
-                    semi_fb_nn = self.semi_flyby_nn[int_][parti_][event_]
-                    if semi_fb_nn < 1 | units.parsec and self.strain_flyby_nn[int_][parti_][event_] > 0:
-                        if np.asarray(self.fb_nn_SMBH[int_][parti_][event_]) < 0:
-                            IMBH_strain[int_].append(self.strain_flyby_nn[int_][parti_][event_])
-                            IMBH_strain_nn[int_].append(self.strain_flyby_nn[int_][parti_][event_])
-                            IMBH_freq[int_].append(self.freq_flyby_nn[int_][parti_][event_])
-                            IMBH_freq_nn[int_].append(self.freq_flyby_nn[int_][parti_][event_])
-                        else:
-                            SMBH_strain[int_].append(self.strain_flyby_nn[int_][parti_][event_])
-                            SMBH_strain_nn[int_].append(self.strain_flyby_nn[int_][parti_][event_])
-                            SMBH_freq[int_].append(self.freq_flyby_nn[int_][parti_][event_])
-                            SMBH_freq_nn[int_].append(self.freq_flyby_nn[int_][parti_][event_])
+        for parti_ in range(len(self.semi_flyby_nn)): #Looping through every individual particle
+            for event_ in range(len(self.semi_flyby_nn[parti_])): #Looping through every detected event
+                semi_fb_nn = self.semi_flyby_nn[parti_][event_]
+                if semi_fb_nn < 1 | units.parsec and self.strain_flyby_nn[parti_][event_] > 0:
+                    if np.asarray(self.fb_nn_SMBH[parti_][event_]) < 0:
+                        IMBH_strain.append(self.strain_flyby_nn[parti_][event_])
+                        IMBH_strain_nn.append(self.strain_flyby_nn[parti_][event_])
+                        IMBH_freq.append(self.freq_flyby_nn[parti_][event_])
+                        IMBH_freq_nn.append(self.freq_flyby_nn[parti_][event_])
+                    else:
+                        SMBH_strain.append(self.strain_flyby_nn[parti_][event_])
+                        SMBH_strain_nn.append(self.strain_flyby_nn[parti_][event_])
+                        SMBH_freq.append(self.freq_flyby_nn[parti_][event_])
+                        SMBH_freq_nn.append(self.freq_flyby_nn[parti_][event_])
 
-            for parti_ in range(len(self.semi_flyby_t[int_])):
-                for event_ in range(len(self.semi_flyby_t[int_][parti_])):
-                    semi_fb_t = self.semi_flyby_t[int_][parti_][event_]
-                    if semi_fb_t < 1 | units.parsec and self.strain_flyby_t[int_][parti_][event_] > 0:
-                        if np.asarray(self.fb_t_SMBH[int_][parti_][event_]) < 0:
-                            IMBH_strain[int_].append(self.strain_flyby_t[int_][parti_][event_])
-                            IMBH_strain_t[int_].append(self.strain_flyby_t[int_][parti_][event_])
-                            IMBH_freq[int_].append(self.freq_flyby_t[int_][parti_][event_])
-                            IMBH_freq_t[int_].append(self.freq_flyby_t[int_][parti_][event_])
-                        else:
-                            SMBH_strain[int_].append(self.strain_flyby_t[int_][parti_][event_])
-                            SMBH_strain_t[int_].append(self.strain_flyby_t[int_][parti_][event_])
-                            SMBH_freq[int_].append(self.freq_flyby_t[int_][parti_][event_])
-                            SMBH_freq_t[int_].append(self.freq_flyby_t[int_][parti_][event_])
+        for parti_ in range(len(self.semi_flyby_t)):
+            for event_ in range(len(self.semi_flyby_t[parti_])):
+                semi_fb_t = self.semi_flyby_t[parti_][event_]
+                if semi_fb_t < 1 | units.parsec and self.strain_flyby_t[parti_][event_] > 0:
+                    if np.asarray(self.fb_t_SMBH[parti_][event_]) < 0:
+                        IMBH_strain.append(self.strain_flyby_t[parti_][event_])
+                        IMBH_strain_t.append(self.strain_flyby_t[parti_][event_])
+                        IMBH_freq.append(self.freq_flyby_t[parti_][event_])
+                        IMBH_freq_t.append(self.freq_flyby_t[parti_][event_])
+                    else:
+                        SMBH_strain.append(self.strain_flyby_t[parti_][event_])
+                        SMBH_strain_t.append(self.strain_flyby_t[parti_][event_])
+                        SMBH_freq.append(self.freq_flyby_t[parti_][event_])
+                        SMBH_freq_t.append(self.freq_flyby_t[parti_][event_])
 
-            for parti_ in range(len(self.semi_flyby_SMBH[int_])):
-                for event_ in range(len(self.semi_flyby_SMBH[int_][parti_])):
-                    semi_fb_SMBH = self.semi_flyby_SMBH[int_][parti_][event_]
-                    if semi_fb_SMBH < 1 | units.parsec:
-                        SMBH_strain[int_].append(self.strain_flyby_SMBH[int_][parti_][event_])
-                        SMBH_freq[int_].append(self.freq_flyby_SMBH[int_][parti_][event_])
+        for parti_ in range(len(self.semi_flyby_SMBH)):
+            for event_ in range(len(self.semi_flyby_SMBH[parti_])):
+                semi_fb_SMBH = self.semi_flyby_SMBH[parti_][event_]
+                if semi_fb_SMBH < 1 | units.parsec:
+                    SMBH_strain.append(self.strain_flyby_SMBH[parti_][event_])
+                    SMBH_freq.append(self.freq_flyby_SMBH[parti_][event_])
 
         fig = plt.figure(figsize=(8, 6))
         gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
@@ -902,23 +938,23 @@ class gw_calcs(object):
         ax = fig.add_subplot(gs[1, 0])
         ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
         ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
-        for int_ in range(1):
-            self.scatter_hist(SMBH_freq[int_], SMBH_strain[int_],
-                              IMBH_freq[int_], IMBH_strain[int_], 
-                              ax, ax1, ax2, 'SMBH-IMBH', 'IMBH-IMBH')
-            ax.set_xlabel(r'$\log_{10}f$ [Hz]')
-            ax.set_ylabel(r'$\log_{10}h$')
-            ax1.set_title(str(self.integrator[int_]))
-            plot_ini.tickers(ax, 'plot')
-            plot_ini.tickers(ax1, 'plot')
-            plot_ini.tickers(ax2, 'plot')
-            ax.set_ylim(-30, -12.2)
-            ax.set_xlim(-12.5, 0.1)
-            plt.savefig('figures/gravitational_waves/'+str(self.integrator[int_])+'GW_freq_strain_maximise_diagram.png', dpi = 500, bbox_inches='tight')
-            plt.clf()
+        
+        self.scatter_hist(SMBH_freq, SMBH_strain,
+                          IMBH_freq, IMBH_strain, 
+                          ax, ax1, ax2, 'SMBH-IMBH', 'IMBH-IMBH')
+        ax.set_xlabel(r'$\log_{10}f$ [Hz]')
+        ax.set_ylabel(r'$\log_{10}h$')
+        ax1.set_title(str(self.integrator[1]))
+        plot_ini.tickers(ax, 'plot')
+        plot_ini.tickers(ax1, 'plot')
+        plot_ini.tickers(ax2, 'plot')
+        ax.set_ylim(-30, -12.2)
+        ax.set_xlim(-12.5, 0.1)
+        plt.savefig('figures/gravitational_waves/'+str(self.integrator[1])+'GW_freq_strain_maximise_diagram.png', dpi = 500, bbox_inches='tight')
+        plt.clf()
 
-        SMBH_mass = self.mass_SMBH[0][0][0]
-        IMBH_mass = self.mass_IMBH[0][0][0]
+        SMBH_mass = self.mass_SMBH[0][0]
+        IMBH_mass = self.mass_IMBH[0][0]
         sem_SMBH = self.coll_radius(SMBH_mass)
         sem_IMBH = self.coll_radius(IMBH_mass)
 
@@ -931,79 +967,81 @@ class gw_calcs(object):
         max_strain_IMBH = max_strain_IMBH.value_in(units.kg**1.6653345369377348e-16 * units.s**3.3306690738754696e-16)
 
         with open('figures/gravitational_waves/output/Binaries_redshift_freq_strain.txt', 'w') as file:
-            for int_ in range(1):
-                IMBH_strain[int_] = np.asarray(IMBH_strain[int_])
-                SMBH_strain[int_] = np.asarray(SMBH_strain[int_])
-                SMBH_freq[int_] = np.asarray(SMBH_freq[int_])
-                file.write('\nData for '+str(self.integrator[int_]))
-                file.write('\nFor eccentric events @ z ~ 3.5, IMBH-IMBH min. strain is: ' + str(np.nanmin(IMBH_strain[int_][IMBH_strain[int_] > 0]) * (1/7015)))
-                file.write('\nFor eccentric events @ z ~ 3.5, IMBH-IMBH max. strain is: ' + str(np.nanmax(IMBH_strain[int_][IMBH_strain[int_] > 0]) * (1/7015)))
-                file.write('\nFor eccentric events @ z ~ 3.5, SMBH-IMBH min. strain is: ' + str(np.nanmin(SMBH_strain[int_][SMBH_strain[int_] > 0]) * (1/7015)))
-                file.write('\nFor eccentric events @ z ~ 3.5, SMBH-IMBH max. strain is: ' + str(np.nanmax(SMBH_strain[int_][SMBH_strain[int_] > 0]) * (1/7015)))
-                file.write('\nFor eccentric events @ z ~ 3.5, IMBH-IMBH min. freq is:   ' + str(np.nanmin(IMBH_freq[int_]) * (1/7015)))
-                file.write('\nFor eccentric events @ z ~ 3.5, IMBH-IMBH max. freq is:   ' + str(np.nanmax(IMBH_freq[int_]) * (1/7015)))
-                file.write('\nFor eccentric events @ z ~ 3.5, SMBH-IMBH min. freq is:   ' + str(np.nanmin(SMBH_freq[int_][SMBH_freq[int_] > 0]) * (1/7015)))
-                file.write('\nFor eccentric events @ z ~ 3.5, SMBH-IMBH max. freq is:   ' + str(np.nanmax(SMBH_freq[int_][SMBH_freq[int_] > 0]) * (1/7015)))
-                file.write('\nInspiral IMBH-IMBH freq is: ' + str(max_freq_IMBH.value_in(units.Hz)) + ' with strain at 1 Mpc: ' + str(max_strain_IMBH))
-                file.write('\nInspiral SMBH-IMBH freq is: ' + str(max_freq_SMBH.value_in(units.Hz)) + ' with strain at 1 Mpc: ' + str(max_strain_SMBH))
-                file.write('\n========================================================================')
+            IMBH_strain = np.asarray(IMBH_strain)
+            SMBH_strain = np.asarray(SMBH_strain)
+            SMBH_freq = np.asarray(SMBH_freq)
+            file.write('\nData for '+str(self.integrator[1]))
+            file.write('\nFor eccentric events @ z ~ 3.5, IMBH-IMBH min. strain is: ' + str(np.nanmin(IMBH_strain[IMBH_strain > 0]) * (1/7015)))
+            file.write('\nFor eccentric events @ z ~ 3.5, IMBH-IMBH max. strain is: ' + str(np.nanmax(IMBH_strain[IMBH_strain > 0]) * (1/7015)))
+            file.write('\nFor eccentric events @ z ~ 3.5, SMBH-IMBH min. strain is: ' + str(np.nanmin(SMBH_strain[SMBH_strain > 0]) * (1/7015)))
+            file.write('\nFor eccentric events @ z ~ 3.5, SMBH-IMBH max. strain is: ' + str(np.nanmax(SMBH_strain[SMBH_strain > 0]) * (1/7015)))
+            file.write('\nFor eccentric events @ z ~ 3.5, IMBH-IMBH min. freq is:   ' + str(np.nanmin(IMBH_freq) * (1/7015)))
+            file.write('\nFor eccentric events @ z ~ 3.5, IMBH-IMBH max. freq is:   ' + str(np.nanmax(IMBH_freq) * (1/7015)))
+            file.write('\nFor eccentric events @ z ~ 3.5, SMBH-IMBH min. freq is:   ' + str(np.nanmin(SMBH_freq[SMBH_freq > 0]) * (1/7015)))
+            file.write('\nFor eccentric events @ z ~ 3.5, SMBH-IMBH max. freq is:   ' + str(np.nanmax(SMBH_freq[SMBH_freq > 0]) * (1/7015)))
+            file.write('\nInspiral IMBH-IMBH freq is: ' + str(max_freq_IMBH.value_in(units.Hz)) + ' with strain at 1 Mpc: ' + str(max_strain_IMBH))
+            file.write('\nInspiral SMBH-IMBH freq is: ' + str(max_freq_SMBH.value_in(units.Hz)) + ' with strain at 1 Mpc: ' + str(max_strain_SMBH))
+            file.write('\n========================================================================')
 
     def transient_events(self):
 
         plot_init = plotter_setup() 
+        self.combine_data('integrator', self.integrator[1])
 
-        iter = -1
-        for int_ in range(1):
-            time_IMBH_arr = [ ]
-            time_SMBH_arr = [ ]
-            freq_IMBH_arr = [ ]
-            freq_SMBH_arr = [ ]
+        time_IMBH_arr = [ ]
+        time_SMBH_arr = [ ]
+        freq_IMBH_arr = [ ]
+        freq_SMBH_arr = [ ]
 
+        for parti_ in range(len(self.time_flyby_nn)):
+            if self.pop[parti_] == 10:
+                for event_ in range(len(self.time_flyby_nn[parti_])):
+                    if self.freq_flyby_nn[parti_][event_] > 10**-5:
+                        if self.fb_nn_SMBH[parti_][event_] < 0:
+                            time_IMBH_arr.append(self.time_flyby_nn[parti_][event_])
+                            freq_IMBH_arr.append(self.freq_flyby_nn[parti_][event_])
+                        else:
+                            time_SMBH_arr.append(self.time_flyby_nn[parti_][event_])
+                            freq_SMBH_arr.append(self.freq_flyby_nn[parti_][event_])
+
+        for parti_ in range(len(self.time_flyby_t)):
+            if self.pop[parti_] == 10:
+                for event_ in range(len(self.time_flyby_t[parti_])):
+                    if self.freq_flyby_t[parti_][event_] > 10**-5:
+                        if self.fb_t_SMBH[parti_][event_] < 0:
+                            time_IMBH_arr.append(self.time_flyby_t[parti_][event_])
+                            freq_IMBH_arr.append(self.freq_flyby_t[parti_][event_])
+                        else:
+                            time_SMBH_arr.append(self.time_flyby_t[parti_][event_])
+                            freq_SMBH_arr.append(self.freq_flyby_t[parti_][event_])
+
+        for parti_ in range(len(self.time_flyby_t)):
+            if self.pop[parti_] == 10:
+                for event_ in range(len(self.time_flyby_t[parti_])):
+                    if self.freq_flyby_SMBH[parti_][event_] > 10**-5:
+                        for event_ in range(len(self.time_flyby_SMBH[parti_])):
+                            time_SMBH_arr.append(self.time_flyby_SMBH[parti_][event_])
+                            freq_SMBH_arr.append(self.freq_flyby_SMBH[parti_][event_])
+
+        fig = plt.figure(figsize=(16, 14))
+        ax1 = fig.add_subplot(221)
+        ax2 = fig.add_subplot(222)
+        plot_title = ['SMBH-IMBH', 'IMBH-IMBH']
+        colours = ['red', 'blue']
+        ax = [ax1, ax2]
+        iter = 0
+        for ax_ in ax:
+            plot_init.tickers(ax_, 'plot')
+            ax_.set_xlabel('Time [Myr]')
+            ax_.set_ylabel(r' $\log_{10} f_{\rm{GW}}$ [Hz]')
+            ax_.set_title(plot_title[iter])
+            ax_.set_ylim(-5, 0)
             iter += 1
-            for parti_ in range(len(self.time_flyby_nn[int_])):
-                if self.pop[int_][parti_] == 10:
-                    for event_ in range(len(self.time_flyby_nn[int_][parti_])):
-                        if self.fb_nn_SMBH[int_][parti_][event_] < 0:
-                            time_IMBH_arr.append(self.time_flyby_nn[int_][parti_][event_])
-                            freq_IMBH_arr.append(self.freq_flyby_nn[int_][parti_][event_])
-                        else:
-                            time_SMBH_arr.append(self.time_flyby_nn[int_][parti_][event_])
-                            freq_SMBH_arr.append(self.freq_flyby_nn[int_][parti_][event_])
 
-            for parti_ in range(len(self.time_flyby_t[int_])):
-                if self.pop[int_][parti_] == 10:
-                    for event_ in range(len(self.time_flyby_t[int_][parti_])):
-                        if self.fb_t_SMBH[int_][parti_][event_] < 0:
-                            time_IMBH_arr.append(self.time_flyby_t[int_][parti_][event_])
-                            freq_IMBH_arr.append(self.freq_flyby_t[int_][parti_][event_])
-                        else:
-                            time_SMBH_arr.append(self.time_flyby_t[int_][parti_][event_])
-                            freq_SMBH_arr.append(self.freq_flyby_t[int_][parti_][event_])
-
-            for parti_ in range(len(self.time_flyby_t[int_])):
-                if self.pop[int_][parti_] == 10:
-                    for event_ in range(len(self.time_flyby_SMBH[int_][parti_])):
-                        time_SMBH_arr.append(self.time_flyby_SMBH[int_][parti_][event_])
-                        freq_SMBH_arr.append(self.freq_flyby_SMBH[int_][parti_][event_])
-
-            fig = plt.figure(figsize=(16, 14))
-            ax1 = fig.add_subplot(221)
-            ax2 = fig.add_subplot(222)
-            plot_title = ['SMBH-IMBH', 'IMBH-IMBH']
-            colours = ['red', 'blue']
-            ax = [ax1, ax2]
-            iter = 0
-            for ax_ in ax:
-                plot_init.tickers(ax_, 'plot')
-                ax_.set_xlabel('Time [Myr]')
-                ax_.set_ylabel(r' $\log_{10} f_{\rm{GW}}$ [Hz]')
-                ax_.set_title(plot_title[iter])
-                ax_.set_ylim(-5, 0)
-                iter += 1
-            ax1.scatter(time_SMBH_arr,  np.log10(freq_SMBH_arr), 
-                        edgecolors = 'black', color = colours[int_])
-            ax2.scatter(time_IMBH_arr, np.log10(freq_IMBH_arr), 
-                        edgecolors = 'black', color = colours[int_])
+        ax1.scatter(time_SMBH_arr,  np.log10(freq_SMBH_arr), 
+                    edgecolors = 'black', color = colours[1])
+        ax2.scatter(time_IMBH_arr, np.log10(freq_IMBH_arr), 
+                    edgecolors = 'black', color = colours[1])
 
         plt.savefig('figures/gravitational_waves/events_time.png', dpi = 300, bbox_inches='tight')
 
@@ -1029,10 +1067,9 @@ class gw_calcs(object):
 
 
 #print('...tGW_plotters...')
-#cst = gw_calcs()
+cst = gw_calcs()
 #cst.new_data_extractor()
-#cst.combine_data()
 #cst.orbital_hist_plotter()
 #cst.Nenc_tgw_plotter()
 #cst.strain_freq_plotter()
-#cst.transient_events()
+cst.transient_events()

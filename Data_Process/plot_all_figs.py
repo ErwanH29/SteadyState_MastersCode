@@ -20,16 +20,6 @@ cst.new_data_extractor()
 cst.combine_data()
 cst.energy_plotters()
 cst.vejec_plotters()
-STOP
-
-print('...tGW_plotters...')
-cst = gw_calcs()
-cst.new_data_extractor()
-cst.combine_data()
-cst.orbital_hist_plotter()
-cst.Nenc_tgw_plotter()
-cst.strain_freq_plotter()
-cst.transient_events()
 
 print('...spatial_plotters...')
 ejected_evolution()
@@ -48,12 +38,12 @@ print('...sustainable_bintert_plotters...')
 cst = sustainable_sys()
 cst.system_formation_plotter()
 
-
-
-
-##########################
-#### NO UPDATE NEEDED ####
-##########################
-
+print('...tGW_plotters...')
+cst = gw_calcs()
+#cst.new_data_extractor()
+cst.orbital_hist_plotter()
+cst.Nenc_tgw_plotter()
+cst.strain_freq_plotter()
+cst.transient_events()
 
 print('Plotting time [mins]:', (end_time - start_time)/60)

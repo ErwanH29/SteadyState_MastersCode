@@ -52,8 +52,8 @@ class stability_plotters(object):
         Function to plot stability time for constant distances
         """
             
-        def log_fit(xval, slope, beta, log_c, beta2):
-            return slope * (np.log(log_c*xval)*xval**0.5)**beta #* xval**beta2
+        def log_fit(xval, slope, beta, log_c, beta2, yint):
+            return slope *(xval**0.5*np.log(log_c*xval))**beta
             
         plot_ini = plotter_setup()
         dirH = 'data/Hermite/no_addition/chaotic_simulation/*'
@@ -126,7 +126,7 @@ class stability_plotters(object):
         hist_temp = [N_parti_avg[0][5], N_parti_avg[0][6]]
         ax.set_title(r'Histogram for $\langle t_{\rm{surv}} \rangle (N = 60, N = 70)$')
         ax.axvline((4.87), color = 'black', linestyle = ':')
-        ax.text((4.9), 7, r'$\langle t_{\rm{surv}}\rangle$', rotation = 270)
+        ax.text((4.95), 17, r'$\langle t_{\rm{surv}}\rangle$', rotation = 270)
         n1, bins, patches = ax.hist((hist_tails), 30, histtype='step', color = 'black')
         n1, bins, patches = ax.hist((hist_tails), 30, alpha = 0.3, color = 'black')
         plot_ini.tickers(ax, 'plot')
@@ -139,16 +139,14 @@ class stability_plotters(object):
         plot_ini.tickers_pop(ax1, pop[0], 'Hermite')
         ax1.set_xlim(5,105)
         ax1.xaxis.labelpad = 30
-        ax1.set_ylim(-2.5, 2.3)
-        #ax1.axhline(np.log10(7), linestyle = ':', color = 'black', zorder = 1)
-        #ax1.text(88.3, np.log10(7.6), r'$t_{\rm{stab, M1}} = 7$ Myr', fontsize ='small')
+        ax1.set_ylim(-1.5, 2.3)
         ax1.axhline(np.log10(259))
         ax1.axhline(np.log10(882))
 
         for int_ in range(2):
             N_parti_avg[int_] = np.array([float(i) for i in N_parti_avg[int_]])
             for j, xpos in enumerate(pop[int_][pop[int_] % 10 == 0]):
-                ax1.text(pop[int_][pop[int_] % 10 == 0][j], -2.75*(1+0.04*int_), str(integrator[int_])+': '+str('{:.0f}'.format(psamp[int_][pop[int_] % 10 == 0][j][0])), fontsize = 'xx-small', ha = 'center' )
+                ax1.text(pop[int_][pop[int_] % 10 == 0][j], -1.7*(1+0.04*int_), str(integrator[int_])+': '+str('{:.0f}'.format(psamp[int_][pop[int_] % 10 == 0][j][0])), fontsize = 'xx-small', ha = 'center' )
                 if j == 0:
                     ax1.scatter(pop[int_][pop[int_] % 10 == 0], np.log10(N_parti_avg[int_][pop[int_] % 10 == 0]), color = colors[int_], edgecolor = 'black', zorder = 2, label = integrator[int_])
                 else:
@@ -157,25 +155,18 @@ class stability_plotters(object):
             ax1.scatter(pop[int_][pop[int_] % 10 == 0], np.log10(std_max[int_][pop[int_] % 10 == 0]), color = colors[int_], marker = '_')
             ax1.plot([pop[int_][pop[int_] % 10 == 0], pop[int_][pop[int_] % 10 == 0]], [np.log10(std_min[int_][pop[int_] % 10 == 0]), np.log10(std_max[int_][pop[int_] % 10 == 0])], color = colors[int_], zorder = 1)
 
-        p0 = (100, -5, 20, 0.5)
-        #params, cv = scipy.optimize.curve_fit(log_fit, pop[0], (N_parti_avg[0]), p0, maxfev = 10000, method = 'trf')
-        #slopeH, betaH, log_cH, beta2 = params
-        params, cv = scipy.optimize.curve_fit(log_fit, pop[1][pop[int_] % 10 == 0], (N_parti_avg[1][pop[int_] % 10 == 0]), p0, maxfev = 10000, method = 'trf')
-        slope, beta, log_c, beta2 = params
-
-        print(slope, beta, log_c, beta2)
-        #slope_arr = [slopeH, slope]
-        #beta_arr = [betaH, beta]
-        #log_carr = [log_cH, log_c]
+        p0 = (100, -5, 20, 0.5, 60)
+        params, cv = scipy.optimize.curve_fit(log_fit, pop[1][pop[1] % 10 == 0], (N_parti_avg[1][pop[1] % 10 == 0]), p0, maxfev = 10000, method = 'trf')
+        slope, beta, log_c, beta2, y = params
         
         slope_str = str('{:.2f}'.format(slope))
         logc_str = str('{:.2f}'.format(log_c))
         beta_str = str('{:.2f}'.format(beta))
         xtemp = np.linspace(10, 100, 1000)
-        curve = [(log_fit(i, slope, beta, log_c, beta2)) for i in xtemp]
+        curve = [(log_fit(i, slope, beta, log_c, beta2, y)) for i in xtemp]
 
         ax1.plot(xtemp, np.log10(curve), zorder = 1, color = 'black', ls = '-.')
-        ax1.text(72, 1.5, r'$t_{{\rm surv}} \approx{{{}}}(\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
+        ax1.text(65, 1.5, r'$t_{{\rm surv}} \approx{{{}}}(\sqrt{{N}}\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
         ax1.legend()
         plt.savefig('figures/steady_time/stab_time_mean.pdf', dpi = 300, bbox_inches='tight')
         plt.clf()
@@ -206,19 +197,12 @@ class stability_plotters(object):
         ax1.scatter(pop[1], np.log10(std_min[1]), color = colors[1], marker = '_')
         ax1.scatter(pop[1], np.log10(std_max[1]), color = colors[1], marker = '_')
         ax1.plot([pop[1], pop[1]], [np.log10(std_min[1]), np.log10(std_max[1])], color = colors[1], zorder = 1)
-
-        #p0 = (slope, beta, log_c, beta2)
-        #params, cv = scipy.optimize.curve_fit(log_fit, pop[1], (N_parti_avg[1]), p0, maxfev = 20000, method = 'trf') #CHANGE METHOD
-        #slope, beta, log_c, beta2 = params
-        #print(slope, beta, log_c, beta2)
         
         slope_str = str('{:.2f}'.format(slope))
         logc_str = str('{:.2f}'.format(log_c))
         beta_str = str('{:.2f}'.format(beta))
-        curve = [(log_fit(i, slope, beta, log_c, beta2))for i in xtemp]
         ax1.plot(xtemp, np.log10(curve), zorder = 1, color = 'black', ls = '-.')
-        ax1.legend()
-        ax1.text(40, 1.5, r'$t_{{\rm surv}} \approx{{{}}}(\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
+        ax1.text(35, 1.8, r'$t_{{\rm surv}} \approx{{{}}}(\sqrt{{N}}\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
         plt.savefig('figures/steady_time/stab_time_mean_GRX.pdf', dpi = 300, bbox_inches='tight')
 
         fig = plt.figure(figsize=(15, 6))
@@ -249,13 +233,14 @@ class stability_plotters(object):
         mmin, betamin, log_cmin = params_min"""
 
         with open('figures/steady_time/Sim_summary.txt', 'w') as file:
-            for int_ in range(2):
+            for int_ in range(1):
+                int_ += 1
                 file.write('\n\nFor'+str(integrator[int_])+', # of full simulations per population:  '+str(pop[int_].flatten()))
                 file.write('\n                                              '+str(full_simul[int_]))
-                file.write('\nThe slope of the curve goes as:               '+str(slope_arr[int_]))
-                file.write('\nThe power-law of the curve goes as:           '+str(beta_arr[int_]))
-                file.write('\nThe logarithmic factor goes as:               '+str(log_carr[int_]))
-                file.write('\nThe logarithmic prefactor goes as:            '+str(log_c))
+                file.write('\nThe slope of the curve goes as:               '+str(slope))
+                file.write('\nThe power-law of the lnN goes as:             '+str(beta))
+                file.write('\nThe power-law of the N goes as:               '+str(beta2))
+                file.write('\nThe logarithmic factor goes as:               '+str(log_c))
                 file.write('\nThe final raw data:                           '+str(pop[int_].flatten()))
                 file.write('\nSimulated time [Myr]                          '+str(N_parti_avg[int_].flatten()))
                 file.write('\nStandard dev. [Myr]:                          '+str(N_parti_std[int_].flatten()))

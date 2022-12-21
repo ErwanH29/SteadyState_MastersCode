@@ -308,12 +308,3 @@ class event_tracker(object):
         plot_ini.tickers_pop(ax, in_pop[0], 'Hermite')
         plt.legend()
         plt.savefig('figures/ejection_stats/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')
-
-
-print('... ejection_Stat_plotters ...')
-cst = event_tracker()
-cst = ejection_stats()
-cst.new_data_extractor()
-cst.combine_data()
-cst.energy_plotters()
-cst.vejec_plotters()
