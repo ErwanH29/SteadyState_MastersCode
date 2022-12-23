@@ -27,6 +27,15 @@ end_spat = cpu_time.time()
 print('Plotting time [mins]:', (end_spat - end_stab)/60)"""
 
 
+print('...tGW_plotters...')
+cst = gw_calcs()
+#cst.new_data_extractor()
+cst.orbital_hist_plotter()
+cst.Nenc_tgw_plotter()
+cst.strain_freq_plotter()
+cst.transient_events()
+end_tGW = cpu_time.time()
+
 print('...sustainable_bintert_plotters...')
 cst = sustainable_sys()
 cst.system_formation_plotter()
@@ -51,15 +60,6 @@ cst.energy_plotters()
 cst.vejec_plotters()
 end_ejec = cpu_time.time()
 print('Plotting time [mins]:', (end_ejec - end_LC)/60)
-
-print('...tGW_plotters...')
-cst = gw_calcs()
-#cst.new_data_extractor()
-cst.orbital_hist_plotter()
-cst.Nenc_tgw_plotter()
-cst.strain_freq_plotter()
-cst.transient_events()
-end_tGW = cpu_time.time()
 
 print('Plotting time [mins]:', (end_tGW - end_ejec)/60)
 

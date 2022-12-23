@@ -91,7 +91,7 @@ class gw_calcs(object):
 
                                 if parti_ != 0:
                                     for col_ in range(np.shape(data)[1]-1):
-                                        sem_SMBH = data.iloc[parti_][col_][7][0]
+                                        sem_SMBH = abs(data.iloc[parti_][col_][7][0])
                                         ecc_SMBH = data.iloc[parti_][col_][8][0]
 
                                         strain_SMBH = self.gw_strain(sem_SMBH, ecc_SMBH, mass1, SMBH_sys_mass)
@@ -130,7 +130,7 @@ class gw_calcs(object):
                                             dist_SMBH = (linex**2+liney**2+linez**2).sqrt()
                                             dist_NN = data.iloc[parti_][col_][-1]
 
-                                            if dist_SMBH.value_in(units.pc) == dist_NN:
+                                            if dist_SMBH.value_in(units.pc) == dist_NN or mass2 > 10**5 | units.MSun:
                                                 Nfbnn_indiv += 1
                                                 SMBH_NN_event.append(1)
                                             else:
@@ -138,7 +138,7 @@ class gw_calcs(object):
                                                 SMBH_NN_event.append(-5)
                                                 
                                         tSMBH = False
-                                        if sem_SMBH == semi_major_t:
+                                        if sem_SMBH == semi_major_t or ecc_SMBH == ecc_t:
                                             mass2 = SMBH_sys_mass
                                             tSMBH = True
 
@@ -247,7 +247,6 @@ class gw_calcs(object):
         tGW_data = natsort.natsorted(glob.glob('data/tGW/*'))
         if filter == 'pop_filt':
             for file_ in range(len(tGW_data)):
-                print(file_)
                 with open(tGW_data[file_], 'rb') as input_file:
                     data_file = pkl.load(input_file)
                     if data_file.iloc[0][2] <= 50:
@@ -604,7 +603,6 @@ class gw_calcs(object):
         ax_histh.tick_params(axis="y", labelleft=False)
 
         kdef_SMBH = sm.nonparametric.KDEUnivariate(np.log10(x1))
-        print(np.log10(x1))
         kdef_SMBH.fit()
         kdef_SMBH.density = (kdef_SMBH.density/max(kdef_SMBH.density))
 
@@ -709,8 +707,8 @@ class gw_calcs(object):
                     if semi_fb_nn < 1 | units.parsec:
                         if np.asarray(self.fb_nn_SMBH[parti_][event_]) < 0:
                             ecc_fb_nn = self.ecc_flyby_nn[parti_][event_]
-                            gwtime_nn = self.gw_timescale(semi_fb_nn, ecc_fb_nn, self.mass_IMBH[parti_], 
-                                                            self.mass_parti[parti_]).value_in(units.Myr)
+                            gwtime_nn = self.gw_timescale(semi_fb_nn, ecc_fb_nn, self.mass_parti[parti_], 
+                                                          self.mass_parti[parti_]).value_in(units.Myr)
 
                             IMBH_tgw[int_].append(gwtime_nn)
                             IMBH_sem[int_].append(semi_fb_nn.value_in(units.pc))
@@ -728,7 +726,7 @@ class gw_calcs(object):
                 for event_ in range(len(self.semi_flyby_t[parti_])):
                     semi_fb_t = self.semi_flyby_t[parti_][event_]
                     if semi_fb_t < 1 | units.parsec:
-                        if np.asarray(self.fb_t_SMBH[parti_][event_]) < 0:
+                        if np.asarray(self.fb_t_SMBH[parti_][event_]) < 0 or self.mass_IMBH[parti_][event_] < 10**5 | units.MSun:
                             ecc_fb_t = self.ecc_flyby_t[parti_][event_]
                             gwtime_t = self.gw_timescale(semi_fb_t, ecc_fb_t, self.mass_parti[parti_], 
                                                             self.mass_IMBH[parti_]).value_in(units.Myr)
@@ -777,16 +775,16 @@ class gw_calcs(object):
                                                             range=([1.1*xmin, 1.1*xmax], [1.1*ymin, 0]))
             bin2d_sim /= np.max(bin2d_sim)
             contours = ax_top[int_].imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-            ax_top[int_].scatter(np.log10(IMBH_sem[int_])[IMBH_tgw[int_] < self.tH.value_in(units.Myr)], 
-                                 IMBH_ecc[int_][IMBH_tgw[int_] < self.tH.value_in(units.Myr)], 
-                                 marker = 'X', color = 'white', edgecolor = 'black')
+            ax_top[int_].scatter(np.log10(IMBH_sem[int_])[np.log10(IMBH_sem[int_]) < -4], 
+                                 IMBH_ecc[int_][np.log10(IMBH_sem[int_]) < -4], 
+                                 marker = 'X', color = 'white', edgecolor = 'black', s = 5)
 
             bin2d_sim, xedg, xedg, image = ax_bot[int_].hist2d(np.log10(SMBH_sem[int_]), SMBH_ecc[int_], bins=(150, 150), 
                                                             range=([1.1*xmin, 1.1*xmax], [1.1*ymin, 0]))
             bin2d_sim /= np.max(bin2d_sim)
             contours = ax_bot[int_].imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-            ax_bot[int_].scatter(np.log10(SMBH_sem[int_])[SMBH_tgw[int_] < self.tH.value_in(units.Myr)], 
-                                 SMBH_ecc[int_][SMBH_tgw[int_] < self.tH.value_in(units.Myr)], 
+            ax_bot[int_].scatter(np.log10(SMBH_sem[int_])[np.log10(SMBH_sem[int_]) < -3], 
+                                 SMBH_ecc[int_][np.log10(SMBH_sem[int_]) < -3], 
                                  marker = 'X', color = 'white', edgecolor = 'black')
             
             for ax_ in [ax_bot[int_], ax_top[int_]]:

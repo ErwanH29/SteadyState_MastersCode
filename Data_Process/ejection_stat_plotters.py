@@ -303,13 +303,14 @@ class event_tracker(object):
 
             in_pop[int_] = np.unique(init_pop[int_])
             iter = -1
-            for pop_ in in_pop[int_]:
+            for pop_ in in_pop[int_][in_pop[int_] > 5]:
                 iter +=1
                 indices = np.where((init_pop[int_] == pop_))[0]
                 temp_frac = [merger[int_][i] for i in indices]
                 frac_merge[int_].append(np.mean(temp_frac))
 
             ax[int_].scatter(in_pop[int_], frac_merge[int_], color = colours[int_], edgecolors = 'black', label = labels[int_])
-        plot_ini.tickers_pop(ax[int_], in_pop[int_], labels[int_])
+            plot_ini.tickers_pop(ax[int_], in_pop[int_], labels[int_])
+
         plt.legend()
         plt.savefig('figures/ejection_stats/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')
