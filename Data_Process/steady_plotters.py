@@ -72,6 +72,8 @@ class stability_plotters(object):
         popG, psampG, fpartiG, stab_timeG = self.index_extractor(imass_dataG, fparti_dataG, 
                                                                  stab_time_dataG, idist_idx_chaosG, 
                                                                  imass_dataG)
+        
+        psampG = psampG[popG > 5]
         popG = popG[popG > 5]
 
         N_parti_avg = [[ ], [ ]]
@@ -186,14 +188,15 @@ class stability_plotters(object):
         ax1.tick_params(axis="x", which = 'both', direction="in")     
         ax1.set_xticks(xints)
         ax1.xaxis.labelpad = 30
-        
+        print(pop[1], psamp[1])
         N_parti_avg[int_] = np.array([float(i) for i in N_parti_avg[int_]])
-        for j, xpos in enumerate(pop[1][pop[1] > 5]):
-            ax1.text(pop[1][j], -1.5, str(integrator[int_])+': '+str('{:.0f}'.format(psamp[1][j][0])), fontsize = 'xx-small', ha = 'center' )
-            if j == 0:
-                ax1.scatter(pop[1], np.log10(N_parti_avg[1]), color = colors[1], edgecolor = 'black', zorder = 2, label = integrator[1])
-            else:
-                ax1.scatter(pop[1], np.log10(N_parti_avg[1]), color = colors[1], edgecolor = 'black', zorder = 2)
+        for j, xpos in enumerate(pop[1]):
+            if pop[1][j] > 5:
+                ax1.text(pop[1][j], -1.5, str(integrator[int_])+': '+str('{:.0f}'.format(psamp[1][j][0])), fontsize = 'xx-small', ha = 'center' )
+                if j == 0:
+                    ax1.scatter(pop[1], np.log10(N_parti_avg[1]), color = colors[1], edgecolor = 'black', zorder = 2, label = integrator[1])
+                else:
+                    ax1.scatter(pop[1], np.log10(N_parti_avg[1]), color = colors[1], edgecolor = 'black', zorder = 2)
         ax1.scatter(pop[1], np.log10(std_min[1]), color = colors[1], marker = '_')
         ax1.scatter(pop[1], np.log10(std_max[1]), color = colors[1], marker = '_')
         ax1.plot([pop[1], pop[1]], [np.log10(std_min[1]), np.log10(std_max[1])], color = colors[1], zorder = 1)
@@ -233,8 +236,7 @@ class stability_plotters(object):
         mmin, betamin, log_cmin = params_min"""
 
         with open('figures/steady_time/Sim_summary.txt', 'w') as file:
-            for int_ in range(1):
-                int_ += 1
+            for int_ in range(2):
                 file.write('\n\nFor'+str(integrator[int_])+', # of full simulations per population:  '+str(pop[int_].flatten()))
                 file.write('\n                                              '+str(full_simul[int_]))
                 file.write('\nThe slope of the curve goes as:               '+str(slope))
@@ -245,8 +247,3 @@ class stability_plotters(object):
                 file.write('\nSimulated time [Myr]                          '+str(N_parti_avg[int_].flatten()))
                 file.write('\nStandard dev. [Myr]:                          '+str(N_parti_std[int_].flatten()))
 
-
-
-print('...steady_plotter...')
-cst = stability_plotters()
-cst.overall_steady_plotter()

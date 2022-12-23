@@ -773,15 +773,21 @@ class gw_calcs(object):
             red_mass2 = (self.mass_parti[0][0]*self.mass_SMBH[0][0])*(self.mass_parti[0][0]+self.mass_SMBH[0][0])
             const_tgw2 = [np.log10(1-np.sqrt(1-((256*self.tH*(constants.G**3)/(5*constants.c**5)*red_mass2*(10**(i) * (1 | units.pc)) **-4)) **(1/3.5))) for i in x_arr]
 
-            bin2d_sim, xedg, xedg, image = ax_top[int_].hist2d(np.log10(IMBH_sem[int_]), IMBH_ecc[int_], bins=(250, 250), 
+            bin2d_sim, xedg, xedg, image = ax_top[int_].hist2d(np.log10(IMBH_sem[int_]), IMBH_ecc[int_], bins=(150, 150), 
                                                             range=([1.1*xmin, 1.1*xmax], [1.1*ymin, 0]))
             bin2d_sim /= np.max(bin2d_sim)
             contours = ax_top[int_].imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+            ax_top[int_].scatter(np.log10(IMBH_sem[int_])[IMBH_tgw[int_] < self.tH.value_in(units.Myr)], 
+                                 IMBH_ecc[int_][IMBH_tgw[int_] < self.tH.value_in(units.Myr)], 
+                                 marker = 'X', color = 'white', edgecolor = 'black')
 
-            bin2d_sim, xedg, xedg, image = ax_bot[int_].hist2d(np.log10(SMBH_sem[int_]), SMBH_ecc[int_], bins=(250, 250), 
+            bin2d_sim, xedg, xedg, image = ax_bot[int_].hist2d(np.log10(SMBH_sem[int_]), SMBH_ecc[int_], bins=(150, 150), 
                                                             range=([1.1*xmin, 1.1*xmax], [1.1*ymin, 0]))
             bin2d_sim /= np.max(bin2d_sim)
             contours = ax_bot[int_].imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+            ax_bot[int_].scatter(np.log10(SMBH_sem[int_])[SMBH_tgw[int_] < self.tH.value_in(units.Myr)], 
+                                 SMBH_ecc[int_][SMBH_tgw[int_] < self.tH.value_in(units.Myr)], 
+                                 marker = 'X', color = 'white', edgecolor = 'black')
             
             for ax_ in [ax_bot[int_], ax_top[int_]]:
                 ax_.set_ylabel(r'$\log_{10}(1-e)$')
@@ -803,9 +809,9 @@ class gw_calcs(object):
             ax_bot[int_].text(-5.5, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
             ax_bot[int_].text(-0.85, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+4, color = 'white')
             ax_bot[int_].text(-1.23, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+4, color = 'white')
-        ax_top[1].plot(ecc_lx, const_semi)
-        ax_top[0].plot(ecc_lx, const_semi)
-        ax_top[0].plot(ecc_lx, const_semi2, color = 'white')
+        #ax_top[1].plot(ecc_lx, const_semi)
+        #ax_top[0].plot(ecc_lx, const_semi)
+        #ax_top[0].plot(ecc_lx, const_semi2, color = 'white')
         plt.savefig('figures/gravitational_waves/ecc_semi_bins_IMBH_histogram_t.png', dpi=500, bbox_inches='tight')
         plt.clf()
 
@@ -1066,10 +1072,10 @@ class gw_calcs(object):
         plt.savefig('figures/gravitational_waves/strain_dependence.pdf', dpi = 300, bbox_inches='tight')
 
 
-#print('...tGW_plotters...')
+"""#print('...tGW_plotters...')
 cst = gw_calcs()
 #cst.new_data_extractor()
 #cst.orbital_hist_plotter()
 #cst.Nenc_tgw_plotter()
 #cst.strain_freq_plotter()
-cst.transient_events()
+cst.transient_events()"""

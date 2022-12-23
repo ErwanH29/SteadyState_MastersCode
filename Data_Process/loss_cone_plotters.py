@@ -64,7 +64,7 @@ class loss_cone(object):
                     if pop <= 50 and pop > 5:
                         with open(pfile[int_][file_], 'rb') as input_file:
                             file_size = os.path.getsize(pfile[int_][file_])
-                            if file_size < 2.8e9:
+                            if file_size < 2.7e9:
                                 print('Reading file', file_, ': ', pfile[int_][file_])
                                 ptracker = pkl.load(input_file)
 
@@ -75,7 +75,7 @@ class loss_cone(object):
                                 else:
                                     col_len = np.shape(ptracker)[1]-1
 
-                                for parti_ in range(np.shape(data)[0]):
+                                for parti_ in range(np.shape(ptracker)[0]):
                                     KE_arr = [ ]
                                     PE_arr = [ ]
                                     angL_arr = [ ]
@@ -85,31 +85,31 @@ class loss_cone(object):
                                         self.init_pop[int_].append(pop)
                                         angL_val = 0
                                         for col_ in range(col_len):
-                                            KE = data.iloc[parti_][col_][4].value_in(units.J)
-                                            PE = data.iloc[parti_][col_][5].value_in(units.J)
+                                            KE = ptracker.iloc[parti_][col_][4].value_in(units.J)
+                                            PE = ptracker.iloc[parti_][col_][5].value_in(units.J)
                                             tot_E = KE + PE
                                             KE_arr.append(KE)
                                             PE_arr.append(PE)
                                             energy_arr.append(abs(tot_E))
                                             time.append(col_*1000)
 
-                                            semi_val = data.iloc[parti_][col_][7][0]
-                                            ecc_val = (1-data.iloc[parti_][col_][8][0])
+                                            semi_val = ptracker.iloc[parti_][col_][7][0]
+                                            ecc_val = (1-ptracker.iloc[parti_][col_][8][0])
                                             angL_arr.append(self.ang_momentum(semi_val, ecc_val))
                                             angL_val += self.ang_momentum(semi_val, ecc_val)
                                         
-                                        if not isinstance(data.iloc[parti_][col_+1][0], np.uint64) or data.iloc[parti_][col_+1][1] > 4*10**6 | units.MSun:
+                                        if not isinstance(ptracker.iloc[parti_][col_+1][0], np.uint64) or ptracker.iloc[parti_][col_+1][1] > 4*10**6 | units.MSun:
                                             self.ejec_part[int_].append(1)
                                         else:
                                             self.ejec_part[int_].append(0)
 
-                                        sem_init = data.iloc[parti_][0][7][0]
-                                        ecc_init = 1-data.iloc[parti_][0][8][0]
-                                        semi_fin = data.iloc[parti_][-2][7][0]
-                                        ecc_fin = 1-data.iloc[parti_][-2][8][0]
+                                        sem_init = ptracker.iloc[parti_][0][7][0]
+                                        ecc_init = 1-ptracker.iloc[parti_][0][8][0]
+                                        semi_fin = ptracker.iloc[parti_][-2][7][0]
+                                        ecc_fin = 1-ptracker.iloc[parti_][-2][8][0]
 
                                         angL_val -= self.ang_momentum(sem_init, ecc_init)
-                                        angL_val /= np.shape(data)[1] - 1                # Average change per kyr
+                                        angL_val /= col_len                # Average change per kyr
                                         self.dangL_avg[int_].append(angL_val)
 
                                         angL_init_val = self.ang_momentum(sem_init, ecc_init)

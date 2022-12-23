@@ -259,7 +259,7 @@ class ejection_stats(object):
 
         for ax_ in [ax3, ax4]:
             ax_.set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
-            ax_.set_ylabel(r'Frequency')
+            ax_.set_ylabel(r'$\rho/\rho_{\rm{max}}$')
             ax_.axvline(vesc_MW, linestyle = ':', color = 'black')
             ax_.set_xlim(175, 1.1*max(vels))
             ax_.text(655, 0.2, r'$v_{\rm{esc, MW}}$', rotation = 270)
@@ -286,9 +286,14 @@ class event_tracker(object):
         colours = ['red', 'blue']
         labels = ['Hermite', 'GRX']
 
-        fig, ax = plt.subplots()
-        ax.set_ylabel(r'$N_{\rm{merge}}/N_{\rm{sim}}$')
-        ax.set_ylim(0,1.05)
+        fig = plt.figure(figsize=(16, 6))
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        ax = [ax1, ax2]
+        for ax_ in ax:
+            ax_.set_ylabel(r'$N_{\rm{merge}}/N_{\rm{sim}}$')
+            ax_.set_ylim(0,1.05)
+
         for int_ in range(2):
             for file_ in range(len(chaos_data[int_])):
                 with open(chaos_data[int_][file_], 'rb') as input_file:
@@ -304,7 +309,7 @@ class event_tracker(object):
                 temp_frac = [merger[int_][i] for i in indices]
                 frac_merge[int_].append(np.mean(temp_frac))
 
-            ax.scatter(in_pop[int_], frac_merge[int_], color = colours[int_], edgecolors = 'black', label = labels[int_])
-        plot_ini.tickers_pop(ax, in_pop[0], 'Hermite')
+            ax[int_].scatter(in_pop[int_], frac_merge[int_], color = colours[int_], edgecolors = 'black', label = labels[int_])
+        plot_ini.tickers_pop(ax[int_], in_pop[int_], labels[int_])
         plt.legend()
         plt.savefig('figures/ejection_stats/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')

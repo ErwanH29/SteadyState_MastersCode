@@ -18,8 +18,8 @@ class sustainable_sys(object):
 
         GW_calcs = gw_calcs()
 
-        filenameH = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory_temp/*'))
-        filenameGRX = glob.glob('/media/erwanh/Elements/GRX/particle_trajectory_temp/*')
+        filenameH = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
+        filenameGRX = glob.glob('/media/erwanh/Elements/GRX/particle_trajectory/*')
         filename = [natsort.natsorted(filenameH), natsort.natsorted(filenameGRX)]
 
         self.pop = [[ ], [ ]]
@@ -86,7 +86,7 @@ class sustainable_sys(object):
                                     temp_dedt.append((data.iloc[parti_][-2][8][0] - data.iloc[parti_][2][8][0])/(np.shape(data)[1]-3))
                                     temp_dadt.append((data.iloc[parti_][-2][7][0]**-1 - data.iloc[parti_][2][7][0]**-1).value_in((units.pc)**-1)/(np.shape(data)[1]-3))
                                     for col_ in range(np.shape(data)[1]-1):
-                                        nn_semi = data.iloc[parti_][col_][7][1]
+                                        nn_semi = abs(data.iloc[parti_][col_][7][1])
                                         nn_ecc = data.iloc[parti_][col_][8][1]
                                         mass1 = data.iloc[parti_][0][1]
                                         for part_ in range(np.shape(data)[0]):
@@ -95,14 +95,13 @@ class sustainable_sys(object):
                                                 mass = max(mass1, mass2)
                                                 hard = False
                                                 bin = False
-                                                print((constants.G*mass)/(4*(150000*(1 | units.ms))**2))
+                                                
                                                 if  nn_semi < (constants.G*mass)/(4*(150000*(1 | units.ms))**2):   #Hard binary conditions based on Quinlan 1996b
                                                     hard = True
                                                     bin = True
                                                     self.hard_bin[int_].append(1)
-                                                print(((constants.G*mass)/(4*(15000*(1 | units.ms))**2)).value_in(units.pc))
-                                                STOP
-                                                if not (hard) and nn_semi < (constants.G*mass)/(4*(1500*(1 | units.ms))**2) and abs(nn_ecc) < 1:  #Value chosen for 1000AU
+                                                    
+                                                if not (hard) and nn_semi < (constants.G*mass)/(4*(15000*(1 | units.ms))**2) and abs(nn_ecc) < 1:  #Value chosen for 1000AU
                                                     self.hard_bin[int_].append(-5)
                                                     bin = True
 
@@ -131,11 +130,11 @@ class sustainable_sys(object):
                                                     self.parti_velb[int_].append(float(vel.value_in(units.kms)))
                                                     self.GW_bmass[int_].append(mass2.value_in(units.MSun))
 
-                                                    semi_outer = data.iloc[parti_][col_][7][2]
+                                                    semi_outer = abs(data.iloc[parti_][col_][7][2])
                                                     ecc_outer = data.iloc[parti_][col_][8][2]
 
                                                     #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
-                                                    if ecc_outer < 1 and semi_outer < 0.1 | units.parsec:
+                                                    if ecc_outer < 1 and semi_outer < 1e-2 | units.parsec:
                                                         for part_ in range(np.shape(data)[0]):
                                                             if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
                                                                 mass_outer = data.iloc[part_][0][1]
@@ -244,6 +243,8 @@ class sustainable_sys(object):
                     semi_mvt = self.semi_t_min[int_][idx][self.semi_t_min[int_][idx] > 0]
                     self.semi_NN_max.append('{:.7f}'.format(np.mean(semi_av)))
                     self.semi_t_max.append('{:.7f}'.format(np.mean(semi_avt)))
+                    print(pop_, semi_mv, semi_av, semi_avt)
+                    print(np.shape(semi_mv), np.shape(semi_av))
                     if len(semi_av) > 0:
                         semi_NN_avg.append('{:.7f}'.format(np.mean(semi_av)))
                         semi_NN_min.append('{:.7f}'.format(np.min(semi_mv)))
@@ -317,8 +318,9 @@ class sustainable_sys(object):
                 file.write('\nPopulation: '+str(ini_pop[pop_])+':          '+str(tform_time[pop_]/10**3)+' kyr')
             file.write('\n# Tertiary systems at initialisation:            '+str(tform_ini[pop_]))
             file.write('\n5 shortest tertiary GW merger time scales [Myr]: ')
-            for i in range(5):
-                file.write('{:.2f}'.format(np.sort(self.GW_timet[int_][self.GW_timet[int_] > 0])[i])+',   ')
+            if len(self.GW_timet[int_]) > 5:
+                for i in range(5):
+                    file.write('{:.2f}'.format(np.sort(self.GW_timet[int_][self.GW_timet[int_] > 0])[i])+',   ')
             file.write('\nFraction of mergers within Hubble time:          '+str(len(self.GW_timet[int_][self.GW_timet[int_] < tH.value_in(units.Myr)])) +'/'+str(len(self.GW_timet[int_])))
             file.write('\nFraction of (IMBH-IMBH)-SMBH tertiaries:         '+str(len(self.GW_tmass[int_][0][(self.GW_tmass[int_][0] < 10**6) & (self.GW_tmass[int_][1] > 10**6)])) +'/'+str(np.shape(self.GW_tmass[int_])[1]))
             file.write('\nFraction of (IMBH-SMBH)-IMBH tertiaries:         '+str(len(self.GW_tmass[int_][0][(self.GW_tmass[int_][1] < 10**6) & (self.GW_tmass[int_][0] > 10**6)])) +'/'+str(np.shape(self.GW_tmass[int_])[1]))
@@ -456,9 +458,3 @@ class sustainable_sys(object):
             ax.set_xlim(-12.5, 0.1)
             plt.savefig('figures/binary_hierarchical/'+str(self.integrator[int_])+'GW_freq_strain_maximise_diagram.png', dpi = 500, bbox_inches='tight')
             plt.clf()
-"""
-
-print('...sustainable_bintert_plotters...')
-cst = sustainable_sys()
-cst.system_formation_plotter()
-cst.GW_emissions()"""
