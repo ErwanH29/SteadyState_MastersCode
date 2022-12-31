@@ -330,7 +330,7 @@ def chaos_deviate():
     ax1.set_ylabel(r'$y$ [pc]')
     ax2.set_ylabel(r'$\ln [\delta w(\vec r,\vec v)]$')
     ax3.set_ylabel(r'$a(t)/a_{\rm{SMBH},0}^{\rm{Hermite}}$')
-    ax4.set_ylabel(r'$r_{\rm {nn}}$ [pc]')
+    ax4.set_ylabel(r'$\log_{10}r_{\rm {nn}}$ [pc]')
     for ax_ in [ax2, ax3, ax4]:
         ax_.set_xlabel('Time [Myr]')
         plot_ini.tickers(ax_, 'plot') 
@@ -508,9 +508,9 @@ def ejected_evolution():
                                     ax3.set_title('Time vs. Inclination')
                                     ax4.set_title('Time vs. Distance to Nearest Neighbour')
                                     ax1.set_ylabel(r'$\log_{10}(1-e)$')
-                                    ax2.set_ylabel(r'$K_E / K_{E,0}$ [J]')
+                                    ax2.set_ylabel(r'$K_E / K_{E,0}$')
                                     ax3.set_ylabel(r'$\log_{10} |v|$ [km s$^{-1}$]')
-                                    ax4.set_ylabel(r'$r_{nn}$ [pc]')
+                                    ax4.set_ylabel(r'$\log_{10}r_{\rm {nn}}$ [pc]')
                                     ax1.set_ylim(-6.5, 0)
                                     for ax_ in [ax1, ax2, ax3, ax4]:
                                         ax_.set_xlabel('Time [Myr]')
