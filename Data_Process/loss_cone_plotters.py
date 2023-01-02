@@ -3,6 +3,7 @@ from file_logistics import *
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
+import pickle as pkl
 
 np.seterr(divide='ignore')
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
@@ -61,7 +62,7 @@ class loss_cone(object):
                 with open(cfile[int_][file_], 'rb') as input_file:
                     chaotic_tracker = pkl.load(input_file)
                     pop = chaotic_tracker.iloc[0][6]
-                    if pop <= 50 and pop > 5:
+                    if pop <= 30 and pop > 5:
                         with open(pfile[int_][file_], 'rb') as input_file:
                             file_size = os.path.getsize(pfile[int_][file_])
                             if file_size < 2.7e9:
@@ -248,7 +249,7 @@ class loss_cone(object):
         ax1.text(18.85, 43.4, r'$L_{\rm{crit}}$', rotation = -90)
         
         plt.colorbar(colour_axes, ax = ax2, label = r'$\log_{10} t$ [yr]')
-        plt.savefig('figures/loss_cone/LC_evol.pdf', dpi=300, bbox_inches='tight')
+        plt.savefig('figures/loss_cone/LC_evol.png', dpi=300, bbox_inches='tight')
 
     def lcone_timescale(self):
         init_pop_t = np.asarray(self.init_pop)

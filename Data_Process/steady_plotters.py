@@ -7,6 +7,7 @@ from scipy.stats import iqr
 import scipy.optimize
 from scipy.optimize import OptimizeWarning
 from scipy.interpolate import make_interp_spline
+import pickle as pkl
 
 class stability_plotters(object):
     """
@@ -176,7 +177,6 @@ class stability_plotters(object):
         fig = plt.figure(figsize=(8, 6))
         ax1 = fig.add_subplot(111)
         ax1.set_ylabel(r'$\log_{10} t_{\rm{surv}}$ [Myr]') 
-        plot_ini.tickers_pop(ax1, pop[0], 'GRX')
         ax1.set_xlim(8,55)
         ax1.set_ylim(-1.3, 2.3)
         xints = [i for i in range(8, 1+int(max(pop[1]))) if i % 5 == 0]
@@ -187,25 +187,28 @@ class stability_plotters(object):
         ax1.tick_params(axis="y", which = 'both', direction="in")
         ax1.tick_params(axis="x", which = 'both', direction="in")     
         ax1.set_xticks(xints)
-        ax1.xaxis.labelpad = 30
-        print(pop[1], psamp[1])
+        ax1.xaxis.labelpad = 20
+        
         N_parti_avg[int_] = np.array([float(i) for i in N_parti_avg[int_]])
+        xtemp = np.linspace(10, 35, 1000)
+        curve = [(log_fit(i, slope, beta, log_c, beta2, y)) for i in xtemp]
         for j, xpos in enumerate(pop[1]):
-            if pop[1][j] > 5:
+            if pop[1][j] > 5 and pop[1][j] < 40:
                 ax1.text(pop[1][j], -1.5, str(integrator[int_])+': '+str('{:.0f}'.format(psamp[1][j][0])), fontsize = 'xx-small', ha = 'center' )
                 if j == 0:
-                    ax1.scatter(pop[1], np.log10(N_parti_avg[1]), color = colors[1], edgecolor = 'black', zorder = 2, label = integrator[1])
+                    ax1.scatter(pop[1][pop[1] < 40], np.log10(N_parti_avg[1][pop[1] < 40]), color = colors[1], edgecolor = 'black', zorder = 2, label = integrator[1])
                 else:
-                    ax1.scatter(pop[1], np.log10(N_parti_avg[1]), color = colors[1], edgecolor = 'black', zorder = 2)
-        ax1.scatter(pop[1], np.log10(std_min[1]), color = colors[1], marker = '_')
-        ax1.scatter(pop[1], np.log10(std_max[1]), color = colors[1], marker = '_')
-        ax1.plot([pop[1], pop[1]], [np.log10(std_min[1]), np.log10(std_max[1])], color = colors[1], zorder = 1)
+                    ax1.scatter(pop[1][pop[1] < 40], np.log10(N_parti_avg[1][pop[1] < 40]), color = colors[1], edgecolor = 'black', zorder = 2)
+        ax1.scatter(pop[1][pop[1] < 40], np.log10(std_min[1][pop[1] < 40]), color = colors[1], marker = '_')
+        ax1.scatter(pop[1][pop[1] < 40], np.log10(std_max[1][pop[1] < 40]), color = colors[1], marker = '_')
+        ax1.plot([pop[1][pop[1] < 40], pop[1][pop[1] < 40]], [np.log10(std_min[1][pop[1] < 40]), np.log10(std_max[1][pop[1] < 40])], color = colors[1], zorder = 1)
         
         slope_str = str('{:.2f}'.format(slope))
         logc_str = str('{:.2f}'.format(log_c))
         beta_str = str('{:.2f}'.format(beta))
         ax1.plot(xtemp, np.log10(curve), zorder = 1, color = 'black', ls = '-.')
-        ax1.text(35, 1.8, r'$t_{{\rm surv}} \approx{{{}}}(\sqrt{{N}}\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
+        ax1.text(25, 2, r'$t_{{\rm surv}} \approx{{{}}}(\sqrt{{N}}\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
+        plot_ini.tickers_pop(ax1, pop[0], 'GRX')
         plt.savefig('figures/steady_time/stab_time_mean_GRX.pdf', dpi = 300, bbox_inches='tight')
 
         fig = plt.figure(figsize=(15, 6))

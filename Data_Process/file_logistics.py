@@ -54,8 +54,8 @@ class plotter_setup(object):
             xints = [i for i in range(1+int(max(pop))) if i % 10 == 0 and i > 5]
             ax.set_xlim(5, 105)
         else:
-            xints = [i for i in range(1+int(max(pop))) if i % 5 == 0 and i > 5]
-            ax.set_xlim(5, 55)
+            xints = [i for i in range(1+int(max(pop))) if i % 5 == 0 and i > 5 and i < 45]
+            ax.set_xlim(5, 45)
  
         ax.set_xticks(xints)
 

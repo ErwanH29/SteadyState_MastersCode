@@ -8,6 +8,7 @@ import warnings
 import pandas as pd
 import statsmodels.api as sm
 import LISA_Curves.LISA as li
+import pickle as pkl
 
 class gw_calcs(object):
     """
@@ -46,7 +47,7 @@ class gw_calcs(object):
             for file_ in range(len(filename[int_])):
                 with open(filenameC[int_][file_], 'rb') as input_file:
                     chaotic_tracker = pkl.load(input_file)
-                    if chaotic_tracker.iloc[0][6] <= 50 and chaotic_tracker.iloc[0][6] > 5:
+                    if chaotic_tracker.iloc[0][6] <= 40 and chaotic_tracker.iloc[0][6] > 5:
                         with open(filename[int_][file_], 'rb') as input_file:
                             print('Reading file', file_, ': ', filename[int_][file_])
                             data = pkl.load(input_file)
@@ -249,7 +250,7 @@ class gw_calcs(object):
             for file_ in range(len(tGW_data)):
                 with open(tGW_data[file_], 'rb') as input_file:
                     data_file = pkl.load(input_file)
-                    if data_file.iloc[0][2] <= 50:
+                    if data_file.iloc[0][2] <= 30:
                         if data_file.iloc[0][0] == self.integrator[int_idx]:
                             files += 1
                             self.sim_time.append(data_file.iloc[0][1])
@@ -682,8 +683,10 @@ class gw_calcs(object):
         ax4 = fig.add_subplot(224)
         ax_top = [ax1, ax2]
         ax_bot = [ax3, ax4]
-        ax1.set_title('Hermite')
-        ax2.set_title('GRX')
+        ax1.set_title('Hermite\nIMBH-IMBH')
+        ax2.set_title('GRX\nIMBH-IMBH')
+        ax3.set_title('SMBH-IMBH')
+        ax4.set_title('SMBH-IMBH')
         extent = [1.1*xmin, 1.1*xmax, 1.1*ymin, 0]
         ecc_l = np.linspace(0, 1, 1000)
         const_semi = [np.log10((1-i)**-1/10)-1 for i in ecc_l]
@@ -726,7 +729,7 @@ class gw_calcs(object):
                 for event_ in range(len(self.semi_flyby_t[parti_])):
                     semi_fb_t = self.semi_flyby_t[parti_][event_]
                     if semi_fb_t < 1 | units.parsec:
-                        if np.asarray(self.fb_t_SMBH[parti_][event_]) < 0 or self.mass_IMBH[parti_][event_] < 10**5 | units.MSun:
+                        if np.asarray(self.fb_t_SMBH[parti_][event_]) < 0 or self.mass_IMBH[parti_] < 10**5 | units.MSun:
                             ecc_fb_t = self.ecc_flyby_t[parti_][event_]
                             gwtime_t = self.gw_timescale(semi_fb_t, ecc_fb_t, self.mass_parti[parti_], 
                                                             self.mass_IMBH[parti_]).value_in(units.Myr)
@@ -775,8 +778,8 @@ class gw_calcs(object):
                                                             range=([1.1*xmin, 1.1*xmax], [1.1*ymin, 0]))
             bin2d_sim /= np.max(bin2d_sim)
             contours = ax_top[int_].imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
-            ax_top[int_].scatter(np.log10(IMBH_sem[int_])[np.log10(IMBH_sem[int_]) < -4], 
-                                 IMBH_ecc[int_][np.log10(IMBH_sem[int_]) < -4], 
+            ax_top[int_].scatter(np.log10(IMBH_sem[int_])[np.log10(IMBH_sem[int_]) < -3], 
+                                 IMBH_ecc[int_][np.log10(IMBH_sem[int_]) < -3], 
                                  marker = 'X', color = 'white', edgecolor = 'black', s = 5)
 
             bin2d_sim, xedg, xedg, image = ax_bot[int_].hist2d(np.log10(SMBH_sem[int_]), SMBH_ecc[int_], bins=(150, 150), 

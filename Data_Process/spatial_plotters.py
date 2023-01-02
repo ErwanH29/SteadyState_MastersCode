@@ -6,7 +6,11 @@ import matplotlib.ticker as mtick
 import matplotlib.animation as animation
 import numpy as np
 import warnings
+import pickle as pkl
+import faulthandler
 
+
+faulthandler.enable()
 np.seterr(divide='ignore')
 warnings.filterwarnings("ignore", category=RuntimeWarning) 
 
@@ -414,19 +418,18 @@ def ejected_evolution():
             
         for file_ in range(len(data)):
             with open(chaotic[file_], 'rb') as input_file:
-                print('Reading file : ', input_file)
                 chaotic_tracker = pkl.load(input_file)
-                if chaotic_tracker.iloc[0][6] <= 50 and chaotic_tracker.iloc[0][6] > 5:
+                if chaotic_tracker.iloc[0][6] <= 30 and chaotic_tracker.iloc[0][6] > 5:
                     if chaotic_tracker.iloc[0][-4] > 0 or chaotic_tracker.iloc[0][5] > 0:
-                        with open(data[file_], 'rb') as input_file:
+                        with open(data[file_], 'rb') as input_filep:
                             file_size = os.path.getsize(data[file_])
                             if file_size < 2.8e9:
-                                ptracker = pkl.load(input_file)
-                                print(chaotic_tracker)
-                                print(ptracker)
+                                print(input_file)
+                                ptracker = pkl.load(input_filep)
 
-                                with open(energy[file_], 'rb') as input_file:
-                                    etracker = pkl.load(input_file)
+                                with open(energy[file_], 'rb') as input_fileE:
+                                    print(input_fileE)
+                                    etracker = pkl.load(input_fileE)
                                     
                                 if 10*round(0.1*chaotic_tracker.iloc[0][6]) in popG:
                                     idx = np.where(popG == 10*round(0.1*chaotic_tracker.iloc[0][6]))
@@ -508,9 +511,9 @@ def ejected_evolution():
                                     ax3.set_title('Time vs. Inclination')
                                     ax4.set_title('Time vs. Distance to Nearest Neighbour')
                                     ax1.set_ylabel(r'$\log_{10}(1-e)$')
-                                    ax2.set_ylabel(r'$K_E / K_{E,0}$ [J]')
+                                    ax2.set_ylabel(r'$K_E / K_{E,0}$')
                                     ax3.set_ylabel(r'$\log_{10} |v|$ [km s$^{-1}$]')
-                                    ax4.set_ylabel(r'$r_{nn}$ [pc]')
+                                    ax4.set_ylabel(r'$\log_{10} r_{nn}$ [pc]')
                                     ax1.set_ylim(-6.5, 0)
                                     for ax_ in [ax1, ax2, ax3, ax4]:
                                         ax_.set_xlabel('Time [Myr]')
@@ -677,7 +680,6 @@ def ejected_evolution():
 def energy_plotter(int_string):
     """
     Function to plot the energy evolution of the system
-
     output: Energy evolution plot of the system
     """
 
@@ -753,7 +755,6 @@ def global_properties():
     NNecc_arr = [[ ], [ ]]
     tersemi_arr = [[ ], [ ]]
     terecc_arr = [[ ], [ ]]
-    KE_arr = [[ ], [ ]]
 
     dir = os.path.join('/home/erwanh/Desktop/SteadyStateBH/Data_Process/figures/steady_time/Sim_summary.txt')
     with open(dir) as f:
@@ -789,7 +790,7 @@ def global_properties():
         for file_ in range(len(data)):
             with open(chaotic[file_], 'rb') as input_file:
                 chaotic_tracker = pkl.load(input_file)
-                if chaotic_tracker.iloc[0][6] <= 50 and chaotic_tracker.iloc[0][6] >= 10:
+                if chaotic_tracker.iloc[0][6] <= 30 and chaotic_tracker.iloc[0][6] >= 10:
                     with open(data[file_], 'rb') as input_file:
                         file_size = os.path.getsize(data[file_])
                         if file_size < 2.8e9:
@@ -815,7 +816,6 @@ def global_properties():
                                     NN = [ ]
                                     SMBH_dist = [ ]
                                     pvel = [ ]
-                                    KE = [ ]
                                     ecc_SMBH = [ ]
                                     nn_semi = [ ]
                                     nn_ecc = [ ]
@@ -827,7 +827,6 @@ def global_properties():
                                         time_arr = etracker.iloc[j]
                                         SMBH_coords = SMBH_data.iloc[j]
 
-                                        KE.append(np.log10(time_step[4].value_in(units.J)))
                                         ecc_SMBH.append(np.log10(1-time_step[8][0]))
 
                                         for i in range(3):
@@ -873,16 +872,14 @@ def global_properties():
                                     tersemi_arr[iter].append(ter_semi)
                                     terecc_arr[iter].append(ter_ecc)
                                     vel_arr[iter].append(pvel)
-                                    KE_arr[iter].append(KE)
             
-    print(terecc_arr)
     c_hist = ['red', 'blue']
 
     ecc_flat = [[ ], [ ]]
     distSMBH_flat = [[ ], [ ]]
     vel_flat = [[ ], [ ]]
     NNdist_flat = [[ ], [ ]]
-    KE_flat = [[ ], [ ]]
+    NN_flat = [[ ], [ ]]
     for j in range(2):
         for sublist in ecc_arr[j]:
             for item in sublist:
@@ -896,9 +893,6 @@ def global_properties():
         for sublist in vel_arr[j]:
             for item in sublist:
                     vel_flat[j].append(item)
-        for sublist in KE_arr[j]:
-            for item in sublist:
-                    KE_flat[j].append(item)
 
     ks_ecc = stats.ks_2samp(ecc_flat[0], ecc_flat[1])
     ks_dSMBH = stats.ks_2samp(distSMBH_flat[0], distSMBH_flat[1])
@@ -919,9 +913,9 @@ def global_properties():
     ax3 = fig.add_subplot(223)
     ax4 = fig.add_subplot(224) 
     ax1.set_xlabel(r'$\log_{10}(1-e)_{\rm{SMBH}}$')
-    ax2.set_xlabel(r'$\log_{10}r$ [pc]')
+    ax2.set_xlabel(r'$\log_{10} r_{\rm{SMBH}}$ [pc]')
     ax3.set_xlabel(r'$\log_{10}|v|$ [km s$^{-1}$]')
-    ax4.set_xlabel(r'$\log_{10} K_E$ [J]')
+    ax4.set_xlabel(r'$\log_{10} r_{\rm{IMBH}}$ [pc]')
     for ax_ in [ax1, ax2, ax3, ax4]:
         plot_ini.tickers(ax_, 'plot')
         ax_.set_ylabel(r'$\log_{10}(\rho/\rho_{\rm{max}})$')
@@ -932,22 +926,15 @@ def global_properties():
 
         distSMBH_sort = np.sort(distSMBH_flat[j])
         distSMBH_index = np.asarray([i for i in enumerate(distSMBH_sort)])
-        NNdist_sort = np.sort(NNdist_flat[j])
-        NNdist_index = np.asarray([i for i in enumerate(NNdist_sort)])
-        if j == 0:
-            ax2.plot(distSMBH_sort, np.log10(distSMBH_index[:,0]/distSMBH_index[-1,0]), color = c_hist[j], linestyle = ':', label = r'$r_{\rm{SMBH}}$')
-            ax2.plot(NNdist_sort, np.log10(NNdist_index[:,0]/NNdist_index[-1,0]), color = c_hist[j], linestyle = '-.', label =r'$r_{\rm{IMBH}}$')
-        else:
-            ax2.plot(distSMBH_sort, np.log10(distSMBH_index[:,0]/distSMBH_index[-1,0]), color = c_hist[j], linestyle = ':')
-            ax2.plot(NNdist_sort, np.log10(NNdist_index[:,0]/NNdist_index[-1,0]), color = c_hist[j], linestyle = '-.')
-        
+        ax2.plot(distSMBH_sort, np.log10(distSMBH_index[:,0]/distSMBH_index[-1,0]), color = c_hist[j])
+
         vel_sort = np.sort(vel_flat[j])
         vel_index = np.asarray([i for i in enumerate(vel_sort)])
         ax3.plot(vel_sort, np.log10(vel_index[:,0]/vel_index[-1,0]), color = c_hist[j])
 
-        KE_sort = np.sort(KE_flat[j])
-        KE_index = np.asarray([i for i in enumerate(KE_sort)])
-        ax4.plot(KE_sort, np.log10(KE_index[:,0]/KE_index[-1,0]), color = c_hist[j])
+        NNdist_sort = np.sort(NNdist_flat[j])
+        NNdist_index = np.asarray([i for i in enumerate(NNdist_sort)])
+        ax4.plot(NNdist_sort, np.log10(NNdist_index[:,0]/NNdist_index[-1,0]), color = c_hist[j])
 
     ax1.legend(loc='upper left')
     ax2.legend(loc='upper left')
@@ -977,33 +964,9 @@ def global_properties():
         semiter_flat[j] = np.asarray(semiter_flat[j])
         semiter_flat[j] = semiter_flat[j][np.isfinite(semiter_flat[j])]
 
-    fig = plt.figure(figsize=(12.5, 10))
-    ax1 = fig.add_subplot(221)
-    ax2 = fig.add_subplot(222)
-    ax3 = fig.add_subplot(223)
-    ax4 = fig.add_subplot(224) 
-    ax1.set_title('Nearest Neighbour')
-    ax2.set_title('Tertiary')
-    for ax_ in [ax3, ax4]:
-        ax_.set_xlabel(r'$\log_{10}(1-e)$')
-    for ax_ in [ax1, ax2]:
-        ax_.set_xlabel(r'$\log_{10}a$ [pc]')
-        
-    for int_ in range(2):
-        n, bins, patches = ax1.hist(np.log10(seminn_flat[int_]), 50, density=True, histtype='step', color = c_hist[int_], label = integrator[int_])
-        n, bins, patches = ax1.hist(np.log10(seminn_flat[int_]), 50, density=True, alpha = 0.3, color = c_hist[int_])
-        n, bins, patches = ax2.hist(np.log10(semiter_flat[int_]), 50, density=True, histtype='step', color = c_hist[int_])
-        n, bins, patches = ax2.hist(np.log10(semiter_flat[int_]), 50, density=True, alpha = 0.3, color = c_hist[int_])
-        n, bins, patches = ax3.hist(eccnn_flat[int_], 50, density=True, histtype='step', color = c_hist[int_])
-        n, bins, patches = ax3.hist(eccnn_flat[int_], 50, density=True, alpha = 0.3, color = c_hist[int_])
-        n, bins, patches = ax4.hist(eccter_flat[int_], 50, density=True, histtype='step', color = c_hist[int_])
-        n, bins, patches = ax4.hist(eccter_flat[int_], 50, density=True, alpha = 0.3, color = c_hist[int_])
-    plt.savefig('figures/system_evolution/global_properties_NN_ter_histogram.pdf', dpi=300, bbox_inches='tight')
-
 def spatial_plotter(int_string):
     """
     Function to plot the evolution of the system
-
     output: The spatial evolution of the system
     """
 
@@ -1017,7 +980,8 @@ def spatial_plotter(int_string):
         iter_file += 1
         with open(ctracker_files[file_], 'rb') as input_file:
             ctracker = pkl.load(input_file)
-            if ctracker.iloc[0][5] > 0 and ctracker.iloc[0][6] >= 10:
+            print(ctracker)
+            if ctracker.iloc[0][6] > 5:
                 with open(ptracker_files[file_], 'rb') as input_file:
                     file_size = os.path.getsize(ptracker_files[file_])
                     if file_size < 2.8e9:
@@ -1025,6 +989,7 @@ def spatial_plotter(int_string):
                         ptracker = pkl.load(input_file)
                         with open(etracker_files[file_], 'rb') as input_file:
                             etracker = pkl.load(input_file)
+                            print(input_file)
 
                         col_len_raw = np.shape(ptracker)[1]-1
                         col_len = round(col_len_raw**0.6)

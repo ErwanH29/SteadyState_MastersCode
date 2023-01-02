@@ -6,6 +6,7 @@ import matplotlib.ticker as mtick
 import numpy as np
 import scipy.optimize
 import warnings
+import pickle as pkl
 
 class sustainable_sys(object):
     """
@@ -73,7 +74,7 @@ class sustainable_sys(object):
                         ter_val = 0
                         bin_sys = 0 
                         ter_sys = 0
-                        if pop > 5 and pop <= 50:
+                        if pop > 5 and pop <= 30:
                             for parti_ in range(np.shape(data)[0]):
                                 bin_sys = False
                                 ter_sys = False

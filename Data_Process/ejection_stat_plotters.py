@@ -31,10 +31,13 @@ class ejection_stats(object):
                 with open(filesc[int_][file_], 'rb') as input_file:
                     ctracker = pkl.load(input_file)
                     if ctracker.iloc[0][5] > 0 and ctracker.iloc[0][6] > 5:
+                        print(ctracker)
                         with open(filest[int_][file_], 'rb') as input_file:
                             print('Reading File :', input_file)
                             count = len(fnmatch.filter(os.listdir('data/ejection_stats/'), '*.*'))
                             ptracker = pkl.load(input_file)
+                            print(ptracker)
+                            print(ejected_extract_final(ptracker, ctracker))
 
                             ex, ey, ez, vesc, ejec_KE, ejec_PE, Nclose, ebool = ejected_extract_final(ptracker, ctracker)
 
@@ -303,14 +306,16 @@ class event_tracker(object):
 
             in_pop[int_] = np.unique(init_pop[int_])
             iter = -1
-            for pop_ in in_pop[int_][in_pop[int_] > 5]:
+            for pop_ in in_pop[int_][(in_pop[int_] > 5)]:
                 iter +=1
                 indices = np.where((init_pop[int_] == pop_))[0]
                 temp_frac = [merger[int_][i] for i in indices]
                 frac_merge[int_].append(np.mean(temp_frac))
+            if int_ == 0:
+                ax[int_].scatter(in_pop[int_][(in_pop[int_] > 5)], frac_merge[int_], color = colours[int_], edgecolors = 'black')
+            else:
+                ax[int_].scatter(in_pop[int_][(in_pop[int_] > 5) & (in_pop[int_] < 45)], frac_merge[int_][:-1], color = colours[int_], edgecolors = 'black')
+        plot_ini.tickers_pop(ax1, in_pop[0], labels[0])
+        plot_ini.tickers_pop(ax2, in_pop[1], labels[1])
 
-            ax[int_].scatter(in_pop[int_], frac_merge[int_], color = colours[int_], edgecolors = 'black', label = labels[int_])
-            plot_ini.tickers_pop(ax[int_], in_pop[int_], labels[int_])
-
-        plt.legend()
         plt.savefig('figures/ejection_stats/SMBH_merge_fraction.pdf', dpi=300, bbox_inches='tight')
