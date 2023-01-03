@@ -28,11 +28,11 @@ def calc_loop(iter, redshift, range_a, range_b, phi0, phi0_diff, mc, mc_diff, al
     
     if phen == 'ULX':
         eff = 0.6
-        const_rate = (11/3)
+        const_rate = 5.89285714
         NIMBH = 10
     else:
         eff = 1
-        const_rate = (4/3)
+        const_rate = 2.142857 #7 / 0.9 merge per Myr
         NIMBH = 1
 
     phi0_val = phi0 + phi0_diff * (iter-range_b)/(range_a-range_b)
@@ -74,7 +74,7 @@ def GC_formation(zGC):
 
     z = 3.2
     sigmaGC = 1.5
-    return np.exp(-(z-zGC)/sigmaGC)
+    return np.exp(-(z-zGC)**2/(2*sigmaGC**2))
 
 def phenomena_event(phen):
     """
@@ -167,7 +167,7 @@ def phenomena_event(phen):
         NIMBH = 10
     else:
         eff = 1
-        const_rate = (4/3)
+        const_rate = 2.142857
         NIMBH = 1
 
     for i in range(len(ps_int)):
@@ -196,35 +196,40 @@ def phenomena_event(phen):
         cum_GCz.insert(5, 103)
         cum_GCc.insert(5, 551)
 
-    fig = plt.figure(figsize=(12.5, 5))
-    ax1 = fig.add_subplot(121)
-    ax2 = fig.add_subplot(122)
+    fig, ax1 = plt.subplots()
     ax1.set_ylabel(r'Events [Gpc$^{-3}$ yr$^{-1}$]')
-    ax2.set_ylabel(r'Events [yr$^{-1}$]')
-    for ax_ in [ax1, ax2]:
-        ax_.set_xlim(0,3)
-        ax_.set_xlabel(r'Redshift')
-        ax_.xaxis.set_ticks_position('bottom')
-        ax_.yaxis.set_ticks_position('left')
-        plot_ini.tickers(ax_, 'plot')
+    ax2 = ax1.twinx()
+    ax2.set_ylabel(r'Events [yr$^{-1}$]', color = 'purple')
+    ax1.set_xlim(0,3)
+    ax1.set_xlabel(r'Redshift') 
     ax1.set_yscale('log')
-    ax2.set_yscale('log')
-    ax1.plot(redshift_vals, rate_const, color = 'red')
-    ax1.plot(redshift_vals, rate, color = 'black')
-    ax2.plot(xnew, fc, color = 'red', label = r'$N_{GC,const}$')
-    ax2.plot(xnew, fz, color = 'black', label = r'$N_{GC}(z)$')
-    ax1.plot(redshift_vals, 0.1*rate, color = 'black', linestyle = 'dashdot')
-    ax1.plot(redshift_vals, 0.01*rate, color = 'black', linestyle = 'dashed')
-    ax2.plot(xnew, 0.1*fz, color = 'black', linestyle = 'dashdot', label = r'$f_{IMBH} = 0.1$')
-    ax2.plot(xnew, 0.01*fz, color = 'black', linestyle = 'dashed', label = r'$M_{IMBH} \leq 0.1M_{GC}$')
+    ax2.set_yscale('log') 
+    ax1.xaxis.set_ticks_position('bottom')
+    ax1.yaxis.set_ticks_position('left')
+    ax2.yaxis.set_ticks_position('right')
+    ax1.xaxis.set_ticks_position('both')
+    for ax_ in [ax1, ax2]:
+        ax_.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+    ax1.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+    ax1.tick_params(axis="y", direction="in")
+    ax2.tick_params(axis="y", direction="in")
+    ax1.tick_params(axis="x", which = 'both', direction="in")
+    ax1.plot(redshift_vals, rate_const, color = 'black')
+    #ax1.plot(redshift_vals, rate * rate_const[-1]/rate[-1], color = 'black')
+    ax2.plot(xnew, fc,  color = 'purple')
+    #ax2.plot(xnew, fz * max(fc)/fz[-1], color = 'black', label = r'$N_{GC}(z)$')
+    ax1.tick_params(axis='y', labelcolor='black')
+    ax2.tick_params(axis='y', labelcolor='purple')
+    ax1.tick_params(axis="x", which = 'both', direction="in")   
     if phen == 'ULX':
         ax1.set_ylim(5e-1, 800) 
         ax2.set_ylim(5e-1, 12000)
     else:   
-        ax1.set_ylim(3e-2, 60) 
-        ax2.set_ylim(3e-2, 1000)
-    ax2.legend()
+        ax1.set_ylim(.8, 120) 
+        ax2.set_ylim(8, 1200)
     plt.savefig('figures/forecast/'+str(phen)+'_rate.pdf', dpi=300, bbox_inches='tight')
+
+    print(max(fc), max(fz))
 
 def PS_function(zmass, phi0, mc, alpha):
     """

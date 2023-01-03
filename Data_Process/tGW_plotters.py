@@ -676,7 +676,7 @@ class gw_calcs(object):
         xmax = 0
         ymin = -4
 
-        fig = plt.figure(figsize=(15, 12))
+        fig = plt.figure(figsize=(13, 12))
         ax1 = fig.add_subplot(221)
         ax2 = fig.add_subplot(222)
         ax3 = fig.add_subplot(223)
@@ -837,7 +837,7 @@ class gw_calcs(object):
 
         plot_init = plotter_setup()
         
-        fig = plt.figure(figsize=(14, 6))
+        fig = plt.figure(figsize=(12, 6))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax1.set_title('Hermite')

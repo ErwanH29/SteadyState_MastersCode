@@ -446,6 +446,7 @@ class sustainable_sys(object):
 
         ####### CALCULATE FOR TERTIARY, HARD BINARY, SOFT BINARY AND ALL
         for int_ in range(1):
+            int_ += 1
             GW_calcs.scatter_hist(self.GW_freqbin[int_], self.GW_strainbin[int_],
                                   self.GW_freqter[int_], self.GW_strainter[int_],
                                   ax, ax1, ax2, 'Binary', 'Tertiary')

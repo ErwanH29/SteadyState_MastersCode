@@ -182,13 +182,6 @@ class ejection_stats(object):
         norm_max = np.log10(max(avg_surv))
         normalise = plt.Normalize(norm_min, norm_max)
 
-        fig = plt.figure(figsize=(15, 13))
-        ax1 = fig.add_subplot(221)
-        ax2 = fig.add_subplot(222)
-        ax3 = fig.add_subplot(223)
-        ax4 = fig.add_subplot(224)
-        
-        ax = [ax1, ax2, ax3, ax4]
         ax_iter = -1
         ax_title = ['Hermite', '\n GRX']
         colours = ['red', 'blue']
@@ -212,6 +205,7 @@ class ejection_stats(object):
                 samples = [ ]
                 minvel = [ ]
                 maxvel = [ ]
+                MWvels = [ ]
                 iter = -1
 
                 for pop_ in in_pop:
@@ -223,10 +217,12 @@ class ejection_stats(object):
                     avg_surv[iter] = np.nanmean(sim_time[idx])
                     minvel.append(np.nanmin(vesc[idx]))
                     maxvel.append(np.nanmax(vesc[idx]))
+                    MWvels.append(vesc[idx][vesc[idx] > 660])
 
                     ymin.append(min(avg_vesc))
                     ymax.append(max(avg_vesc))
                 vels.append(max(vesc))
+                print(MWvels)
 
                 file.write('\nData for '+str(self.integrator[int_]))
                 file.write('\nPopulations average escape velocity          ' + str(in_pop) + ' : ' + str(avg_vesc) + ' kms')
@@ -236,39 +232,44 @@ class ejection_stats(object):
                 file.write('\nPopulations average escape time              ' + str(in_pop) + ' : ' + str(avg_surv) + ' Myr')
                 file.write('\n========================================================================')
 
-                colour_axes = ax[int_].scatter(pops, avg_vesc, edgecolors='black', c = np.log10(avg_surv), norm = normalise, zorder = 3)
-                ax[int_].set_title(ax_title[int_])
-                for j, xpos in enumerate(pops):
-                    ax[int_].text(pops[j], 150, str(self.integrator[int_])+'\n'+str('{:.0f}'.format(samples[j])), fontsize = 'xx-small', ha = 'center' )
-                if ax_iter == 0:
-                    plot_ini.tickers_pop(ax[ax_iter], pops, 'Hermite')
-                else:
-                    plot_ini.tickers_pop(ax[ax_iter], pops, 'GRX')
+                fig = plt.figure(figsize=(15, 13))
+                ax1 = fig.add_subplot(121)
+                ax2 = fig.add_subplot(122)
                 
+                ax = [ax1, ax2]
+                colour_axes = ax1.scatter(pops, avg_vesc, edgecolors='black', c = np.log10(avg_surv), norm = normalise, zorder = 3)
+
+                ax1.set_title(r'$N_{\rm{IMBH}}$ vs. $v_{\rm{esc}}$')
+                ax2.set_title(r'$v_{\rm{esc}}$ Histogram')
+                print(pops, samples)
+
+                ax2.set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
+                ax2.set_ylabel(r'$\rho/\rho_{\rm{max}}$')
+                ax2.axvline(vesc_MW, linestyle = ':', color = 'black')
+                ax2.set_xlim(175, 1.1*max(vels))
+                ax2.text(655, 0.2, r'$v_{\rm{esc, MW}}$', rotation = 270)
+                plot_ini.tickers(ax2, 'plot')
+
                 n1, bins, patches = ax[(int_+2)].hist(vesc, 20)
                 ax[int_+2].clear()
                 n, bins, patches = ax[(int_+2)].hist(vesc, 20, histtype = 'step', color=colours[int_], weights=[1/n1.max()]*len(vesc))
                 n, bins, patches = ax[(int_+2)].hist(vesc, 20, color=colours[int_], alpha = 0.4, weights=[1/n1.max()]*len(vesc))
 
-        for ax_ in [ax1, ax2]:
-            if max(ymax) > 700:
-                ax_.text(15, 660, r'$v_{\rm{esc, MW}}$')
-            ax_.set_ylabel(r'$\langle v_{ej} \rangle$ [km/s]')
-            ax_.axhline(vesc_MW, color = 'black', linestyle = ':')
-            ax_.xaxis.labelpad = 30
-            ax_.set_ylim(175, 1.05*max(ymax))
-        plot_ini.tickers_pop(ax1, self.tot_pop[0], 'Hermite')
-        plot_ini.tickers_pop(ax2, self.tot_pop[1], 'GRX')
+                for ax_ in [ax1, ax2]:
+                    if max(ymax) > 700:
+                        ax_.text(15, 660, r'$v_{\rm{esc, MW}}$')
+                    ax_.set_ylabel(r'$\langle v_{\rm{ejec}} \rangle$ [km/s]')
+                    ax_.axhline(vesc_MW, color = 'black', linestyle = ':')
+                    ax_.xaxis.labelpad = 30
+                    ax_.set_ylim(175, 1.05*max(ymax))
 
-        for ax_ in [ax3, ax4]:
-            ax_.set_xlabel(r'$v_{ejec}$ [km s$^{-1}$]')
-            ax_.set_ylabel(r'$\rho/\rho_{\rm{max}}$')
-            ax_.axvline(vesc_MW, linestyle = ':', color = 'black')
-            ax_.set_xlim(175, 1.1*max(vels))
-            ax_.text(655, 0.2, r'$v_{\rm{esc, MW}}$', rotation = 270)
-            plot_ini.tickers(ax_, 'plot')
+                if int_ == 0:
+                    plot_ini.tickers_pop(ax1, self.tot_pop[0], 'Hermite')
+                else:
+                    plot_ini.tickers_pop(ax1, self.tot_pop[1], 'GRX')
 
-        cbar = plt.colorbar(colour_axes, ax=ax2, label = r'$\log_{10} \langle t_{\rm{ej}}\rangle$ [Myr]')
+
+        cbar = plt.colorbar(colour_axes, ax=ax2, label = r'$\log_{10} \langle t_{\rm{ejec}}\rangle$ [Myr]')
         plt.savefig('figures/ejection_stats/vejection.pdf', dpi = 300, bbox_inches='tight')
 
 class event_tracker(object):
@@ -289,7 +290,7 @@ class event_tracker(object):
         colours = ['red', 'blue']
         labels = ['Hermite', 'GRX']
 
-        fig = plt.figure(figsize=(16, 6))
+        fig = plt.figure(figsize=(14, 6))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax = [ax1, ax2]

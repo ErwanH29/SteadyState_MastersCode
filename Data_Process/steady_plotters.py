@@ -127,9 +127,11 @@ class stability_plotters(object):
         fig, ax = plt.subplots()
         hist_tails = np.concatenate((temp_data[0], temp_data[1]))
         hist_temp = [N_parti_avg[0][5], N_parti_avg[0][6]]
-        ax.set_title(r'Histogram for $\langle t_{\rm{surv}} \rangle (N = 60, N = 70)$')
+        ax.set_title(r'$\langle t_{\rm{surv}} \rangle$ for $N = 60, N = 70$')
         ax.axvline((4.87), color = 'black', linestyle = ':')
         ax.text((4.95), 17, r'$\langle t_{\rm{surv}}\rangle$', rotation = 270)
+        ax.set_xlabel(r'Time [Myr]')
+        ax.set_ylabel(r'Counts')
         n1, bins, patches = ax.hist((hist_tails), 30, histtype='step', color = 'black')
         n1, bins, patches = ax.hist((hist_tails), 30, alpha = 0.3, color = 'black')
         plot_ini.tickers(ax, 'plot')
@@ -141,7 +143,6 @@ class stability_plotters(object):
         ax1.set_ylabel(r'$\log_{10} t_{\rm{surv}}$ [Myr]') 
         plot_ini.tickers_pop(ax1, pop[0], 'Hermite')
         ax1.set_xlim(5,105)
-        ax1.xaxis.labelpad = 30
         ax1.set_ylim(-1.5, 2.3)
         ax1.axhline(np.log10(259))
         ax1.axhline(np.log10(882))
@@ -149,7 +150,6 @@ class stability_plotters(object):
         for int_ in range(2):
             N_parti_avg[int_] = np.array([float(i) for i in N_parti_avg[int_]])
             for j, xpos in enumerate(pop[int_][pop[int_] % 10 == 0]):
-                ax1.text(pop[int_][pop[int_] % 10 == 0][j], -1.7*(1+0.04*int_), str(integrator[int_])+': '+str('{:.0f}'.format(psamp[int_][pop[int_] % 10 == 0][j][0])), fontsize = 'xx-small', ha = 'center' )
                 if j == 0:
                     ax1.scatter(pop[int_][pop[int_] % 10 == 0], np.log10(N_parti_avg[int_][pop[int_] % 10 == 0]), color = colors[int_], edgecolor = 'black', zorder = 2, label = integrator[int_])
                 else:
@@ -162,17 +162,17 @@ class stability_plotters(object):
         params, cv = scipy.optimize.curve_fit(log_fit, pop[1][pop[1] % 10 == 0], (N_parti_avg[1][pop[1] % 10 == 0]), p0, maxfev = 10000, method = 'trf')
         slope, beta, log_c, beta2, y = params
         
-        slope_str = str('{:.2f}'.format(slope))
-        logc_str = str('{:.2f}'.format(log_c))
-        beta_str = str('{:.2f}'.format(beta))
         xtemp = np.linspace(10, 100, 1000)
         curve = [(log_fit(i, slope, beta, log_c, beta2, y)) for i in xtemp]
 
         ax1.plot(xtemp, np.log10(curve), zorder = 1, color = 'black', ls = '-.')
-        ax1.text(65, 1.5, r'$t_{{\rm surv}} \approx{{{}}}(\sqrt{{N}}\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
         ax1.legend()
         plt.savefig('figures/steady_time/stab_time_mean.pdf', dpi = 300, bbox_inches='tight')
         plt.clf()
+
+        print('Factor:       ', slope)
+        print('log Factor:   ', log_c)
+        print('Power Factor: ', beta)
       
         fig = plt.figure(figsize=(8, 6))
         ax1 = fig.add_subplot(111)
@@ -187,14 +187,12 @@ class stability_plotters(object):
         ax1.tick_params(axis="y", which = 'both', direction="in")
         ax1.tick_params(axis="x", which = 'both', direction="in")     
         ax1.set_xticks(xints)
-        ax1.xaxis.labelpad = 20
         
         N_parti_avg[int_] = np.array([float(i) for i in N_parti_avg[int_]])
         xtemp = np.linspace(10, 35, 1000)
         curve = [(log_fit(i, slope, beta, log_c, beta2, y)) for i in xtemp]
         for j, xpos in enumerate(pop[1]):
-            if pop[1][j] > 5 and pop[1][j] < 40:
-                ax1.text(pop[1][j], -1.5, str(integrator[int_])+': '+str('{:.0f}'.format(psamp[1][j][0])), fontsize = 'xx-small', ha = 'center' )
+            if pop[1][j] > 5 and pop[1][j] <= 40:
                 if j == 0:
                     ax1.scatter(pop[1][pop[1] < 40], np.log10(N_parti_avg[1][pop[1] < 40]), color = colors[1], edgecolor = 'black', zorder = 2, label = integrator[1])
                 else:
@@ -202,12 +200,9 @@ class stability_plotters(object):
         ax1.scatter(pop[1][pop[1] < 40], np.log10(std_min[1][pop[1] < 40]), color = colors[1], marker = '_')
         ax1.scatter(pop[1][pop[1] < 40], np.log10(std_max[1][pop[1] < 40]), color = colors[1], marker = '_')
         ax1.plot([pop[1][pop[1] < 40], pop[1][pop[1] < 40]], [np.log10(std_min[1][pop[1] < 40]), np.log10(std_max[1][pop[1] < 40])], color = colors[1], zorder = 1)
-        
-        slope_str = str('{:.2f}'.format(slope))
-        logc_str = str('{:.2f}'.format(log_c))
-        beta_str = str('{:.2f}'.format(beta))
+        print(pop, psamp)
+
         ax1.plot(xtemp, np.log10(curve), zorder = 1, color = 'black', ls = '-.')
-        ax1.text(25, 2, r'$t_{{\rm surv}} \approx{{{}}}(\sqrt{{N}}\ln({{{}N}})}}$'.format(slope_str[:3], logc_str)+r'$)^{{{}}}$'.format(beta_str)+' Myr')
         plot_ini.tickers_pop(ax1, pop[0], 'GRX')
         plt.savefig('figures/steady_time/stab_time_mean_GRX.pdf', dpi = 300, bbox_inches='tight')
 
@@ -229,14 +224,6 @@ class stability_plotters(object):
         ax2.set_xlim(6,55)
         plt.savefig('figures/steady_time/stab_time_residuals.pdf', dpi = 300, bbox_inches='tight')
         plt.clf()
-
-        """max_slope = [std_max[1][0], N_parti_avg[1][1], std_min[1][2], std_min[1][3]]
-        min_slope = [std_min[1][0], std_max[1][1], std_max[1][2], std_max[1][3]]
-        
-        params_max, cv = scipy.optimize.curve_fit(log_fit, pop[1], std_max[1], p0, maxfev = 10000, method = 'trf')
-        params_min, cv = scipy.optimize.curve_fit(log_fit, pop[1], std_min[1], p0, maxfev = 10000, method = 'trf')
-        mmax, betamax, log_cmax = params_max
-        mmin, betamin, log_cmin = params_min"""
 
         with open('figures/steady_time/Sim_summary.txt', 'w') as file:
             for int_ in range(2):
