@@ -422,8 +422,6 @@ def ejected_evolution():
                             file_size = os.path.getsize(data[file_])
                             if file_size < 2.8e9:
                                 ptracker = pkl.load(input_file)
-                                print(chaotic_tracker)
-                                print(ptracker)
 
                                 with open(energy[file_], 'rb') as input_file:
                                     etracker = pkl.load(input_file)
@@ -510,7 +508,7 @@ def ejected_evolution():
                                     ax1.set_ylabel(r'$\log_{10}(1-e)$')
                                     ax2.set_ylabel(r'$K_E / K_{E,0}$')
                                     ax3.set_ylabel(r'$\log_{10} |v|$ [km s$^{-1}$]')
-                                    ax4.set_ylabel(r'$\log_{10}r_{\rm {nn}}$ [pc]')
+                                    ax4.set_ylabel(r'$\log_{10}r$ [pc]')
                                     ax1.set_ylim(-6.5, 0)
                                     for ax_ in [ax1, ax2, ax3, ax4]:
                                         ax_.set_xlabel('Time [Myr]')
@@ -643,7 +641,7 @@ def ejected_evolution():
         file.write('\nVelocity 2 sample KS test:             pvalue = '+str(ks_vel[1]))
         file.write('\nNearest neighbour 2 sample KS test:    pvalue = '+str(ks_NNdist[1]))
     
-    fig = plt.figure(figsize=(11, 9))
+    fig = plt.figure(figsize=(11, 8))
     ax1 = fig.add_subplot(221)
     ax2 = fig.add_subplot(222)
     ax3 = fig.add_subplot(223)

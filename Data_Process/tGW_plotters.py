@@ -250,7 +250,7 @@ class gw_calcs(object):
             for file_ in range(len(tGW_data)):
                 with open(tGW_data[file_], 'rb') as input_file:
                     data_file = pkl.load(input_file)
-                    if data_file.iloc[0][2] <= 30:
+                    if data_file.iloc[0][2] == 15:
                         if data_file.iloc[0][0] == self.integrator[int_idx]:
                             files += 1
                             self.sim_time.append(data_file.iloc[0][1])
