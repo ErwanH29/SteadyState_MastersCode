@@ -603,7 +603,7 @@ class gw_calcs(object):
         ax_histf.tick_params(axis="x", labelbottom=False)
         ax_histh.tick_params(axis="y", labelleft=False)
 
-        kdef_SMBH = sm.nonparametric.KDEUnivariate(np.log10(x1))
+        """kdef_SMBH = sm.nonparametric.KDEUnivariate(np.log10(x1))
         kdef_SMBH.fit()
         kdef_SMBH.density = (kdef_SMBH.density/max(kdef_SMBH.density))
 
@@ -632,7 +632,7 @@ class gw_calcs(object):
         ax_histh.plot(kdeh_IMBH.density, kdeh_IMBH.support, color = 'orange')
         ax_histh.fill_between(kdeh_IMBH.density, kdeh_IMBH.support, alpha = 0.35, color = 'orange')
         ax_histh.set_xlim(0, 1.05) 
-        ax_histh.set_xlabel(r'$\rho/\rho_{\rm{max}}$')
+        ax_histh.set_xlabel(r'$\rho/\rho_{\rm{max}}$')"""
 
         # LISA
         lisa = li.LISA() 

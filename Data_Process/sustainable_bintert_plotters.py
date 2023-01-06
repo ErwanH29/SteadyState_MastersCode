@@ -24,20 +24,19 @@ class sustainable_sys(object):
         GW_calcs = gw_calcs()
 
         print('!!!!!! WARNING THIS WILL TAKE A WHILE !!!!!!!')
-        filenameH = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory_temp/*'))
-        filenameGRX = glob.glob('/media/erwanh/Elements/GRX/particle_trajectory_temp/*')
-        filename = [natsort.natsorted(filenameH), natsort.natsorted(filenameGRX)]
+        filenameH = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
+        filenameGRX = glob.glob('/media/erwanh/Elements/GRX/particle_trajectory/*')
+        filename = [natsort.natsorted(filenameH)[8:], natsort.natsorted(filenameGRX)]
         ints = ['Hermite', 'GRX']
-        count = 0
-
-        
+        count = 8
+    
         dir = os.path.join('/home/erwanh/Desktop/SteadyStateBH/Data_Process/figures/steady_time/Sim_summary.txt')
         with open(dir) as f:
             line = f.readlines()
 
-            popG = line[14][48:-2] 
-            avgG = line[21][48:-2]
-            avgG2 = line[22][3:-2] 
+            popG = line[12][48:-2] 
+            avgG = line[19][48:-2]
+            avgG2 = line[20][3:-2] 
             popG_data = popG.split()
             avgG_data = avgG.split()
             avgG2_data = avgG2.split()
@@ -56,9 +55,9 @@ class sustainable_sys(object):
                         data = pkl.load(input_file)
                         pop = 5*round(0.2*np.shape(data)[0])
                         idx = np.where(popG == pop)
-                        col_len = int(min(np.round((avgG[idx])*10**3), np.shape(data)[1])-1)
 
                         if pop > 5 and pop <= 40:
+                            col_len = int(min(np.round((avgG[idx])*10**3), np.shape(data)[1])-1)-1
                             for parti_ in range(np.shape(data)[0]):
                                 integrator = ints[int_]
 
@@ -152,7 +151,7 @@ class sustainable_sys(object):
                                                     ecc_outer = data.iloc[parti_][col_][8][2]
 
                                                     #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
-                                                    if ecc_outer < 1 and semi_outer < 1e-2 | units.parsec:
+                                                    if ecc_outer < 1 and semi_outer < 5e-2 | units.parsec and semi_outer > 5*nn_semi:
                                                         for part_ in range(np.shape(data)[0]):
                                                             if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
                                                                 mass_outer = data.iloc[part_][0][1]
@@ -343,11 +342,43 @@ class sustainable_sys(object):
                 self.semi_t_avg[int_].append(data_file.iloc[0][24])
                 self.semi_t_min[int_].append(data_file.iloc[0][25])
                 self.tot_sim[int_].append(data_file.iloc[0][26])
-                
+
+        self.GWfreq_bin = [[ ], [ ]]
+        self.GWstra_bin = [[ ], [ ]]
+        self.GWfreq_ter = [[ ], [ ]]
+        self.GWstra_ter = [[ ], [ ]]
+
+        for int_ in range(2):
+            self.GWfreq_bin[int_] = self.array_rewrite(self.GW_freqbin[int_], 'nested', False)
+            self.GWstra_bin[int_] = self.array_rewrite(self.GW_strainbin[int_], 'nested', False)
+            self.GWfreq_ter[int_] = self.array_rewrite(self.GW_freqter[int_], 'nested', False)
+            self.GWstra_ter[int_] = self.array_rewrite(self.GW_strainter[int_], 'nested', False) 
+
+        self.unique_pops = [[ ], [ ]]
         self.binary_systems = [[ ], [ ]]
+        self.binary_total = [[ ], [ ]]
         self.binary_occupation = [[ ], [ ]]
+        self.binary_init = [[ ], [ ]]
+        self.binary_IMBH = [[ ], [ ]]
+        self.binary_hard = [[ ], [ ]]
+        self.GWb_mergers = [[ ], [ ]]
+
         self.tertiary_systems = [[ ], [ ]]
+        self.tertiary_total = [[ ], [ ]]
         self.tertiary_occupation = [[ ], [ ]]
+        self.tertiary_init = [[ ], [ ]]
+        self.tertiary_IMBH = [[ ], [ ]]
+        self.tertiary_hard = [[ ], [ ]]
+        self.GWt_mergers = [[ ], [ ]]
+
+        self.GWfreq_binIMBH = [[ ], [ ]]
+        self.GWstra_binIMBH = [[ ], [ ]]
+        self.GWfreq_terIMBH = [[ ], [ ]]
+        self.GWstra_terIMBH = [[ ], [ ]]
+
+        self.GWfreq_binHard = [[ ], [ ]]
+        self.GWstra_binHard = [[ ], [ ]]
+
         with open('figures/binary_hierarchical/output/system_summary.txt', 'w') as file:
             integrator = ['Hermite', 'GRX']
             for int_ in range(2):
@@ -364,10 +395,12 @@ class sustainable_sys(object):
                 pop_arr = np.unique(self.pop[int_])
                 file.write('Data for '+str(integrator[int_]+' in pc'))
                 for pop_ in pop_arr:
+                    self.unique_pops[int_].append(pop_)
                     idx = np.argwhere(self.pop[int_] == pop_).flatten()
                     bform_time = [ ]
                     tform_time = [ ]
                     GWb_time = [ ]
+                    GWt_time = [ ]
                     semi_NN_avg = [ ]
                     semi_NN_min = [ ]
                     semi_t_avg = [ ]
@@ -375,9 +408,17 @@ class sustainable_sys(object):
                     bin_occ = [ ]
                     ter_occ = [ ]
 
-                    bin_data = 0
                     bin_data_merge = 0
+                    bin_data = 0
+                    IMBH_bin = 0
+                    hard_bin = 0
+                    ter_data_merge = 0
+                    ter_data = 0
+                    IMBH_ter = 0
+                    hard_ter = 0 
+
                     for data_ in idx:
+                        hard_Bool = False
                         for item_ in self.bform_time[int_][data_]:
                             if item_ > 0:
                                 bform_time.append(item_)
@@ -385,11 +426,49 @@ class sustainable_sys(object):
                             if item_ > 0:
                                 tform_time.append(item_)
                         idx_nbin = np.argwhere(np.asarray(self.new_bin_sys[int_][data_]) > 0).flatten()
+                        idx_tbin = np.argwhere(np.asarray(self.new_ter_sys[int_][data_]) > 0).flatten()
+
                         GW_btime_temp = np.asarray(self.GW_timeb[int_][data_])[idx_nbin-1]
-                        bin_data += 1
+                        GW_ttime_temp = np.asarray(self.GW_timet[int_][data_])[idx_tbin-1]
+                        bin_data += len(idx_nbin)
+                        ter_data += len(idx_tbin)
+                        if np.asarray(self.GW_bmass[int_][data_])[idx_nbin-1] < 1e6:
+                            IMBH_bin += 1
+                        if np.asarray(self.hard_bin[int_][data_])[idx_nbin-1] > 0:
+                            hard_bin += 1
+                            hard_Bool = True
+                        if np.asarray(self.GW_tmass[int_][data_])[idx_tbin-1] < 1e6:
+                            IMBH_ter += 1
+                        if np.asarray(self.hard_ter[int_][data_])[idx_tbin-1] > 0:
+                            hard_ter += 1
+                        
+                        if (hard_Bool):
+                            if len(idx_nbin) == 1:
+                                self.GWfreq_binIMBH[int_].append([float(i) for i in self.GW_freqbin[int_][data_]])
+                                self.GWstra_binIMBH[int_].append([float(i) for i in self.GW_strainbin[int_][data_]])
+                            else:
+                                prev_iter = 0
+                                for crop_ in idx_nbin:
+                                    self.GWfreq_binIMBH[int_].append([float(i) for i in self.GW_freqbin[int_][data_][prev_iter:crop_]])
+                                    self.GWstra_binIMBH[int_].append([float(i) for i in self.GW_strainbin[int_][data_][prev_iter:crop_]])
+                                    prev_iter = crop_
+
+                            if len(idx_tbin) == 1:
+                                self.GWfreq_terIMBH[int_].append(self.GW_freqter[int_][data_])
+                                self.GWstra_terIMBH[int_].append(self.GW_strainter[int_][data_])
+                            else:
+                                prev_iter = 0
+                                for crop_ in idx_nbin:
+                                    self.GWfreq_terIMBH[int_].append(self.GW_freqter[int_][data_][prev_iter:crop_])
+                                    self.GWstra_terIMBH[int_].append(self.GW_strainter[int_][data_][prev_iter:crop_])
+                                    prev_iter = crop_
+
                         if GW_btime_temp < (GW_calcs.tH).value_in(units.Myr):
                             bin_data_merge += 1
                             GWb_time.append(float(GW_btime_temp))
+                        if GW_ttime_temp < (GW_calcs.tH).value_in(units.Myr):
+                            ter_data_merge += 1
+                            GWt_time.append(float(GW_btime_temp))
 
                         for item_ in self.semi_NN_avg[int_][data_]:
                             if item_ > 0:
@@ -405,12 +484,26 @@ class sustainable_sys(object):
                                 semi_t_min.append(item_)
                         bin_occ.append(1000*(len(self.pop_bin[int_][data_]) / self.tot_sim[int_][data_]))
                         ter_occ.append(1000*(len(self.pop_ter[int_][data_]) / self.tot_sim[int_][data_]))
-
+                    bform_time = np.asarray(bform_time)
+                    tform_time = np.asarray(tform_time)
 
                     binHubble.append(bin_data_merge)
                     totalbin.append(bin_data)
-                    
-                    self.binary_systems[int_].append(bin_data/len(idx))
+
+                    self.binary_total[int_].append(bin_data)
+                    self.binary_IMBH[int_].append(IMBH_bin)
+                    self.binary_hard[int_].append(hard_bin)
+                    self.GWb_mergers[int_].append(bin_data_merge)
+                    self.tertiary_total[int_].append(ter_data)
+                    self.tertiary_IMBH[int_].append(IMBH_ter)
+                    self.tertiary_hard[int_].append(hard_ter)
+                    self.GWt_mergers[int_].append(ter_data_merge)
+
+                    if int_ == 0:
+                        no_samples = 20
+                    else:
+                        no_samples = 40
+                    self.binary_systems[int_].append(bin_data/no_samples)
                     self.binary_occupation[int_].append(np.mean(bin_occ))
                     self.tertiary_systems[int_].append(len(np.asarray(self.semi_t_min[int_][data_])[np.asarray(self.semi_t_min[int_][data_]) > 0])/len(idx))
                     self.tertiary_occupation[int_].append(np.mean(ter_occ))
@@ -423,6 +516,9 @@ class sustainable_sys(object):
                     semi_t_astat.append('{:.7f}'.format(np.mean(semi_t_avg)))
                     semi_t_mstat.append('{:.7f}'.format(np.mean(semi_t_min)))
 
+                    self.binary_init[int_].append(len(bform_time[bform_time <= 1000]))
+                    self.tertiary_init[int_].append(len(tform_time[tform_time <= 1000]))
+
                 file.write('\nAverage binary formation time [yrs]:             '+str(pop_arr)+' : '+str(bform_stat))
                 file.write('\nAverage tertiary formation time [yrs]:           '+str(pop_arr)+' : '+str(tform_stat))
                 file.write('\nFinal GW timescale (only tGW < tH) [Myr]:        '+str(pop_arr)+' : '+str(minGWtime))
@@ -432,23 +528,24 @@ class sustainable_sys(object):
                 file.write('\nAverage tertiary semi-major axis per population: '+str(pop_arr)+' : '+str(semi_t_astat))
                 file.write('\nMinimum tertiary semi-major axis per population: '+str(pop_arr)+' : '+str(semi_t_mstat)+'\n\n')
                 
-        """with open('figures/binary_hierarchical/output/'+str(integrator[int_])+'bin_ter_systems.txt', 'w') as file:
-            file.write(str(integrator[int_])+' BINARY DATA')
-            file.write('\n# Binary systems at initialisation:             '+str(init_bin)+' / '+str(bin))
-            file.write('\nFraction of IMBH-IMBH binaries:                 '+str(np.shape(GW_bmass[GW_bmass < 10**6])[0]) +'/'+str(np.shape(GW_bmass)[0]))
-            file.write('\nFraction of hard binaries:                      '+str(np.sum(bhard[bhard > 0])) +'/'+str(np.shape(bhard)[0]))
+        for int_ in range(2):
+            self.GW_bmass[int_] = np.asarray(self.GW_bmass[int_])
+            with open('figures/binary_hierarchical/output/'+str(integrator[int_])+'bin_ter_systems.txt', 'w') as file:
+                file.write(str(integrator[int_])+'\nBINARY DATA')
+                file.write('\n# Binary systems at initialisation:             '+str(self.unique_pops[int_])+' : '+str(self.binary_init[int_])+' / '+str(self.binary_total[int_]))
+                file.write('\nFraction of IMBH-IMBH binaries:                 '+str(self.unique_pops[int_])+' : '+str(self.binary_IMBH[int_])+' / '+str(self.binary_total[int_]))
+                file.write('\nFraction of hard binaries:                      '+str(self.unique_pops[int_])+' : '+str(self.binary_hard[int_])+' / '+str(self.binary_total[int_]))
+                file.write('\nFraction of mergers within Hubble time:         '+str(self.unique_pops[int_])+' : '+str(self.GWb_mergers[int_])+' / '+str(self.binary_total[int_]))
 
-            file.write('\n\nTERTIARY DATA')
-            for pop_ in range(len(tform_time)):
-                file.write('\nPopulation: '+str(ini_pop[pop_])+':         '+str(tform_time[pop_]/10**3)+' kyr')
-            file.write('\n# Tertiary systems at initialisation:           '+str(init_ter)+' / '+str(ter))
-            file.write('\nFraction of hard tertriary:                     '+str(np.sum(thard[thard > 0])) +'/'+str(np.shape(thard)[0]))
+                file.write('\n\nTERTIARY DATA')
+                file.write('\n# Tertiary systems at initialisation:           '+str(self.unique_pops[int_])+' : '+str(self.tertiary_init[int_])+' / '+str(self.tertiary_total[int_]))
+                file.write('\nFraction of IMBH-IMBH tertiaries:               '+str(self.unique_pops[int_])+' : '+str(self.tertiary_IMBH[int_])+' / '+str(self.tertiary_total[int_]))
+                file.write('\nFraction of hard tertiaries:                    '+str(self.unique_pops[int_])+' : '+str(self.tertiary_hard[int_])+' / '+str(self.tertiary_total[int_]))
+                file.write('\nFraction of mergers within Hubble time:         '+str(self.unique_pops[int_])+' : '+str(self.GWt_mergers[int_])+' / '+str(self.tertiary_total[int_]))
 
-            file.write('\nFraction of mergers within Hubble time:         '+str(np.shape(GWt_mergertime[GWt_mergertime < tH.value_in(units.Myr)])[0]) +'/'+str(np.shape(GWt_mergertime)[0]))
-            
-            file.write('\nFraction of (IMBH-IMBH)-SMBH tertiaries:         '+str(np.shape(GW_tmass[(GW_tmass_in < 10**6) & (GW_tmass_out > 10**6)])[0]) +'/'+str(np.shape(GW_tmass)[0]))
-            file.write('\nFraction of (IMBH-SMBH)-IMBH tertiaries:         '+str(np.shape(GW_tmass[(GW_tmass_out < 10**6) & (GW_tmass_out > 10**6)])[0]) +'/'+str(np.shape(GW_tmass)[0]))
-            file.write('\nFraction of (IMBH-IMBH)-IMBH tertiaries:         '+str(np.shape(GW_tmass[(GW_tmass_in < 10**6) & (GW_tmass_out < 10**6)])[0]) +'/'+str(np.shape(GW_tmass)[0]))"""
+                """file.write('\nFraction of (IMBH-IMBH)-SMBH tertiaries:         '+str(np.shape(GW_tmass[(GW_tmass_in < 10**6) & (GW_tmass_out > 10**6)])[0]) +'/'+str(np.shape(GW_tmass)[0]))
+                file.write('\nFraction of (IMBH-SMBH)-IMBH tertiaries:         '+str(np.shape(GW_tmass[(GW_tmass_out < 10**6) & (GW_tmass_out > 10**6)])[0]) +'/'+str(np.shape(GW_tmass)[0]))
+                file.write('\nFraction of (IMBH-IMBH)-IMBH tertiaries:         '+str(np.shape(GW_tmass[(GW_tmass_in < 10**6) & (GW_tmass_out < 10**6)])[0]) +'/'+str(np.shape(GW_tmass)[0]))"""
     
     def system_formation_plotter(self):
         """
@@ -456,8 +553,7 @@ class sustainable_sys(object):
         """
 
         plot_ini = plotter_setup()
-        mtick_formatter_y = mtick.FormatStrFormatter('%0.4f')
-        mtick_formatter_x = mtick.FormatStrFormatter('%0.2f')
+        mtick_formatter = mtick.FormatStrFormatter('%0.3f')
         integrator = ['Hermite', 'GRX']
         
         dedt = [[ ], [ ]]
@@ -473,18 +569,18 @@ class sustainable_sys(object):
             dedt[j] = np.asarray(dedt[j])
             dadt[j] = np.asarray(dadt[j])
             
-        p21ymin = 1.1*(np.nanmin((dedt[0])))
-        p21ymax = 1.1*(np.nanmax((dedt[0])))
-        p21xmin = 1.1*(np.nanmin((dadt[0])))
-        p21xmax = 1.1*(np.nanmax((dadt[0])))
-        normalise_p1 = plt.Normalize(0, max(max(self.binary_systems[0]), max(self.binary_systems[1])))
+        p21ymin = 1100*(np.nanmin((dedt[0])))
+        p21ymax = 1100*(np.nanmax((dedt[0])))
+        p21xmin = 1100*(np.nanmin((dadt[0])))
+        p21xmax = 1100*(np.nanmax((dadt[0])))
+        normalise_p1 = plt.Normalize(0, (max(self.binary_systems[0])))#, max(self.binary_systems[1])))
         normalise_p2 = plt.Normalize(10, 40)
     
         fig = plt.figure(figsize=(11, 6))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax_ = [ax1, ax2]
-        for int_ in range(2):
+        for int_ in range(1):
             ini_pop = np.unique(self.pop[int_])
             ax_[int_].set_title(integrator[int_])
             ax_[int_].set_xlabel(r'IMBH Population [$N$]')
@@ -493,7 +589,7 @@ class sustainable_sys(object):
             colour_axes = ax_[int_].scatter(ini_pop, np.log10(self.binary_occupation[int_]), edgecolors  = 'black', c = (self.binary_systems[int_]), norm = (normalise_p1), label = 'Stable Binary')
             ax_[int_].scatter(ini_pop, np.log10(self.tertiary_occupation[int_]), edgecolors  = 'black', c = (self.tertiary_systems[int_]), norm = (normalise_p1), marker = 's', label = 'Stable Triple')
         plot_ini.tickers_pop(ax1, self.pop[0], 'Hermite')
-        plot_ini.tickers_pop(ax2, self.pop[1], 'GRX')
+        #plot_ini.tickers_pop(ax2, self.pop[1], 'GRX')
 
         x_arr = np.linspace(5,110)
         y_arr1 = [0.02*i-3 for i in x_arr]
@@ -508,20 +604,19 @@ class sustainable_sys(object):
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax = [ax1, ax2]
-        ax1.set_ylabel(r'$\langle \dot{(1-e)} \rangle_{\rm{SMBH}}$ [Gyr$^{-1}$]')
+        ax1.set_ylabel(r'$\langle \dot{(1-e)} \rangle_{\rm{SMBH}}$ [$10^{3}\times$ Gyr$^{-1}$]')
         for ax_ in ax:
             plot_ini.tickers(ax_, 'plot')
-            ax_.set_xlabel(r'$\langle \dot{a}^{-1} \rangle_{\rm{SMBH}}$ [pc$^{-1}$Gyr$^{-1}$]')            
+            ax_.set_xlabel(r'$\langle \dot{a}^{-1} \rangle_{\rm{SMBH}}$ [mpc$^{-1}$Gyr$^{-1}$]')            
             ax_.set_xlim(0.9*p21xmin, 1.1*p21xmax)
             ax_.set_ylim(0.9*p21ymin, 1.1*p21ymax)
-            ax_.yaxis.set_major_formatter(mtick_formatter_y)        
-            ax_.xaxis.set_major_formatter(mtick_formatter_x)
-        for int_ in range(2):
-            print(dadt, dedt)
+            ax_.yaxis.set_major_formatter(mtick_formatter)        
+            ax_.xaxis.set_major_formatter(mtick_formatter)
+        for int_ in range(1):
             ax[int_].axvline(0, color = 'black', linestyle = ':')
-            ax[int_].text(0.001, 0.0025, 'Hardening', rotation = 270)
-            ax[int_].text(-0.004, 0.0025, 'Softening', rotation = 90)
-            colour_axes = ax[int_].scatter((dadt[int_]), (dedt[int_]), 
+            ax[int_].text(0.045, 0.2, 'Hardening', rotation = 270)
+            ax[int_].text(-0.14, 0.2, 'Softening', rotation = 90)
+            colour_axes = ax[int_].scatter(1000*(dadt[int_]), 1000*(dedt[int_]), 
                                            norm = normalise_p2, edgecolors = 'black', c = self.pop[int_])
             ax[int_].set_title(integrator[int_])
 
@@ -534,6 +629,7 @@ class sustainable_sys(object):
         GW_calcs = gw_calcs()
         plot_ini = plotter_setup()
 
+        plt.clf()
         fig = plt.figure(figsize=(8, 6))
         gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
                               left=0.1, right=0.9, bottom=0.1, top=0.9,
@@ -546,6 +642,7 @@ class sustainable_sys(object):
         softb_idx = [ ]
         hardt_idx = [ ]
         softt_idx = [ ]
+        """
         for int_ in range(1):
             bhidx = np.where(self.hard_bin[int_] > 0)[0]
             bsidx = np.where(self.hard_bin[int_] < 0)[0]
@@ -554,29 +651,113 @@ class sustainable_sys(object):
             hardb_idx[int_].append(bhidx)
             softb_idx[int_].append(bsidx)
             hardt_idx[int_].append(thidx)
-            softt_idx[int_].append(tsidx)
+            softt_idx[int_].append(tsidx)"""
 
-        ####### CALCULATE FOR TERTIARY, HARD BINARY, SOFT BINARY AND ALL + NOTE tGW < tH
+        integrators = ['Hermite', 'GRX']
+        ####### PLOT FOR ALL ########
         for int_ in range(1):
-            int_ += 1
-            GW_calcs.scatter_hist(self.GW_freqbin[int_], self.GW_strainbin[int_],
-                                  self.GW_freqter[int_], self.GW_strainter[int_],
+           # int_ += 1
+            GW_calcs.scatter_hist(self.GWfreq_bin[int_], self.GWstra_bin[int_],
+                                  self.GWfreq_ter[int_], self.GWstra_ter[int_],
                                   ax, ax1, ax2, 'Binary', 'Tertiary')
             ax.set_xlabel(r'$\log_{10}f$ [Hz]')
             ax.set_ylabel(r'$\log_{10}h$')
-            ax1.set_title(str(self.integrator[int_]))
+            ax1.set_title(str(integrators[int_]))
             plot_ini.tickers(ax, 'plot')
             plot_ini.tickers(ax1, 'plot')
             plot_ini.tickers(ax2, 'plot')
             ax.set_ylim(-30, -12.2)
             ax.set_xlim(-12.5, 0.1)
-            plt.savefig('figures/binary_hierarchical/'+str(self.integrator[int_])+'GW_freq_strain_maximise_diagram.png', dpi = 500, bbox_inches='tight')
+            plt.savefig('figures/binary_hierarchical/'+str(integrators[int_])+'GW_freq_strain_maximise_diagram.png', dpi = 500, bbox_inches='tight')
             plt.clf()
 
+        for int_ in range(1):
+            fig = plt.figure(figsize=(8, 6))
+            gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
+                                left=0.1, right=0.9, bottom=0.1, top=0.9,
+                                wspace=0.05, hspace=0.05)
+            ax = fig.add_subplot(gs[1, 0])
+            ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
+            ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
 
+            GWfreq_binIMBH = self.array_rewrite(self.GWfreq_binIMBH[int_], 'nested', False)
+            GWstra_binIMBH = self.array_rewrite(self.GWstra_binIMBH[int_], 'nested', False)
+            GWfreq_terIMBH = self.array_rewrite(self.GWfreq_terIMBH[int_], 'nested', False)
+            GWstra_terIMBH = self.array_rewrite(self.GWstra_terIMBH[int_], 'nested', False)
+            GW_calcs.scatter_hist(GWfreq_binIMBH, GWstra_binIMBH,
+                                  GWfreq_terIMBH, GWstra_terIMBH,
+                                  ax, ax1, ax2, 'Binary', 'Tertiary')
+            ax.set_xlabel(r'$\log_{10}f$ [Hz]')
+            ax.set_ylabel(r'$\log_{10}h$')
+            ax1.set_title(str(integrators[int_]))
+            plot_ini.tickers(ax, 'plot')
+            plot_ini.tickers(ax1, 'plot')
+            plot_ini.tickers(ax2, 'plot')
+            ax.set_ylim(-30, -12.2)
+            ax.set_xlim(-12.5, 0.1)
+            plt.savefig('figures/binary_hierarchical/'+str(integrators[int_])+'GW_freq_strain_IMBH_diagram.png', dpi = 500, bbox_inches='tight')
+            plt.clf()
+
+            fig, ax = plt.subplots()
+
+            GWfreq_binIMBH = self.array_rewrite(self.GWfreq_binIMBH[int_][0], 'not', False)
+            GWstra_binIMBH = self.array_rewrite(self.GWstra_binIMBH[int_][0], 'not', False)
+            GWfreq_terIMBH = self.array_rewrite(self.GWfreq_terIMBH[int_][0], 'not', False)
+            GWstra_terIMBH = self.array_rewrite(self.GWstra_terIMBH[int_][0], 'not', False)
+
+            print(len(GWfreq_binIMBH))
+            GWtime_binIMBH = [np.log10(1000*i) for i in range(len(GWfreq_binIMBH))]
+            GWtime_terIMBH = [np.log10(1000*i) for i in range(len(GWfreq_terIMBH))]
+            colour_axes = ax.scatter(np.log10(GWfreq_binIMBH), np.log10(GWstra_binIMBH), s = 5, c = GWtime_binIMBH)
+            if len(GWfreq_terIMBH) > 0:
+                ax.scatter(np.log10(GWfreq_terIMBH), np.log10(GWstra_terIMBH), c = GWtime_terIMBH)
+            plt.colorbar(colour_axes, ax=ax, label = r'$\log_{10} t_{\rm{sys}}$ [yrs]')
+
+            # LISA
+            lisa = li.LISA() 
+            x_temp = np.linspace(10**-5, 1, 1000)
+            Sn = lisa.Sn(x_temp)
+
+            # SKA
+            SKA = np.load(os.path.join(os.path.dirname(__file__), 'SGWBProbe/files/hc_SKA.npz'))
+            SKA_freq = SKA['x']
+            SKA_hc = SKA['y']
+            SKA_strain = SKA_hc**2/SKA_freq
+
+            # BBO 
+            BBO = np.load(os.path.join(os.path.dirname(__file__), 'SGWBProbe/files/S_h_BBO_STAR.npz'))
+            BBO_freq = BBO['x']
+            BBO_strain = BBO['y']
+
+            # muAres 
+            Ares = np.load(os.path.join(os.path.dirname(__file__), 'SGWBProbe/files/S_h_muAres_nofgs.npz'))
+            Ares_freq = Ares['x']
+            Ares_strain = Ares['y']
+
+            ax.plot(np.log10(x_temp), np.log10(np.sqrt(x_temp*Sn)), color = 'slateblue')
+            ax.plot(np.log10(BBO_freq), np.log10(np.sqrt(BBO_freq*BBO_strain)), linewidth='1.5', color='blue')
+            ax.plot(np.log10(Ares_freq), np.log10(np.sqrt(Ares_freq*Ares_strain)), linewidth='1.5', color='red')
+            ax.plot(np.log10(SKA_freq), np.log10(np.sqrt(SKA_freq*SKA_strain)), linewidth='1.5', color='orangered')
+            ax.text(-9.26, -15.9, 'SKA', fontsize ='small', rotation = 322, color = 'orangered')
+            ax.text(-4.28, -18.2, 'LISA', fontsize ='small', rotation = 311, color = 'slateblue')
+            ax.text(-5.95, -19, r'$\mu$Ares', fontsize ='small', rotation = 310, color = 'red')
+            ax.text(-1.32, -24, 'BBO', fontsize ='small', rotation = 321, color = 'blue')
+            
+            ax.set_xlabel(r'$\log_{10}f$ [Hz]')
+            ax.set_ylabel(r'$\log_{10}h$')
+            ax.set_title(str(integrators[int_]))
+            plot_ini.tickers(ax, 'plot')
+            plot_ini.tickers(ax1, 'plot')
+            plot_ini.tickers(ax2, 'plot')
+            ax.set_ylim(-30, -12.2)
+            ax.set_xlim(-12.5, 0.1)
+            plt.savefig('figures/binary_hierarchical/'+str(integrators[int_])+'GW_freq_strain_single_streak_diagram.png', dpi = 500, bbox_inches='tight')
+            plt.clf()
+
+"""
 print('...sustainable_bintert_plotters...')
 cst = sustainable_sys()
 cst.new_data_extractor()
 cst.combine_data()
 cst.system_formation_plotter()
-#cst.GW_emissions()
+#cst.GW_emissions()"""

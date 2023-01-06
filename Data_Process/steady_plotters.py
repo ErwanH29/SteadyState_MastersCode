@@ -235,5 +235,4 @@ class stability_plotters(object):
                 file.write('\nThe logarithmic factor goes as:               '+str(log_c))
                 file.write('\nThe final raw data:                           '+str(pop[int_].flatten()))
                 file.write('\nSimulated time [Myr]                          '+str(N_parti_avg[int_].flatten()))
-                file.write('\nStandard dev. [Myr]:                          '+str(N_parti_std[int_].flatten()))
 
