@@ -705,16 +705,16 @@ def energy_plotter(int_string):
             dE_array[i-1] = vals[7]
             PE_array[i-1] = vals[9].value_in(units.J)
 
-    fig = plt.figure(figsize=(12.5, 8))
+    fig = plt.figure(figsize=(12, 11))
     ax1 = fig.add_subplot(221)
     ax2 = fig.add_subplot(222)
     ax1.set_title('Energy Evolution in Time')
     ax2.set_title('Energy Error')
 
     for ax_ in [ax1, ax2]:
-        plot_ini.tickers(ax_, 'plot')  
         ax_.set_xlabel(r'Time [Myr]')
         ax_.set_yscale('log')
+        plot_ini.tickers(ax_, 'plot')  
     ax1.set_ylabel(r'Energy [J]')
     ax2.set_ylabel(r'$\frac{|E(t)-E_0|}{|E_0|}$')
 
@@ -783,6 +783,9 @@ def global_properties():
         SMBHy = []
         SMBHz = []
         SMBH_sample = [[], [], []]
+
+        total_data = 0
+        ecc_data = 0
         
         for file_ in range(len(data)):
             with open(chaotic[file_], 'rb') as input_file:
@@ -821,9 +824,15 @@ def global_properties():
                                     ter_ecc = [ ]
 
                                     for j in range(col_len-1):
+                                        total_data += 1
                                         time_step = particle.iloc[j]
                                         time_arr = etracker.iloc[j]
                                         SMBH_coords = SMBH_data.iloc[j]
+
+                                        if time_step[8][2] < 1:
+                                            ecc_data += 1
+                                        if time_step[8][1] < 1:
+                                            ecc_data += 1
 
                                         KE.append(np.log10(time_step[4].value_in(units.J)))
                                         ecc_SMBH.append(np.log10(1-time_step[8][0]))
@@ -872,6 +881,8 @@ def global_properties():
                                     terecc_arr[iter].append(ter_ecc)
                                     vel_arr[iter].append(pvel)
                                     KE_arr[iter].append(KE)
+                                    
+        print('For'+str(integrator[int_])+'Ecc < 1: ', ecc_data, ' / ', total_data)
             
     c_hist = ['red', 'blue']
 
@@ -1017,14 +1028,14 @@ def spatial_plotter(int_string):
             if ctracker.iloc[0][5] > 0 and ctracker.iloc[0][6] >= 10:
                 with open(ptracker_files[file_], 'rb') as input_file:
                     file_size = os.path.getsize(ptracker_files[file_])
-                    if file_size < 2.8e9:
+                    if file_size < 2e9 and file_ > 120:
                         print('Reading File ', file_, ' : ', input_file)
                         ptracker = pkl.load(input_file)
                         with open(etracker_files[file_], 'rb') as input_file:
                             etracker = pkl.load(input_file)
 
                         col_len_raw = np.shape(ptracker)[1]-1
-                        col_len = round(col_len_raw**0.6)
+                        col_len = round(col_len_raw**0.8)
                         parti_size = 20+len(ptracker)**-0.5
 
                         line_x = np.empty((len(ptracker), col_len))
@@ -1045,7 +1056,7 @@ def spatial_plotter(int_string):
                         time = np.empty((col_len_raw - 1))
                         dE_array = np.empty((col_len_raw - 1))
 
-                        for i in range(col_len_raw):
+                        for i in range(col_len_raw-1):
                             if i == 0:
                                 pass
                             else:

@@ -231,7 +231,6 @@ class stability_plotters(object):
                 file.write('\n                                              '+str(full_simul[int_]))
                 file.write('\nThe slope of the curve goes as:               '+str(slope))
                 file.write('\nThe power-law of the lnN goes as:             '+str(beta))
-                file.write('\nThe power-law of the N goes as:               '+str(beta2))
                 file.write('\nThe logarithmic factor goes as:               '+str(log_c))
                 file.write('\nThe final raw data:                           '+str(pop[int_].flatten()))
                 file.write('\nSimulated time [Myr]                          '+str(N_parti_avg[int_].flatten()))

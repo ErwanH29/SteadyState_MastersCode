@@ -29,6 +29,7 @@ class ejection_stats(object):
         for int_ in range(2):
             for file_ in range(len(filest[int_])):
                 with open(filesc[int_][file_], 'rb') as input_file:
+                    print('Reading file: ', input_file)
                     ctracker = pkl.load(input_file)
                     if ctracker.iloc[0][5] > 0 and ctracker.iloc[0][6] > 5:
                         print(ctracker)
@@ -226,6 +227,7 @@ class ejection_stats(object):
                 avg_vesc = np.asarray(avg_vesc)
 
                 file.write('\nData for '+str(self.integrator[int_]))
+                file.write('\nPopulations counts                           ' + str(in_pop) + ' : ' + str(samples))
                 file.write('\nPopulations average escape velocity          ' + str(in_pop) + ' : ' + str(avg_vesc) + ' kms')
                 file.write('\nPopulations average escape location distance ' + str(in_pop) + ' : ' + str(avg_pos[int_]) + ' pc')
                 file.write('\nPopulations min. escape velocity             ' + str(in_pop) + ' : ' + str(minvel) + ' kms')

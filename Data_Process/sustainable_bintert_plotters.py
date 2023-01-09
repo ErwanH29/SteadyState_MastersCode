@@ -26,17 +26,17 @@ class sustainable_sys(object):
         print('!!!!!! WARNING THIS WILL TAKE A WHILE !!!!!!!')
         filenameH = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
         filenameGRX = glob.glob('/media/erwanh/Elements/GRX/particle_trajectory/*')
-        filename = [natsort.natsorted(filenameH)[8:], natsort.natsorted(filenameGRX)]
+        filename = [natsort.natsorted(filenameH)[63:], natsort.natsorted(filenameGRX)]
         ints = ['Hermite', 'GRX']
-        count = 8
+        count = 64
     
         dir = os.path.join('/home/erwanh/Desktop/SteadyStateBH/Data_Process/figures/steady_time/Sim_summary.txt')
         with open(dir) as f:
             line = f.readlines()
 
-            popG = line[12][48:-2] 
-            avgG = line[19][48:-2]
-            avgG2 = line[20][3:-2] 
+            popG = line[11][48:-2] 
+            avgG = line[17][48:-2]
+            avgG2 = line[18][3:-2] 
             popG_data = popG.split()
             avgG_data = avgG.split()
             avgG2_data = avgG2.split()
@@ -379,6 +379,8 @@ class sustainable_sys(object):
         self.GWfreq_binHard = [[ ], [ ]]
         self.GWstra_binHard = [[ ], [ ]]
 
+        sims = [[10, 19, 20], [ ]]
+
         with open('figures/binary_hierarchical/output/system_summary.txt', 'w') as file:
             integrator = ['Hermite', 'GRX']
             for int_ in range(2):
@@ -394,7 +396,9 @@ class sustainable_sys(object):
 
                 pop_arr = np.unique(self.pop[int_])
                 file.write('Data for '+str(integrator[int_]+' in pc'))
+                iter = -1
                 for pop_ in pop_arr:
+                    iter += 1
                     self.unique_pops[int_].append(pop_)
                     idx = np.argwhere(self.pop[int_] == pop_).flatten()
                     bform_time = [ ]
@@ -499,11 +503,7 @@ class sustainable_sys(object):
                     self.tertiary_hard[int_].append(hard_ter)
                     self.GWt_mergers[int_].append(ter_data_merge)
 
-                    if int_ == 0:
-                        no_samples = 20
-                    else:
-                        no_samples = 40
-                    self.binary_systems[int_].append(bin_data/no_samples)
+                    self.binary_systems[int_].append(bin_data/sims[int_][iter])
                     self.binary_occupation[int_].append(np.mean(bin_occ))
                     self.tertiary_systems[int_].append(len(np.asarray(self.semi_t_min[int_][data_])[np.asarray(self.semi_t_min[int_][data_]) > 0])/len(idx))
                     self.tertiary_occupation[int_].append(np.mean(ter_occ))
@@ -657,9 +657,13 @@ class sustainable_sys(object):
         ####### PLOT FOR ALL ########
         for int_ in range(1):
            # int_ += 1
+            tertiary = False
+            if len(self.GWfreq_ter[int_]) > 0:
+                tertiary = True
             GW_calcs.scatter_hist(self.GWfreq_bin[int_], self.GWstra_bin[int_],
                                   self.GWfreq_ter[int_], self.GWstra_ter[int_],
-                                  ax, ax1, ax2, 'Binary', 'Tertiary')
+                                  ax, ax1, ax2, 'Binary', 'Tertiary',
+                                  tertiary, False)
             ax.set_xlabel(r'$\log_{10}f$ [Hz]')
             ax.set_ylabel(r'$\log_{10}h$')
             ax1.set_title(str(integrators[int_]))
@@ -684,9 +688,16 @@ class sustainable_sys(object):
             GWstra_binIMBH = self.array_rewrite(self.GWstra_binIMBH[int_], 'nested', False)
             GWfreq_terIMBH = self.array_rewrite(self.GWfreq_terIMBH[int_], 'nested', False)
             GWstra_terIMBH = self.array_rewrite(self.GWstra_terIMBH[int_], 'nested', False)
+
+            tertiary = False
+            if len(GWstra_terIMBH) > 0:
+                tertiary = True
+
             GW_calcs.scatter_hist(GWfreq_binIMBH, GWstra_binIMBH,
                                   GWfreq_terIMBH, GWstra_terIMBH,
-                                  ax, ax1, ax2, 'Binary', 'Tertiary')
+                                  ax, ax1, ax2, 'Binary', 'Tertiary',
+                                  tertiary, False)
+
             ax.set_xlabel(r'$\log_{10}f$ [Hz]')
             ax.set_ylabel(r'$\log_{10}h$')
             ax1.set_title(str(integrators[int_]))
@@ -695,23 +706,14 @@ class sustainable_sys(object):
             plot_ini.tickers(ax2, 'plot')
             ax.set_ylim(-30, -12.2)
             ax.set_xlim(-12.5, 0.1)
-            plt.savefig('figures/binary_hierarchical/'+str(integrators[int_])+'GW_freq_strain_IMBH_diagram.png', dpi = 500, bbox_inches='tight')
+            plt.savefig('figures/binary_hierarchical/'+str(integrators[int_])+'GW_freq_strain_hardbins_diagram.png', dpi = 500, bbox_inches='tight')
             plt.clf()
 
             fig, ax = plt.subplots()
 
-            GWfreq_binIMBH = self.array_rewrite(self.GWfreq_binIMBH[int_][0], 'not', False)
-            GWstra_binIMBH = self.array_rewrite(self.GWstra_binIMBH[int_][0], 'not', False)
-            GWfreq_terIMBH = self.array_rewrite(self.GWfreq_terIMBH[int_][0], 'not', False)
-            GWstra_terIMBH = self.array_rewrite(self.GWstra_terIMBH[int_][0], 'not', False)
-
-            print(len(GWfreq_binIMBH))
-            GWtime_binIMBH = [np.log10(1000*i) for i in range(len(GWfreq_binIMBH))]
-            GWtime_terIMBH = [np.log10(1000*i) for i in range(len(GWfreq_terIMBH))]
-            colour_axes = ax.scatter(np.log10(GWfreq_binIMBH), np.log10(GWstra_binIMBH), s = 5, c = GWtime_binIMBH)
-            if len(GWfreq_terIMBH) > 0:
-                ax.scatter(np.log10(GWfreq_terIMBH), np.log10(GWstra_terIMBH), c = GWtime_terIMBH)
-            plt.colorbar(colour_axes, ax=ax, label = r'$\log_{10} t_{\rm{sys}}$ [yrs]')
+            """for j in range(len(self.GWfreq_binIMBH[int_])):
+                print(max(self.GWfreq_binIMBH[int_][j]))
+                print(j)"""
 
             # LISA
             lisa = li.LISA() 
@@ -734,14 +736,27 @@ class sustainable_sys(object):
             Ares_freq = Ares['x']
             Ares_strain = Ares['y']
 
-            ax.plot(np.log10(x_temp), np.log10(np.sqrt(x_temp*Sn)), color = 'slateblue')
-            ax.plot(np.log10(BBO_freq), np.log10(np.sqrt(BBO_freq*BBO_strain)), linewidth='1.5', color='blue')
-            ax.plot(np.log10(Ares_freq), np.log10(np.sqrt(Ares_freq*Ares_strain)), linewidth='1.5', color='red')
-            ax.plot(np.log10(SKA_freq), np.log10(np.sqrt(SKA_freq*SKA_strain)), linewidth='1.5', color='orangered')
-            ax.text(-9.26, -15.9, 'SKA', fontsize ='small', rotation = 322, color = 'orangered')
-            ax.text(-4.28, -18.2, 'LISA', fontsize ='small', rotation = 311, color = 'slateblue')
-            ax.text(-5.95, -19, r'$\mu$Ares', fontsize ='small', rotation = 310, color = 'red')
-            ax.text(-1.32, -24, 'BBO', fontsize ='small', rotation = 321, color = 'blue')
+            ax.plot(np.log10(x_temp), np.log10(np.sqrt(x_temp*Sn)), color = 'slateblue', zorder = 1)
+            ax.plot(np.log10(BBO_freq), np.log10(np.sqrt(BBO_freq*BBO_strain)), linewidth='1.5', color='blue', zorder = 2)
+            ax.plot(np.log10(Ares_freq), np.log10(np.sqrt(Ares_freq*Ares_strain)), linewidth='1.5', color='red', zorder = 3)
+            ax.plot(np.log10(SKA_freq), np.log10(np.sqrt(SKA_freq*SKA_strain)), linewidth='1.5', color='orangered', zorder = 4)
+            ax.text(-9.26, -15.9, 'SKA', fontsize ='small', rotation = 319, color = 'orangered')
+            ax.text(-4.28, -18.2, 'LISA', fontsize ='small', rotation = 308, color = 'slateblue')
+            ax.text(-5.98, -19, r'$\mu$Ares', fontsize ='small', rotation = 306, color = 'red')
+            ax.text(-1.32, -24, 'BBO', fontsize ='small', rotation = 319, color = 'blue')
+
+            GWfreq_binIMBH = self.array_rewrite(self.GWfreq_binIMBH[int_][9], 'not', False)
+            GWstra_binIMBH = self.array_rewrite(self.GWstra_binIMBH[int_][9], 'not', False)
+            GWfreq_terIMBH = self.array_rewrite(self.GWfreq_terIMBH[int_][9], 'not', False)
+            GWstra_terIMBH = self.array_rewrite(self.GWstra_terIMBH[int_][9], 'not', False)
+
+            GWtime_binIMBH = [(1e-3*i) for i in range(len(GWfreq_binIMBH))]
+            GWtime_terIMBH = [(1e-3*i) for i in range(len(GWfreq_terIMBH))]
+            colour_axes = ax.scatter(np.log10(GWfreq_binIMBH), np.log10(GWstra_binIMBH), s = 7, c = GWtime_binIMBH, zorder = 5)
+            if len(GWfreq_terIMBH) > 0:
+                ax.scatter(np.log10(GWfreq_terIMBH), np.log10(GWstra_terIMBH), c = GWtime_terIMBH)
+            plt.colorbar(colour_axes, ax=ax, label = r'$t_{\rm{sys}}$ [Myr]')
+
             
             ax.set_xlabel(r'$\log_{10}f$ [Hz]')
             ax.set_ylabel(r'$\log_{10}h$')
@@ -751,8 +766,9 @@ class sustainable_sys(object):
             plot_ini.tickers(ax2, 'plot')
             ax.set_ylim(-30, -12.2)
             ax.set_xlim(-12.5, 0.1)
-            plt.savefig('figures/binary_hierarchical/'+str(integrators[int_])+'GW_freq_strain_single_streak_diagram.png', dpi = 500, bbox_inches='tight')
+            plt.savefig('figures/binary_hierarchical/'+str(integrators[int_])+'GW_freq_strain_single_streak_diagram.pdf', dpi = 500, bbox_inches='tight')
             plt.clf()
+
 
 """
 print('...sustainable_bintert_plotters...')

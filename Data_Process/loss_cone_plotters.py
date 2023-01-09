@@ -62,7 +62,7 @@ class loss_cone(object):
                 with open(cfile[int_][file_], 'rb') as input_file:
                     chaotic_tracker = pkl.load(input_file)
                     pop = chaotic_tracker.iloc[0][6]
-                    if pop <= 30 and pop > 5:
+                    if pop <= 40 and pop > 5:
                         with open(pfile[int_][file_], 'rb') as input_file:
                             file_size = os.path.getsize(pfile[int_][file_])
                             if file_size < 2.7e9:
