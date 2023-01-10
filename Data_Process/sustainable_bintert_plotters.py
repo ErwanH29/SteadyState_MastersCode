@@ -151,7 +151,7 @@ class sustainable_sys(object):
                                                     ecc_outer = data.iloc[parti_][col_][8][2]
 
                                                     #Calculate tertiary. The stability equality is based on Mardling and Aarseth 2001
-                                                    if ecc_outer < 1 and semi_outer < 5e-2 | units.parsec and semi_outer > 5*nn_semi:
+                                                    if ecc_outer < 1:
                                                         for part_ in range(np.shape(data)[0]):
                                                             if data.iloc[part_][0][0] == data.iloc[parti_][col_][6][2]:
                                                                 mass_outer = data.iloc[part_][0][1]
@@ -208,7 +208,7 @@ class sustainable_sys(object):
                                     dedt.append(np.mean(temp_dedt))
                                     dadt.append(np.mean(temp_dadt))
 
-                                    path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/bin_hier_systems/'
+                                    path = '/home/erwanh/Desktop/SteadyStateBH/Data_Process/data/bin_hier_systems2/'
                                     stab_tracker = pd.DataFrame()
                                     df_stabtime = pd.Series({'Integrator': integrator,
                                                             'Population': pop,
@@ -277,6 +277,7 @@ class sustainable_sys(object):
         various quantitative results.
         """
 
+        print('Extracting data')
         GW_calcs = gw_calcs()
 
         self.integrator = [[ ], [ ]]
@@ -379,7 +380,7 @@ class sustainable_sys(object):
         self.GWfreq_binHard = [[ ], [ ]]
         self.GWstra_binHard = [[ ], [ ]]
 
-        sims = [[10, 19, 20], [ ]]
+        sims = [[10, 19, 20, 20], [40, 40, 40, 40, 40, 40, 40]]
 
         with open('figures/binary_hierarchical/output/system_summary.txt', 'w') as file:
             integrator = ['Hermite', 'GRX']
@@ -441,8 +442,9 @@ class sustainable_sys(object):
                         if np.asarray(self.hard_bin[int_][data_])[idx_nbin-1] > 0:
                             hard_bin += 1
                             hard_Bool = True
-                        if np.asarray(self.GW_tmass[int_][data_])[idx_tbin-1] < 1e6:
-                            IMBH_ter += 1
+                        if np.shape(self.GW_tmass[int_][data_])[0] > 1:
+                            if np.asarray(self.GW_tmass[int_][data_])[idx_tbin-1] < 1e6:
+                                IMBH_ter += 1
                         if np.asarray(self.hard_ter[int_][data_])[idx_tbin-1] > 0:
                             hard_ter += 1
                         
@@ -580,22 +582,16 @@ class sustainable_sys(object):
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax_ = [ax1, ax2]
-        for int_ in range(1):
+        for int_ in range(2):
             ini_pop = np.unique(self.pop[int_])
             ax_[int_].set_title(integrator[int_])
             ax_[int_].set_xlabel(r'IMBH Population [$N$]')
             ax_[int_].set_ylabel(r'$\log_{10}(t_{\rm{sys}} / t_{\rm{sim}})$')
-            ax_[int_].set_ylim(-4, 0)
+            ax_[int_].set_ylim(-10, 0)
             colour_axes = ax_[int_].scatter(ini_pop, np.log10(self.binary_occupation[int_]), edgecolors  = 'black', c = (self.binary_systems[int_]), norm = (normalise_p1), label = 'Stable Binary')
             ax_[int_].scatter(ini_pop, np.log10(self.tertiary_occupation[int_]), edgecolors  = 'black', c = (self.tertiary_systems[int_]), norm = (normalise_p1), marker = 's', label = 'Stable Triple')
-        plot_ini.tickers_pop(ax1, self.pop[0], 'Hermite')
-        #plot_ini.tickers_pop(ax2, self.pop[1], 'GRX')
-
-        x_arr = np.linspace(5,110)
-        y_arr1 = [0.02*i-3 for i in x_arr]
-        y_arr2 = [0.05*i-3 for i in x_arr]
-        ax1.plot(x_arr, y_arr1, color = 'black', linestyle = ':')
-        ax2.plot(x_arr, y_arr2, color = 'black', linestyle = ':')
+        plot_ini.tickers_pop(ax1, self.pop[1], 'GRX')
+        plot_ini.tickers_pop(ax2, self.pop[1], 'GRX')
         ax2.legend()
         plt.colorbar(colour_axes, ax=ax2, label = r'$\langle N_{\rm{sys}} \rangle$ ')
         plt.savefig('figures/binary_hierarchical/sys_formation_N_plot.pdf', dpi=300, bbox_inches='tight')
@@ -612,7 +608,7 @@ class sustainable_sys(object):
             ax_.set_ylim(0.9*p21ymin, 1.1*p21ymax)
             ax_.yaxis.set_major_formatter(mtick_formatter)        
             ax_.xaxis.set_major_formatter(mtick_formatter)
-        for int_ in range(1):
+        for int_ in range(2):
             ax[int_].axvline(0, color = 'black', linestyle = ':')
             ax[int_].text(0.045, 0.2, 'Hardening', rotation = 270)
             ax[int_].text(-0.14, 0.2, 'Softening', rotation = 90)
@@ -655,7 +651,7 @@ class sustainable_sys(object):
 
         integrators = ['Hermite', 'GRX']
         ####### PLOT FOR ALL ########
-        for int_ in range(1):
+        for int_ in range(2):
            # int_ += 1
             tertiary = False
             if len(self.GWfreq_ter[int_]) > 0:
@@ -675,7 +671,7 @@ class sustainable_sys(object):
             plt.savefig('figures/binary_hierarchical/'+str(integrators[int_])+'GW_freq_strain_maximise_diagram.png', dpi = 500, bbox_inches='tight')
             plt.clf()
 
-        for int_ in range(1):
+        for int_ in range(2):
             fig = plt.figure(figsize=(8, 6))
             gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
                                 left=0.1, right=0.9, bottom=0.1, top=0.9,

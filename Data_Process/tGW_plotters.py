@@ -589,7 +589,7 @@ class gw_calcs(object):
         tgw = (5/256) * (constants.c)**5/(constants.G**3)*(semi**4*(1-ecc**2)**3.5)/(red_mass*tot_mass**2)
         return tgw
 
-    def scatter_hist(self, x1, y1, x2, y2, ax, ax_histf, ax_histh, label1, label2, data_exist, data_filt, iter_Test):
+    def scatter_hist(self, x1, y1, x2, y2, ax, ax_histf, ax_histh, label1, label2, data_exist, data_filt):
         """
         Function to plot the frequency/strain histogram along its scatter plot.
         Use of: https://arxiv.org/pdf/2007.04241.pdf and https://arxiv.org/pdf/1408.0740.pdf 
@@ -620,7 +620,6 @@ class gw_calcs(object):
         ax_histf.tick_params(axis="x", labelbottom=False)
         ax_histh.tick_params(axis="y", labelleft=False)
 
-        print('1')
         if (data_filt):
             no_data = round(len(x1)**0.9)
             no_data2 = round(len(x2)**0.5)
@@ -633,7 +632,6 @@ class gw_calcs(object):
         kdef_SMBH.density = (kdef_SMBH.density/max(kdef_SMBH.density))
         ax_histf.plot(kdef_SMBH.support, kdef_SMBH.density, color = 'blueviolet', label = label1)
         ax_histf.fill_between(kdef_SMBH.support, kdef_SMBH.density, alpha = 0.35, color = 'blueviolet')
-        print('2')
         kdeh_SMBH = sm.nonparametric.KDEUnivariate(np.log10(y1[:no_data]))
         kdeh_SMBH.fit()
         kdeh_SMBH.density = (kdeh_SMBH.density / max(kdeh_SMBH.density))
@@ -641,36 +639,17 @@ class gw_calcs(object):
         ax_histh.fill_between(kdeh_SMBH.density, kdeh_SMBH.support, alpha = 0.35, color = 'blueviolet')
 
         if (data_exist):
-            if iter_Test > 5:
-                print('4', len(kdeh_SMBH.density), len(kdeh_SMBH.support))
-                kdef_IMBH = sm.nonparametric.KDEUnivariate(np.log10(x2[:no_data2]))
-                print('swag1')
-                kdef_IMBH.fit()
-                kdef_IMBH.density = (kdef_IMBH.density / max(kdef_IMBH.density))
-                print('swag')
-                ax_histf.plot(kdef_IMBH.support, kdef_IMBH.density, color = 'orange', label = label2)
-                print('swag')
-                ax_histf.fill_between(kdef_IMBH.support, kdef_IMBH.density, alpha = 0.35, color = 'orange')
-                print('xd')
-                kdeh_IMBH = sm.nonparametric.KDEUnivariate(np.log10(y2[:no_data2]))
-                kdeh_IMBH.fit()
-                kdeh_IMBH.density = (kdeh_IMBH.density / max(kdeh_IMBH.density))
-                ax_histh.plot(kdeh_IMBH.density, kdeh_IMBH.support, color = 'orange')
-                ax_histh.fill_between(kdeh_IMBH.density, kdeh_IMBH.support, alpha = 0.35, color = 'orange')
-            else:
-                print('4', len(kdeh_SMBH.density), len(kdeh_SMBH.support))
-                kdef_IMBH = sm.nonparametric.KDEUnivariate(np.log10(x2[:no_data2]))
-                kdef_IMBH.fit()
-                kdef_IMBH.density = (kdef_IMBH.density / max(kdef_IMBH.density))
-                ax_histf.plot(kdef_IMBH.support, kdef_IMBH.density, color = 'orange', label = label2)
-                ax_histf.fill_between(kdef_IMBH.support, kdef_IMBH.density, alpha = 0.35, color = 'orange')
-                kdeh_IMBH = sm.nonparametric.KDEUnivariate(np.log10(y2[:no_data2]))
-                kdeh_IMBH.fit()
-                kdeh_IMBH.density = (kdeh_IMBH.density / max(kdeh_IMBH.density))
-                ax_histh.plot(kdeh_IMBH.density, kdeh_IMBH.support, color = 'orange')
-                ax_histh.fill_between(kdeh_IMBH.density, kdeh_IMBH.support, alpha = 0.35, color = 'orange')
-
-        print('5')
+            kdef_IMBH = sm.nonparametric.KDEUnivariate(np.log10(x2[:no_data2]))
+            kdef_IMBH.fit()
+            kdef_IMBH.density = (kdef_IMBH.density / max(kdef_IMBH.density))
+            ax_histf.plot(kdef_IMBH.support, kdef_IMBH.density, color = 'orange', label = label2)
+            ax_histf.fill_between(kdef_IMBH.support, kdef_IMBH.density, alpha = 0.35, color = 'orange')
+            kdeh_IMBH = sm.nonparametric.KDEUnivariate(np.log10(y2[:no_data2]))
+            kdeh_IMBH.fit()
+            kdeh_IMBH.density = (kdeh_IMBH.density / max(kdeh_IMBH.density))
+            ax_histh.plot(kdeh_IMBH.density, kdeh_IMBH.support, color = 'orange')
+            ax_histh.fill_between(kdeh_IMBH.density, kdeh_IMBH.support, alpha = 0.35, color = 'orange')
+           
         ax_histf.set_ylim(0, 1.05)
         ax_histf.set_ylabel(r'$\rho/\rho_{\rm{max}}$')
         ax_histf.legend()
@@ -860,7 +839,7 @@ class gw_calcs(object):
             ax_top[int_].text(-9.5, -3, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
             ax_top[int_].text(-6.6, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
             ax_top[int_].text(-2.55, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+2, color = 'white')
-            ax_top[int_].text(-2.93, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+2, color = 'white')
+            ax_top[int_].text(-2.95, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+2, color = 'white')
 
             self.forecast_interferometer(ax_bot[int_], self.mass_parti[0][0], self.mass_SMBH[0][0])
             ax_bot[int_].plot(x_arr, const_tgw2, color = 'white')
@@ -874,7 +853,6 @@ class gw_calcs(object):
         plt.savefig('figures/gravitational_waves/ecc_semi_bins_IMBH_histogram_t.png', dpi=500, bbox_inches='tight')
         plt.clf()
 
-
         with open('figures/gravitational_waves/output/GW_merger_time.txt', 'w') as file:
             file.write('Values correspond to N <= 20 data')
             for int_ in range(2):
@@ -882,9 +860,9 @@ class gw_calcs(object):
                 SMBH_tgw[int_] = np.asarray(SMBH_tgw[int_]) 
                 file.write('Data for '+str(self.integrator[int_]))
                 file.write('\nAverage GW timescales for IMBH-IMBH:        ' + str(np.mean(IMBH_tgw_filt[int_])) + ' Myr')
-                file.write('\nMerging GW timescales for IMBH-IMBH:        ' + str(IMBH_tgw_filt[int_][IMBH_tgw_filt[int_] < self.tH.value_in(units.Myr)]) + ' Myr')
+                #file.write('\nMerging GW timescales for IMBH-IMBH:        ' + str(IMBH_tgw_filt[int_][IMBH_tgw_filt[int_] < self.tH.value_in(units.Myr)]) + ' Myr')
                 file.write('\nAverage GW timescales for SMBH-IMBH:        ' + str(np.mean(SMBH_tgw_filt[int_])) + ' Myr')
-                file.write('\nMerging GW timescales for SMBH-IMBH:        ' + str(SMBH_tgw[int_][SMBH_tgw[int_] < self.tH.value_in(units.Myr)]) + ' Myr')
+                #file.write('\nMerging GW timescales for SMBH-IMBH:        ' + str(SMBH_tgw[int_][SMBH_tgw[int_] < self.tH.value_in(units.Myr)]) + ' Myr')
                 if int_ == 0:
                     file.write('\n===========================================================================================================================================\n\n')
 
@@ -1090,11 +1068,11 @@ class gw_calcs(object):
         ax = fig.add_subplot(gs[1, 0])
         ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
         ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
-        iter_Test = 10
+        
         self.scatter_hist(SMBH_freq, SMBH_strain,
                           IMBH_freq, IMBH_strain, 
                           ax, ax1, ax2, 'SMBH-IMBH', 'IMBH-IMBH',
-                          True, True, iter_Test)
+                          True, True)
         ax.set_xlabel(r'$\log_{10}f$ [Hz]')
         ax.set_ylabel(r'$\log_{10}h$')
         ax1.set_title(str(self.integrator[data_idx]))
