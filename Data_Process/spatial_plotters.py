@@ -401,9 +401,9 @@ def ejected_evolution():
         with open(dir) as f:
             line = f.readlines()
 
-            popG = line[14][48:-2] 
-            avgG = line[21][48:-2]
-            avgG2 = line[22][3:-2] 
+            popG = line[11][48:-2] 
+            avgG = line[17][48:-2]
+            avgG2 = line[18][3:-2] 
             popG_data = popG.split()
             avgG_data = avgG.split()
             avgG2_data = avgG2.split()
@@ -757,9 +757,9 @@ def global_properties():
     with open(dir) as f:
         line = f.readlines()
 
-        popG = line[14][48:-2] 
-        avgG = line[21][48:-2]
-        avgG2 = line[22][3:-2] 
+        popG = line[11][48:-2] 
+        avgG = line[17][48:-2]
+        avgG2 = line[18][3:-2] 
         popG_data = popG.split()
         avgG_data = avgG.split()
         avgG2_data = avgG2.split()
@@ -881,8 +881,8 @@ def global_properties():
                                     terecc_arr[iter].append(ter_ecc)
                                     vel_arr[iter].append(pvel)
                                     KE_arr[iter].append(KE)
-                                    
-        print('For'+str(integrator[int_])+'Ecc < 1: ', ecc_data, ' / ', total_data)
+
+        print('For'+str(int_)+'Ecc < 1: ', ecc_data, ' / ', total_data)
             
     c_hist = ['red', 'blue']
 

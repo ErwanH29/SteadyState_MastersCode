@@ -838,15 +838,15 @@ class gw_calcs(object):
             ax_top[int_].plot(x_arr, const_tgw, color = 'white')
             ax_top[int_].text(-9.5, -3, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
             ax_top[int_].text(-6.6, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
-            ax_top[int_].text(-2.55, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+2, color = 'white')
-            ax_top[int_].text(-2.95, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+2, color = 'white')
+            ax_top[int_].text(-2.55, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
+            ax_top[int_].text(-3.05, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
 
             self.forecast_interferometer(ax_bot[int_], self.mass_parti[0][0], self.mass_SMBH[0][0])
             ax_bot[int_].plot(x_arr, const_tgw2, color = 'white')
             ax_bot[int_].text(-8.4, -3, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
             ax_bot[int_].text(-5.5, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
-            ax_bot[int_].text(-0.85, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+4, color = 'white')
-            ax_bot[int_].text(-1.23, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle+4, color = 'white')
+            ax_bot[int_].text(-0.85, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
+            ax_bot[int_].text(-1.3, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
         #ax_top[1].plot(ecc_lx, const_semi)
         #ax_top[0].plot(ecc_lx, const_semi)
         #ax_top[0].plot(ecc_lx, const_semi2, color = 'white')
@@ -929,84 +929,6 @@ class gw_calcs(object):
         data_idx = 0
         self.combine_data('integrator', self.integrator[data_idx], True)
         print('Plotting Strain Frequency Diagram')
-
-        """IMBH_strain = [ ]
-        IMBH_strain_nn = [ ]
-        IMBH_strain_t = [ ]
-        IMBH_freq = [ ]
-        IMBH_freq_nn = [ ]
-        IMBH_freq_t = [ ]
-
-        SMBH_strain = [ ]
-        SMBH_strain_nn = [ ]
-        SMBH_strain_t = [ ]
-        SMBH_freq = [ ]
-        SMBH_freq_nn = [ ]
-        SMBH_freq_t = [ ]
-
-        iter_Test = 0
-        
-        for parti_ in range(len(self.semi_flyby_nn)): #Looping through every individual particle
-            for event_ in range(len(self.semi_flyby_nn[parti_])): #Looping through every detected event
-                semi_fb_nn = self.semi_flyby_nn[parti_][event_]
-                if semi_fb_nn < 1 | units.parsec and self.strain_flyby_nn[parti_][event_] > 0:
-                    if np.asarray(self.fb_nn_SMBH[parti_][event_]) < 0:
-                        IMBH_strain.append(self.strain_flyby_nn[parti_][event_])
-                        IMBH_strain_nn.append(self.strain_flyby_nn[parti_][event_])
-                        IMBH_freq.append(self.freq_flyby_nn[parti_][event_])
-                        IMBH_freq_nn.append(self.freq_flyby_nn[parti_][event_])
-                    else:
-                        SMBH_strain.append(self.strain_flyby_nn[parti_][event_])
-                        SMBH_strain_nn.append(self.strain_flyby_nn[parti_][event_])
-                        SMBH_freq.append(self.freq_flyby_nn[parti_][event_])
-                        SMBH_freq_nn.append(self.freq_flyby_nn[parti_][event_])
-
-        for parti_ in range(len(self.semi_flyby_t)):
-            for event_ in range(len(self.semi_flyby_t[parti_])):
-                semi_fb_t = self.semi_flyby_t[parti_][event_]
-                if semi_fb_t < 1 | units.parsec and self.strain_flyby_t[parti_][event_] > 0:
-                    if np.asarray(self.fb_t_SMBH[parti_][event_]) < 0:
-                        IMBH_strain.append(self.strain_flyby_t[parti_][event_])
-                        IMBH_strain_t.append(self.strain_flyby_t[parti_][event_])
-                        IMBH_freq.append(self.freq_flyby_t[parti_][event_])
-                        IMBH_freq_t.append(self.freq_flyby_t[parti_][event_])
-                    else:
-                        SMBH_strain.append(self.strain_flyby_t[parti_][event_])
-                        SMBH_strain_t.append(self.strain_flyby_t[parti_][event_])
-                        SMBH_freq.append(self.freq_flyby_t[parti_][event_])
-                        SMBH_freq_t.append(self.freq_flyby_t[parti_][event_])
-
-        for parti_ in range(len(self.semi_flyby_SMBH)):
-            for event_ in range(len(self.semi_flyby_SMBH[parti_])):
-                semi_fb_SMBH = self.semi_flyby_SMBH[parti_][event_]
-                if semi_fb_SMBH < 1 | units.parsec:
-                    SMBH_strain.append(self.strain_flyby_SMBH[parti_][event_])
-                    SMBH_freq.append(self.freq_flyby_SMBH[parti_][event_])
-
-        fig = plt.figure(figsize=(8, 6))
-        gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
-                              left=0.1, right=0.9, bottom=0.1, top=0.9,
-                              wspace=0.05, hspace=0.05)
-        ax = fig.add_subplot(gs[1, 0])
-        ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
-        ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
-        
-        self.scatter_hist(SMBH_freq, SMBH_strain,
-                          IMBH_freq, IMBH_strain, 
-                          ax, ax1, ax2, 'SMBH-IMBH', 'IMBH-IMBH',
-                          True, True, iter_Test)
-        ax.set_xlabel(r'$\log_{10}f$ [Hz]')
-        ax.set_ylabel(r'$\log_{10}h$')
-        ax1.set_title(str(self.integrator[data_idx]))
-        plot_ini.tickers(ax, 'plot')
-        plot_ini.tickers(ax1, 'plot')
-        plot_ini.tickers(ax2, 'plot')
-        ax.set_ylim(-30, -12.2)
-        ax.set_xlim(-12.5, 0.1)
-        plt.savefig('figures/gravitational_waves/'+str(self.integrator[data_idx])+'GW_freq_strain_maximise_diagram.png', dpi = 500, bbox_inches='tight')
-        plt.close()
-        plt.cla()
-        plt.clf()"""
 
         IMBH_strain = [ ]
         IMBH_strain_nn = [ ]

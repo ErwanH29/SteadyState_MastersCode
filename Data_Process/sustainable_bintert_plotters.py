@@ -379,6 +379,8 @@ class sustainable_sys(object):
 
         self.GWfreq_binHard = [[ ], [ ]]
         self.GWstra_binHard = [[ ], [ ]]
+        self.GWfreq_binHardIMBH = [[ ], [ ]]
+        self.GWstra_binHardIMBH = [[ ], [ ]]
 
         sims = [[10, 19, 20, 20], [40, 40, 40, 40, 40, 40, 40]]
 
@@ -626,32 +628,17 @@ class sustainable_sys(object):
         plot_ini = plotter_setup()
 
         plt.clf()
-        fig = plt.figure(figsize=(8, 6))
-        gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
-                              left=0.1, right=0.9, bottom=0.1, top=0.9,
-                              wspace=0.05, hspace=0.05)
-        ax = fig.add_subplot(gs[1, 0])
-        ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
-        ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
-
-        hardb_idx = [ ]
-        softb_idx = [ ]
-        hardt_idx = [ ]
-        softt_idx = [ ]
-        """
-        for int_ in range(1):
-            bhidx = np.where(self.hard_bin[int_] > 0)[0]
-            bsidx = np.where(self.hard_bin[int_] < 0)[0]
-            thidx = np.where(self.hard_ter[int_] > 0)[0]
-            tsidx = np.where(self.hard_ter[int_] < 0)[0]
-            hardb_idx[int_].append(bhidx)
-            softb_idx[int_].append(bsidx)
-            hardt_idx[int_].append(thidx)
-            softt_idx[int_].append(tsidx)"""
 
         integrators = ['Hermite', 'GRX']
         ####### PLOT FOR ALL ########
         for int_ in range(2):
+            fig = plt.figure(figsize=(8, 6))
+            gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
+                                left=0.1, right=0.9, bottom=0.1, top=0.9,
+                                wspace=0.05, hspace=0.05)
+            ax = fig.add_subplot(gs[1, 0])
+            ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
+            ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
            # int_ += 1
             tertiary = False
             if len(self.GWfreq_ter[int_]) > 0:
@@ -706,10 +693,11 @@ class sustainable_sys(object):
             plt.clf()
 
             fig, ax = plt.subplots()
-
             """for j in range(len(self.GWfreq_binIMBH[int_])):
-                print(max(self.GWfreq_binIMBH[int_][j]))
-                print(j)"""
+                if max(self.GWfreq_binIMBH[int_][j]) > 5*10**-4:
+                    print(max(self.GWfreq_binIMBH[int_][j]))
+                    print(j)
+            print('ppppppp')"""
 
             # LISA
             lisa = li.LISA() 
@@ -741,10 +729,11 @@ class sustainable_sys(object):
             ax.text(-5.98, -19, r'$\mu$Ares', fontsize ='small', rotation = 306, color = 'red')
             ax.text(-1.32, -24, 'BBO', fontsize ='small', rotation = 319, color = 'blue')
 
-            GWfreq_binIMBH = self.array_rewrite(self.GWfreq_binIMBH[int_][9], 'not', False)
-            GWstra_binIMBH = self.array_rewrite(self.GWstra_binIMBH[int_][9], 'not', False)
-            GWfreq_terIMBH = self.array_rewrite(self.GWfreq_terIMBH[int_][9], 'not', False)
-            GWstra_terIMBH = self.array_rewrite(self.GWstra_terIMBH[int_][9], 'not', False)
+            idx = [20, 103]
+            GWfreq_binIMBH = self.array_rewrite(self.GWfreq_binIMBH[int_][idx[int_]], 'not', False)
+            GWstra_binIMBH = self.array_rewrite(self.GWstra_binIMBH[int_][idx[int_]], 'not', False)
+            GWfreq_terIMBH = self.array_rewrite(self.GWfreq_terIMBH[int_][idx[int_]], 'not', False)
+            GWstra_terIMBH = self.array_rewrite(self.GWstra_terIMBH[int_][idx[int_]], 'not', False)
 
             GWtime_binIMBH = [(1e-3*i) for i in range(len(GWfreq_binIMBH))]
             GWtime_terIMBH = [(1e-3*i) for i in range(len(GWfreq_terIMBH))]
