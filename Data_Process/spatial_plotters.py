@@ -927,9 +927,9 @@ def global_properties():
     ax3 = fig.add_subplot(223)
     ax4 = fig.add_subplot(224) 
     ax1.set_xlabel(r'$\log_{10}(1-e)_{\rm{SMBH}}$')
-    ax2.set_xlabel(r'$\log_{10}r$ [pc]')
+    ax2.set_xlabel(r'$\log_{10}r_{\rm{SMBH}}$ [pc]')
     ax3.set_xlabel(r'$\log_{10}|v|$ [km s$^{-1}$]')
-    ax4.set_xlabel(r'$\log_{10} K_E$ [J]')
+    ax4.set_xlabel(r'$\log_{10}r_{\rm{IMBH}}$ [pc]')
     for ax_ in [ax1, ax2, ax3, ax4]:
         plot_ini.tickers(ax_, 'plot')
         ax_.set_ylabel(r'$\log_{10}(\rho/\rho_{\rm{max}})$')
@@ -940,22 +940,15 @@ def global_properties():
 
         distSMBH_sort = np.sort(distSMBH_flat[j])
         distSMBH_index = np.asarray([i for i in enumerate(distSMBH_sort)])
-        NNdist_sort = np.sort(NNdist_flat[j])
-        NNdist_index = np.asarray([i for i in enumerate(NNdist_sort)])
-        if j == 0:
-            ax2.plot(distSMBH_sort, np.log10(distSMBH_index[:,0]/distSMBH_index[-1,0]), color = c_hist[j], linestyle = ':', label = r'$r_{\rm{SMBH}}$')
-            ax2.plot(NNdist_sort, np.log10(NNdist_index[:,0]/NNdist_index[-1,0]), color = c_hist[j], linestyle = '-.', label =r'$r_{\rm{IMBH}}$')
-        else:
-            ax2.plot(distSMBH_sort, np.log10(distSMBH_index[:,0]/distSMBH_index[-1,0]), color = c_hist[j], linestyle = ':')
-            ax2.plot(NNdist_sort, np.log10(NNdist_index[:,0]/NNdist_index[-1,0]), color = c_hist[j], linestyle = '-.')
+        ax2.plot(distSMBH_sort, np.log10(distSMBH_index[:,0]/distSMBH_index[-1,0]), color = c_hist[j])
         
         vel_sort = np.sort(vel_flat[j])
         vel_index = np.asarray([i for i in enumerate(vel_sort)])
         ax3.plot(vel_sort, np.log10(vel_index[:,0]/vel_index[-1,0]), color = c_hist[j])
 
-        KE_sort = np.sort(KE_flat[j])
-        KE_index = np.asarray([i for i in enumerate(KE_sort)])
-        ax4.plot(KE_sort, np.log10(KE_index[:,0]/KE_index[-1,0]), color = c_hist[j])
+        NNdist_sort = np.sort(NNdist_flat[j])
+        NNdist_index = np.asarray([i for i in enumerate(NNdist_sort)])
+        ax4.plot(NNdist_sort, np.log10(NNdist_index[:,0]/NNdist_index[-1,0]), color = c_hist[j])
 
     ax1.legend(loc='upper left')
     ax2.legend(loc='upper left')

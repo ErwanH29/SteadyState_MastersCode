@@ -456,17 +456,17 @@ class gw_calcs(object):
 
     def forecast_interferometer(self, ax, m1, m2):
         """
-        Function to plot the LISA and aLIGO frequency range in Ge a vs. (1-e) plots
+        Function to plot the LISA and muAres frequency range in Ge a vs. (1-e) plots
         """
         
         ecc_range = np.linspace(0.0001, (1-10**-8), 50)
 
-        self.LIGO_semimaj_max = self.gw_cfreq_semi(ecc_range[1:], 10000 | units.Hz, m1, m2)
-        self.LIGO_semimaj_min = self.gw_cfreq_semi(ecc_range[1:], 10 | units.Hz, m1, m2)
-        self.LIGO_semimaj = self.gw_cfreq_semi(ecc_range[1:], 200 | units.Hz, m1, m2)
+        self.LIGO_semimaj_max = self.gw_cfreq_semi(ecc_range[1:], 1 | units.Hz, m1, m2)
+        self.LIGO_semimaj_min = self.gw_cfreq_semi(ecc_range[1:], 1e-3 | units.Hz, m1, m2)
+        self.LIGO_semimaj = self.gw_cfreq_semi(ecc_range[1:], 1e-7 | units.Hz, m1, m2)
 
         self.LISA_semimaj_max = self.gw_cfreq_semi(ecc_range[1:], 1 | units.Hz, m1, m2)
-        self.LISA_semimaj_min = self.gw_cfreq_semi(ecc_range[1:], 1e-4 | units.Hz, m1, m2)
+        self.LISA_semimaj_min = self.gw_cfreq_semi(ecc_range[1:], 1e-5 | units.Hz, m1, m2)
         self.LISA_semimaj = self.gw_cfreq_semi(ecc_range[1:], 1e-2 | units.Hz, m1, m2)
 
         ecc_range = [np.log(1-i) for i in ecc_range[1:]]
@@ -476,12 +476,12 @@ class gw_calcs(object):
         ax.plot(self.LIGO_semimaj, ecc_range, linestyle = '-.', color = 'white')
         ax.plot(self.LIGO_semimaj_max, ecc_range, linestyle = ':', color = 'white')
         ax.fill_between(np.append(self.LIGO_semimaj_min, self.LIGO_semimaj_max[::-1]), 
-                        np.append(ecc_range[:], ecc_range[::-1]), alpha = 0.6, color = 'blue')
+                        np.append(ecc_range[:], ecc_range[::-1]), alpha = 0.8, color = 'blue')
         ax.plot(self.LISA_semimaj_min, ecc_range, linestyle = ':', color = 'white')
         ax.plot(self.LISA_semimaj, ecc_range, linestyle = '-.', color = 'white')
         ax.plot(self.LISA_semimaj_max, ecc_range, linestyle = ':', color = 'white')
         ax.fill_between(np.append(self.LISA_semimaj_min, self.LISA_semimaj_max[::-1]), 
-                        np.append(ecc_range[:], ecc_range[::-1]), alpha = 0.6, color = 'red')
+                        np.append(ecc_range[:], ecc_range[::-1]), alpha = 0.8, color = 'red')
 
         return ax
 
@@ -695,9 +695,9 @@ class gw_calcs(object):
 
         plot_init = plotter_setup()
 
-        xmin = -10
+        xmin = -7
         xmax = 0
-        ymin = -4
+        ymin = -7
 
         fig = plt.figure(figsize=(13, 12))
         ax1 = fig.add_subplot(221)
@@ -711,10 +711,6 @@ class gw_calcs(object):
         ax3.set_title('SMBH-IMBH')
         ax4.set_title('SMBH-IMBH')
         extent = [1.1*xmin, 1.1*xmax, 1.1*ymin, 0]
-        ecc_l = np.linspace(0, 1, 1000)
-        const_semi = [np.log10((1-i)**-1/10)-1 for i in ecc_l]
-        const_semi2 = [np.log10((1-i)**-2/10)-2 for i in ecc_l]
-        ecc_lx = [np.log10(1-i)+1 for i in ecc_l]
 
         IMBH_tgw = [[ ], [ ]]
         IMBH_sem = [[ ], [ ]]
@@ -836,21 +832,205 @@ class gw_calcs(object):
 
             self.forecast_interferometer(ax_top[int_], self.mass_parti[0][0], self.mass_IMBH[0][0])
             ax_top[int_].plot(x_arr, const_tgw, color = 'white')
-            ax_top[int_].text(-9.5, -3, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
+            ax_top[int_].text(-9.5, -3, r'$mu$Ares ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
             ax_top[int_].text(-6.6, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
-            ax_top[int_].text(-2.55, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
+            ax_top[int_].text(-2.45, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
             ax_top[int_].text(-3.05, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
 
             self.forecast_interferometer(ax_bot[int_], self.mass_parti[0][0], self.mass_SMBH[0][0])
             ax_bot[int_].plot(x_arr, const_tgw2, color = 'white')
-            ax_bot[int_].text(-8.4, -3, r'aLIGO ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
+            ax_bot[int_].text(-8.4, -3, r'$mu$Ares ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
             ax_bot[int_].text(-5.5, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
-            ax_bot[int_].text(-0.85, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
+            ax_bot[int_].text(-0.75, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
             ax_bot[int_].text(-1.3, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
-        #ax_top[1].plot(ecc_lx, const_semi)
-        #ax_top[0].plot(ecc_lx, const_semi)
-        #ax_top[0].plot(ecc_lx, const_semi2, color = 'white')
         plt.savefig('figures/gravitational_waves/ecc_semi_bins_IMBH_histogram_t.png', dpi=500, bbox_inches='tight')
+        plt.clf()
+
+        fig = plt.figure(figsize=(8, 6))
+        gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
+                            left=0.1, right=0.9, bottom=0.1, top=0.9,
+                            wspace=0.05, hspace=0.05)
+        ax = fig.add_subplot(gs[1, 0])
+        ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
+        ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
+
+        ax.scatter(np.log10(SMBH_sem[0]), SMBH_ecc[0], color = 'red', s = 0.75)
+        ax.scatter(np.log10(SMBH_sem[1]), SMBH_ecc[1], color = 'blue', s = 0.75)
+        
+        ax1.tick_params(axis="x", labelbottom=False)
+        ax2.tick_params(axis="y", labelleft=False)
+
+        no_data0S = round(len(SMBH_ecc[0])**0.9)
+        no_data1S = round(len(SMBH_ecc[1])**0.9)
+        no_data0I = round(len(IMBH_ecc[0])**0.9)
+        no_data1I = round(len(IMBH_ecc[1])**0.9)
+
+        kdeh_IMBH = sm.nonparametric.KDEUnivariate(SMBH_ecc[0][:no_data0S])
+        kdeh_IMBH.fit()
+        kdeh_IMBH.density = (kdeh_IMBH.density / max(kdeh_IMBH.density))
+        ax2.plot(kdeh_IMBH.density, (kdeh_IMBH.support), color = 'red')
+        ax2.fill_between(kdeh_IMBH.density, (kdeh_IMBH.support), alpha = 0.35, color = 'red')
+        
+        kdef_IMBH = sm.nonparametric.KDEUnivariate(np.log10(SMBH_sem[0][:no_data0S]))
+        kdef_IMBH.fit()
+        kdef_IMBH.density = (kdef_IMBH.density / max(kdef_IMBH.density))
+        ax1.plot(kdef_IMBH.support, (kdef_IMBH.density), color = 'red', label = 'Hermite')
+        ax1.fill_between(kdef_IMBH.support, (kdef_IMBH.density), alpha = 0.35, color = 'red')
+
+        kdef_SMBH = sm.nonparametric.KDEUnivariate(np.log10(SMBH_sem[1][:no_data1S]))
+        kdef_SMBH.fit()
+        kdef_SMBH.density = (kdef_SMBH.density/max(kdef_SMBH.density))
+        ax1.plot(kdef_SMBH.support, (kdef_SMBH.density), color = 'blue', label = 'GRX')
+        ax1.fill_between(kdef_SMBH.support, (kdef_SMBH.density), alpha = 0.35, color = 'blue')
+
+        kdeh_SMBH = sm.nonparametric.KDEUnivariate(SMBH_ecc[1][:no_data1S])
+        kdeh_SMBH.fit()
+        kdeh_SMBH.density = (kdeh_SMBH.density / max(kdeh_SMBH.density))
+        ax2.plot(kdeh_SMBH.density, (kdeh_SMBH.support), color = 'blue')
+        ax2.fill_between(kdeh_SMBH.density, (kdeh_SMBH.support), alpha = 0.35, color = 'blue')
+
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, 0)
+        ax1.set_ylabel(r'$\log_{10}(\rho/\rho_{\rm{max}})$')
+        ax1.set_ylim(0,1.05)
+        ax2.set_xlim(0,1.05)
+        ax1.legend()
+        ax2.set_xlabel(r'$\log_{10}(\rho/\rho_{\rm{max}})$')
+
+        self.forecast_interferometer(ax, self.mass_parti[0][0], self.mass_SMBH[0][0])
+        ax.plot(x_arr, const_tgw2, color = 'white')
+        ax.text(-8.4, -3, r'$mu$Ares ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
+        ax.text(-5.5, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'white')
+        ax.text(-0.75, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
+        ax.text(-1.3, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'white')
+
+        ax.set_ylabel(r'$\log_{10}(1-e)$')
+        ax.set_xlabel(r'$\log_{10} a$ [pc]')
+        plot_init.tickers(ax, 'plot')
+        plot_init.tickers(ax1, 'plot')
+        plot_init.tickers(ax2, 'plot')
+        plt.savefig('figures/gravitational_waves/HistScatter_ecc_semi_SMBH.png', dpi=300, bbox_inches='tight')
+        plt.clf()
+
+        fig = plt.figure(figsize=(8, 6))
+        gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
+                            left=0.1, right=0.9, bottom=0.1, top=0.9,
+                            wspace=0.05, hspace=0.05)
+        ax = fig.add_subplot(gs[1, 0])
+        ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
+        ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
+
+        ax.scatter(np.log10(IMBH_sem[0]), IMBH_ecc[0], color = 'red', s = 0.75)
+        ax.scatter(np.log10(IMBH_sem[1]), IMBH_ecc[1], color = 'blue', s = 0.75)
+        
+        ax1.tick_params(axis="x", labelbottom=False)
+        ax2.tick_params(axis="y", labelleft=False)
+
+        kdeh_IMBH = sm.nonparametric.KDEUnivariate(IMBH_ecc[0][:no_data0I])
+        kdeh_IMBH.fit()
+        kdeh_IMBH.density = (kdeh_IMBH.density / max(kdeh_IMBH.density))
+        ax2.plot(kdeh_IMBH.density, (kdeh_IMBH.support), color = 'red')
+        ax2.fill_between(kdeh_IMBH.density, (kdeh_IMBH.support), alpha = 0.35, color = 'red')
+        
+        kdef_IMBH = sm.nonparametric.KDEUnivariate(np.log10(IMBH_sem[0][:no_data0I]))
+        kdef_IMBH.fit()
+        kdef_IMBH.density = (kdef_IMBH.density / max(kdef_IMBH.density))
+        ax1.plot(kdef_IMBH.support, (kdef_IMBH.density), color = 'red', label = 'Hermite')
+        ax1.fill_between(kdef_IMBH.support, (kdef_IMBH.density), alpha = 0.35, color = 'red')
+
+        kdef_SMBH = sm.nonparametric.KDEUnivariate(np.log10(IMBH_sem[1][:no_data1I]))
+        kdef_SMBH.fit()
+        kdef_SMBH.density = (kdef_SMBH.density/max(kdef_SMBH.density))
+        ax1.plot(kdef_SMBH.support, (kdef_SMBH.density), color = 'blue', label = 'GRX')
+        ax1.fill_between(kdef_SMBH.support, (kdef_SMBH.density), alpha = 0.35, color = 'blue')
+
+        kdeh_SMBH = sm.nonparametric.KDEUnivariate(IMBH_ecc[1][:no_data1I])
+        kdeh_SMBH.fit()
+        kdeh_SMBH.density = (kdeh_SMBH.density / max(kdeh_SMBH.density))
+        ax2.plot(kdeh_SMBH.density, (kdeh_SMBH.support), color = 'blue')
+        ax2.fill_between(kdeh_SMBH.density, (kdeh_SMBH.support), alpha = 0.35, color = 'blue')
+
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, 0)
+        ax1.set_ylim(0,1.05)
+        ax2.set_xlim(0,1.05)
+        ax1.set_ylabel(r'$\log_{10}(\rho/\rho_{\rm{max}})$')
+        ax1.legend()
+        ax2.set_xlabel(r'$\log_{10}(\rho/\rho_{\rm{max}})$')
+
+        self.forecast_interferometer(ax, self.mass_parti[0][0], self.mass_IMBH[0][0])
+        ax.plot(x_arr, const_tgw, color = 'black')
+        ax.text(-9.5, -3, r'$\mu$Ares ($f_{\rm{peak}} = 10^{-3}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'black')
+        ax.text(-6.6, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'black')
+        ax.text(-2.45, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'black')
+        ax.text(-3.05, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'black')
+
+        ax.set_ylabel(r'$\log_{10}(1-e)$')
+        ax.set_xlabel(r'$\log_{10} a$ [pc]')
+        plot_init.tickers(ax, 'plot')
+        plot_init.tickers(ax1, 'plot')
+        plot_init.tickers(ax2, 'plot')
+        plt.savefig('figures/gravitational_waves/HistScatter_ecc_semi_IMBH.png', dpi=300, bbox_inches='tight')
+        plt.clf()
+
+        fig = plt.figure(figsize=(8, 6))
+        gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
+                            left=0.1, right=0.9, bottom=0.1, top=0.9,
+                            wspace=0.05, hspace=0.05)
+        ax = fig.add_subplot(gs[1, 0])
+        ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
+        ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
+        self.scatter_hist(np.log10(IMBH_sem[0]), IMBH_ecc[0],
+                          np.log10(IMBH_sem[1]), IMBH_ecc[1],
+                          ax, ax1, ax2, 'Hermite', 'GRX', True, False)
+        self.forecast_interferometer(ax, self.mass_parti[0][0], self.mass_IMBH[0][0])
+        ax.plot(x_arr, const_tgw, color = 'black')
+        ax.text(-8.4, -3, r'$mu$Ares ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'black')
+        ax.text(-5.5, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'black')
+        ax.text(-0.75, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'black')
+        ax.text(-1.3, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'black')
+        ax.title('IMBH-IMBH')
+        plot_init.tickers(ax, 'plot')
+        plot_init.tickers(ax1, 'plot')
+        plot_init.tickers(ax2, 'plot')
+        ax.set_ylabel(r'$\log_{10}(1-e)$')
+        ax.set_xlabel(r'$\log_{10} a$ [pc]')
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, 0)
+        ax1.set_xlim(xmin, xmax)
+        ax2.set_ylim(ymin, 0)
+        plot_init.tickers(ax_, 'hist')
+        plt.savefig('figures/gravitational_waves/IMBH_IMBH_histogram.png', dpi=500, bbox_inches='tight')
+        plt.clf()
+
+        fig = plt.figure(figsize=(8, 6))
+        gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
+                            left=0.1, right=0.9, bottom=0.1, top=0.9,
+                            wspace=0.05, hspace=0.05)
+        ax = fig.add_subplot(gs[1, 0])
+        ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
+        ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
+        self.scatter_hist(np.log10(SMBH_sem[0]), SMBH_ecc[0],
+                          np.log10(SMBH_sem[1]), SMBH_ecc[1],
+                          ax, ax1, ax2, 'Hermite', 'GRX', True, False)
+        self.forecast_interferometer(ax, self.mass_parti[0][0], self.mass_SMBH[0][0])
+        ax.plot(x_arr, const_tgw2, color = 'white')
+        ax.text(-8.4, -3, r'$mu$Ares ($f_{\rm{peak}} = 200$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'black')
+        ax.text(-5.5, -3, r'LISA ($f_{\rm{peak}} = 10^{-2}$ Hz)', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle-10, color = 'black')
+        ax.text(-0.75, -3, r'$t_{\rm{GW}} > t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'black')
+        ax.text(-1.3, -3, r'$t_{\rm{GW}} < t_H$', verticalalignment = 'center', fontsize ='small', rotation=self.text_angle, color = 'black')
+        ax.title('SMBH-IMBH')
+        plot_init.tickers(ax, 'plot')
+        plot_init.tickers(ax1, 'plot')
+        plot_init.tickers(ax2, 'plot')
+        ax.set_ylabel(r'$\log_{10}(1-e)$')
+        ax.set_xlabel(r'$\log_{10} a$ [pc]')
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, 0)
+        ax1.set_xlim(xmin, xmax)
+        ax2.set_ylim(ymin, 0)
+        plot_init.tickers(ax_, 'hist')
+        plt.savefig('figures/gravitational_waves/SMBH_IMBH_histogram.png', dpi=500, bbox_inches='tight')
         plt.clf()
 
         with open('figures/gravitational_waves/output/GW_merger_time.txt', 'w') as file:
@@ -1006,17 +1186,16 @@ class gw_calcs(object):
         plt.savefig('figures/gravitational_waves/'+str(self.integrator[data_idx])+'GW_freq_strain_maximise_diagram_N<=40.png', dpi = 500, bbox_inches='tight')
         plt.clf()
 
-        SMBH_mass = self.mass_SMBH[0][0]
-        IMBH_mass = self.mass_IMBH[0][0]
+        SMBH_mass = 4*10**6 | units.MSun
+        IMBH_mass = 10**3 | units.MSun
         sem_SMBH = self.coll_radius(SMBH_mass)
         sem_IMBH = self.coll_radius(IMBH_mass)
 
         dist_z = 7015 | units.Mpc
         max_freq_SMBH = (np.pi)**-1 * np.sqrt(constants.G*(SMBH_mass + IMBH_mass)/sem_SMBH**3)  # Eqn. (3) Matsubayashi 2003
-        max_strain_SMBH = np.sqrt(32/5) * (np.pi**2*constants.G**5)**(1/3) * constants.c**(-4)*(SMBH_mass * IMBH_mass)*(SMBH_mass + IMBH_mass)**(-1/3)*max_freq_SMBH**(2/3)*dist_z**-1
-        max_strain_SMBH = max_strain_SMBH.value_in(units.kg**1.6653345369377348e-16 * units.s**3.3306690738754696e-16)
+        max_strain_SMBH = self.gw_strain(sem_SMBH, 0, SMBH_mass, IMBH_mass)
         max_freq_IMBH = (np.pi)**-1 * np.sqrt(constants.G*(IMBH_mass + IMBH_mass)/sem_IMBH**3)
-        max_strain_IMBH = np.sqrt(32/5) * (np.pi**2*constants.G**5)**(1/3) * constants.c**(-4)*(IMBH_mass * IMBH_mass)*(IMBH_mass + IMBH_mass)**(-1/3)*max_freq_IMBH**(2/3)*dist_z**-1
+        max_strain_SMBH = self.gw_strain(sem_IMBH, 0, IMBH_mass, IMBH_mass)
         max_strain_IMBH = max_strain_IMBH.value_in(units.kg**1.6653345369377348e-16 * units.s**3.3306690738754696e-16)
 
         with open('figures/gravitational_waves/output/Binaries_redshift_freq_strain.txt', 'w') as file:

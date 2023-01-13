@@ -6,6 +6,7 @@ import matplotlib.ticker as mtick
 import numpy as np
 import warnings
 import pickle as pkl
+from scipy.optimize import curve_fit
 
 class sustainable_sys(object):
     """
@@ -26,10 +27,10 @@ class sustainable_sys(object):
         print('!!!!!! WARNING THIS WILL TAKE A WHILE !!!!!!!')
         filenameH = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
         filenameGRX = glob.glob('/media/erwanh/Elements/GRX/particle_trajectory/*')
-        filename = [natsort.natsorted(filenameH)[63:], natsort.natsorted(filenameGRX)]
+        filename = [natsort.natsorted(filenameH)[24:63], natsort.natsorted(filenameGRX)]
         ints = ['Hermite', 'GRX']
-        count = 64
-    
+        count = 3080
+        
         dir = os.path.join('/home/erwanh/Desktop/SteadyStateBH/Data_Process/figures/steady_time/Sim_summary.txt')
         with open(dir) as f:
             line = f.readlines()
@@ -45,7 +46,7 @@ class sustainable_sys(object):
             avgG2 = np.asarray([float(i) for i in avgG2_data])
             avgG = np.concatenate((avgG, avgG2))
 
-        for int_ in range(2):
+        for int_ in range(1):
             for file_ in range(len(filename[int_])):
                 with open(filename[int_][file_], 'rb') as input_file:
                     print('Reading file', file_, ':', input_file)
@@ -240,6 +241,8 @@ class sustainable_sys(object):
                                                             })
                                     stab_tracker = stab_tracker.append(df_stabtime, ignore_index = True)
                                     stab_tracker.to_pickle(os.path.join(path, 'IMBH_'+str(ints[int_])+'_system_data_indiv_parti_'+str(count)+'_'+str(parti_)+'_local2.pkl'))
+
+            STOP
 
     def array_rewrite(self, arr, arr_type, filt):
         """
@@ -556,9 +559,14 @@ class sustainable_sys(object):
         Function to plot various 'sustainable system' plots
         """
 
+
+        def log_fit(xval, slope):
+            return slope * (xval)
+
         plot_ini = plotter_setup()
         mtick_formatter = mtick.FormatStrFormatter('%0.3f')
         integrator = ['Hermite', 'GRX']
+
         
         dedt = [[ ], [ ]]
         dadt = [[ ], [ ]]
@@ -580,18 +588,32 @@ class sustainable_sys(object):
         normalise_p1 = plt.Normalize(0, (max(self.binary_systems[0])))#, max(self.binary_systems[1])))
         normalise_p2 = plt.Normalize(10, 40)
     
-        fig = plt.figure(figsize=(11, 6))
+        fig = plt.figure(figsize=(11, 4))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax_ = [ax1, ax2]
         for int_ in range(2):
             ini_pop = np.unique(self.pop[int_])
+
+            xtemp = np.linspace(10, 40, 1000)
+            best_fit = np.polyfit(ini_pop, np.log10(self.binary_occupation[int_]), 1)
+            curve = np.poly1d(best_fit)
+            print('Factor:       ', best_fit[0])
+            print('y-intercept:  ', best_fit[1])
+
+            params = curve_fit(log_fit, ini_pop, np.log10(self.binary_occupation[int_]))
+            [a] = params[0]
+            y_fit = [(a)*i for i in xtemp]
+            print(a)
+
             ax_[int_].set_title(integrator[int_])
             ax_[int_].set_xlabel(r'IMBH Population [$N$]')
             ax_[int_].set_ylabel(r'$\log_{10}(t_{\rm{sys}} / t_{\rm{sim}})$')
             ax_[int_].set_ylim(-10, 0)
-            colour_axes = ax_[int_].scatter(ini_pop, np.log10(self.binary_occupation[int_]), edgecolors  = 'black', c = (self.binary_systems[int_]), norm = (normalise_p1), label = 'Stable Binary')
-            ax_[int_].scatter(ini_pop, np.log10(self.tertiary_occupation[int_]), edgecolors  = 'black', c = (self.tertiary_systems[int_]), norm = (normalise_p1), marker = 's', label = 'Stable Triple')
+            #ax_[int_].plot(xtemp, curve(xtemp), color = 'black', linestyle = ':', zorder = 1)
+            ax_[int_].plot(xtemp, y_fit, color = 'black', linestyle = '-.', zorder = 1)
+            colour_axes = ax_[int_].scatter(ini_pop, np.log10(self.binary_occupation[int_]), edgecolors  = 'black', c = (self.binary_systems[int_]), norm = (normalise_p1), label = 'Stable Binary', zorder = 2)
+            ax_[int_].scatter(ini_pop, np.log10(self.tertiary_occupation[int_]), edgecolors  = 'black', c = (self.tertiary_systems[int_]), norm = (normalise_p1), marker = 's', label = 'Stable Triple', zorder = 3)
         plot_ini.tickers_pop(ax1, self.pop[1], 'GRX')
         plot_ini.tickers_pop(ax2, self.pop[1], 'GRX')
         ax2.legend()
@@ -645,7 +667,7 @@ class sustainable_sys(object):
                 tertiary = True
             GW_calcs.scatter_hist(self.GWfreq_bin[int_], self.GWstra_bin[int_],
                                   self.GWfreq_ter[int_], self.GWstra_ter[int_],
-                                  ax, ax1, ax2, 'Binary', 'Tertiary',
+                                  ax, ax1, ax2, 'Binary', 'Hierarchical',
                                   tertiary, False)
             ax.set_xlabel(r'$\log_{10}f$ [Hz]')
             ax.set_ylabel(r'$\log_{10}h$')
@@ -678,7 +700,7 @@ class sustainable_sys(object):
 
             GW_calcs.scatter_hist(GWfreq_binIMBH, GWstra_binIMBH,
                                   GWfreq_terIMBH, GWstra_terIMBH,
-                                  ax, ax1, ax2, 'Binary', 'Tertiary',
+                                  ax, ax1, ax2, 'Hard Binary', 'Hierarchical',
                                   tertiary, False)
 
             ax.set_xlabel(r'$\log_{10}f$ [Hz]')
@@ -693,11 +715,6 @@ class sustainable_sys(object):
             plt.clf()
 
             fig, ax = plt.subplots()
-            """for j in range(len(self.GWfreq_binIMBH[int_])):
-                if max(self.GWfreq_binIMBH[int_][j]) > 5*10**-4:
-                    print(max(self.GWfreq_binIMBH[int_][j]))
-                    print(j)
-            print('ppppppp')"""
 
             # LISA
             lisa = li.LISA() 
@@ -729,7 +746,16 @@ class sustainable_sys(object):
             ax.text(-5.98, -19, r'$\mu$Ares', fontsize ='small', rotation = 306, color = 'red')
             ax.text(-1.32, -24, 'BBO', fontsize ='small', rotation = 319, color = 'blue')
 
-            idx = [20, 103]
+            for j in range(len(self.GWfreq_binIMBH[int_])):
+                """if len(self.GWfreq_binIMBH[int_][j]) < 10000 and len(self.GWfreq_binIMBH[int_][j]) > 5000:
+                    print(int_, j, len(self.GWfreq_binIMBH[int_][j]))"""
+                if max(self.GWstra_binIMBH[int_][j]) > 10**-19:
+                    print(max(self.GWfreq_binIMBH[int_][j]), max(self.GWstra_binIMBH[int_][j]))
+                    print(len(self.GWfreq_binIMBH[int_][j]))
+                    print(j, int_)
+
+            print('ppppppp')
+            idx = [20, 70]
             GWfreq_binIMBH = self.array_rewrite(self.GWfreq_binIMBH[int_][idx[int_]], 'not', False)
             GWstra_binIMBH = self.array_rewrite(self.GWstra_binIMBH[int_][idx[int_]], 'not', False)
             GWfreq_terIMBH = self.array_rewrite(self.GWfreq_terIMBH[int_][idx[int_]], 'not', False)

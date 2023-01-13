@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import warnings
 import pickle as pkl
+from tGW_plotters import *
 
 np.seterr(divide='ignore')
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
@@ -68,9 +69,9 @@ class loss_cone(object):
                                 ptracker = pkl.load(input_file)
 
                                 ###### KEEP THIS FOR COMPARISON PLOTS - FOR EVOLUTION TURN OFF
-                                if 10*round(0.1*chaotic_tracker.iloc[0][6]) in popG:
+                                if 5*round(0.2*chaotic_tracker.iloc[0][6]) in popG:
                                     idx = np.where(popG == 10*round(0.1*chaotic_tracker.iloc[0][6]))
-                                    col_len = int(min(np.round((avgG[idx])*10**3), np.shape(ptracker)[1])-1)
+                                    col_len = int(min(np.round((avgG[idx])*10**3), np.shape(ptracker)[1])-1)-1
                                 else:
                                     col_len = np.shape(ptracker)[1]-1
 
@@ -81,7 +82,7 @@ class loss_cone(object):
                                     energy_arr = [ ]
                                     time = [ ]
                                     if parti_ != 0:
-                                        self.init_pop[int_].append(pop)
+                                        """self.init_pop[int_].append(pop)
                                         angL_val = 0
                                         for col_ in range(col_len):
                                             KE = ptracker.iloc[parti_][col_][4].value_in(units.J)
@@ -100,16 +101,16 @@ class loss_cone(object):
                                         if not isinstance(ptracker.iloc[parti_][col_+1][0], np.uint64) or ptracker.iloc[parti_][col_+1][1] > 4*10**6 | units.MSun:
                                             self.ejec_part[int_].append(1)
                                         else:
-                                            self.ejec_part[int_].append(0)
+                                            self.ejec_part[int_].append(0)"""
 
                                         sem_init = ptracker.iloc[parti_][0][7][0]
                                         ecc_init = 1-ptracker.iloc[parti_][0][8][0]
-                                        semi_fin = ptracker.iloc[parti_][-2][7][0]
-                                        ecc_fin = 1-ptracker.iloc[parti_][-2][8][0]
+                                        semi_fin = ptracker.iloc[parti_][col_len][7][0]
+                                        ecc_fin = 1-ptracker.iloc[parti_][col_len][8][0]
 
-                                        angL_val -= self.ang_momentum(sem_init, ecc_init)
+                                        """angL_val -= self.ang_momentum(sem_init, ecc_init)
                                         angL_val /= col_len                # Average change per kyr
-                                        self.dangL_avg[int_].append(angL_val)
+                                        self.dangL_avg[int_].append(angL_val)"""
 
                                         angL_init_val = self.ang_momentum(sem_init, ecc_init)
                                         angL_fin_val = self.ang_momentum(semi_fin, ecc_fin)
@@ -149,86 +150,76 @@ class loss_cone(object):
         """
 
         plot_ini = plotter_setup()
+        GW_calcs = gw_calcs()
 
         angL_init = np.asarray(self.angL_init)
         angL_fin = np.asarray(self.angL_fin)    
         init_pop_t = np.asarray(self.init_pop)
-
-        init_pop = [[ ], [ ]]
-        for int_ in range(2):
-            for pop_ in init_pop_t[int_]:
-                init_pop[int_].append(10*round(0.1*pop_))
-            init_pop[int_] = np.asarray([i for i in init_pop[int_]])
         xline = np.linspace(1, 1.1*max(max(angL_init[0]), max(angL_init[1]),
                                        max(angL_fin[0]),  max(angL_fin[1])))
+
+        fig = plt.figure(figsize=(5, 10))
+        ax1 = fig.add_subplot(211)
+        ax2 = fig.add_subplot(212)
+        xmax = 1.01*np.log10(max(max(angL_init[0]), max(angL_init[1])))
+        ymax = 1.01*np.log10(max(max(angL_fin[0]), max(angL_fin[1])))
+
+        fig = plt.figure(figsize=(8, 6))
+        gs = fig.add_gridspec(2, 2,  width_ratios=(4, 2), height_ratios=(2, 4),
+                            left=0.1, right=0.9, bottom=0.1, top=0.9,
+                            wspace=0.05, hspace=0.05)
+        ax = fig.add_subplot(gs[1, 0])
+        ax1 = fig.add_subplot(gs[0, 0], sharex=ax)
+        ax2 = fig.add_subplot(gs[1, 1], sharey=ax)
+        ax1.tick_params(axis="x", labelbottom=False)
+        ax2.tick_params(axis="y", labelleft=False)
+
+        ax.scatter(np.log10(angL_init[0]), np.log10(angL_fin[0]), color = 'red', s = 0.75)
+        ax.scatter(np.log10(angL_init[1]), np.log10(angL_fin[1]), color = 'blue', s = 0.75)
+
+        kdeh_IMBH = sm.nonparametric.KDEUnivariate(np.log10(angL_fin[0]))
+        kdeh_IMBH.fit()
+        kdeh_IMBH.density = (kdeh_IMBH.density / max(kdeh_IMBH.density))
+        ax2.plot(kdeh_IMBH.density, (kdeh_IMBH.support), color = 'red')
+        ax2.fill_between(kdeh_IMBH.density, (kdeh_IMBH.support), alpha = 0.35, color = 'red')
         
-        colours = ['black', 'white']
-        file = ['Hermite', 'GRX']
-        fig = plt.figure(figsize=(5, 15))
-        ax1 = fig.add_subplot(211)
-        ax2 = fig.add_subplot(212)
-        for int_ in range(2):
-            ax_ = [ax1, ax2]
-            iter = -1
+        kdef_IMBH = sm.nonparametric.KDEUnivariate(np.log10(angL_init[0]))
+        kdef_IMBH.fit()
+        kdef_IMBH.density = (kdef_IMBH.density / max(kdef_IMBH.density))
+        ax1.plot(kdef_IMBH.support, (kdef_IMBH.density), color = 'red', label = 'Hermite')
+        ax1.fill_between(kdef_IMBH.support, (kdef_IMBH.density), alpha = 0.35, color = 'red')
 
-            xmax = 1.01*np.log10(max(max(angL_init[0]), max(angL_init[1])))
-            ymax = 1.01*np.log10(max(max(angL_fin[0]), max(angL_fin[1])))
-            plot_ini.tickers(ax1, 'plot')
+        kdef_SMBH = sm.nonparametric.KDEUnivariate(np.log10(angL_init[1]))
+        kdef_SMBH.fit()
+        kdef_SMBH.density = (kdef_SMBH.density/max(kdef_SMBH.density))
+        ax1.plot(kdef_SMBH.support, (kdef_SMBH.density), color = 'blue', label = 'GRX')
+        ax1.fill_between(kdef_SMBH.support, (kdef_SMBH.density), alpha = 0.35, color = 'blue')
 
-            bin2d_sim, xed, yed, image = ax_[int_].hist2d(np.log10(angL_init[int_]), 
-                                                          np.log10(angL_fin[int_]), bins=(50, 50),
-                                                          range=([17.8, 1.005*xmax], [17.8, 1.005*ymax]))
-            bin2d_sim /= np.max(bin2d_sim)
-            extent = [17.8, 1.005*(xmax), 17.8, 1.005*(ymax)]
-            contours = ax2.imshow((bin2d_sim), extent = extent, aspect='auto', origin = 'upper')
+        kdeh_SMBH = sm.nonparametric.KDEUnivariate(np.log10(angL_fin[1]))
+        kdeh_SMBH.fit()
+        kdeh_SMBH.density = (kdeh_SMBH.density / max(kdeh_SMBH.density))
+        ax2.plot(kdeh_SMBH.density, (kdeh_SMBH.support), color = 'blue')
+        ax2.fill_between(kdeh_SMBH.density, (kdeh_SMBH.support), alpha = 0.35, color = 'blue')
 
-        for ax_ in [ax1, ax2]:
-            plot_ini.tickers(ax_, 'hist')
-            ax_.set_xlabel(r'$\log_{10} L_{0}$')
-            ax_.set_ylabel(r'$\log_{10} L_{f}$')
-            ax_.axhline(np.log10(self.SMBH_angL), color = 'white')
-            ax_.axvline(np.log10(self.SMBH_angL), color = 'white')
-            ax_.plot(xline, xline, color = 'white', linestyle = ':')
-            ax_.set_xlim(17.8, 1.01*(xmax))
-            ax_.set_ylim(17.8, 1.01*(ymax))
-            ax_.text(18, 1.002*np.log10(self.SMBH_angL), r'$L_{\rm{crit}}$')
-        ax1.text(18, 1.002*np.log10(self.SMBH_angL), r'$L_{\rm{crit}}$')
+        ax1.set_ylabel(r'$(\rho/\rho_{\rm{max}})$')
+        ax2.set_xlabel(r'$(\rho/\rho_{\rm{max}})$')
+        ax1.legend()
 
-        plt.colorbar(colour_axes, ax=ax1, label = r'IMBH Population [$N$]')
-        plt.savefig('figures/loss_cone/LCif_hist_'+str(file[int_])+'.pdf', dpi=300, bbox_inches='tight')
+        ax.set_xlabel(r'$\log_{10} L_{0}$')
+        ax.set_ylabel(r'$\log_{10} L_{f}$')
+        ax.axhline(np.log10(self.SMBH_angL), color = 'black')
+        ax.axvline(np.log10(self.SMBH_angL), color = 'black')
+        ax.plot(xline, xline, color = 'black', linestyle = ':')
+        ax.text(18, 1.002*np.log10(self.SMBH_angL), r'$L_{\rm{crit}}$', color = 'black')
+        plot_ini.tickers(ax, 'plot')
+        plot_ini.tickers(ax1, 'plot')
+        plot_ini.tickers(ax2, 'plot')
+        ax.set_xlim(17.8, 1.005*(xmax))
+        ax.set_ylim(17.8, 1.005*(ymax))
+        ax1.set_ylim(0,1.05)
+        ax2.set_xlim(0,1.05)
+        plt.savefig('figures/loss_cone/LCif_KDE_scatter.pdf', dpi=300, bbox_inches='tight')
         plt.clf()
-
-        fig = plt.figure(figsize=(5, 15))
-        ax1 = fig.add_subplot(211)
-        ax2 = fig.add_subplot(212)
-        normalise = plt.Normalize(10, 40)
-        for int_ in range(2):
-            idx_ejec = np.where(self.ejec_part[int_] == 1)[0]
-            idx_stab = np.where(self.ejec_part[int_] != 1)[0]
-            for idx in idx_ejec:
-                colour_axes = ax1.scatter(np.log10(angL_init[int_][idx]), 
-                                          np.log10(angL_fin[int_][idx]), 
-                                          c = init_pop[int_][idx], norm = normalise,
-                                          marker = 'X', edgecolors='black')
-            for idx in idx_stab:
-                colour_axes = ax1.scatter(np.log10(angL_init[int_][idx]), 
-                                          np.log10(angL_fin[int_][idx]), 
-                                          c = init_pop[int_][idx], norm = normalise,
-                                          edgecolors='black')
-            for ax_ in [ax1, ax2]:
-                plot_ini.tickers(ax_, 'plot')
-                ax_.set_xlabel(r'$\log_{10} L_{0}$')
-                ax_.set_ylabel(r'$\log_{10} L_{f}$')
-                ax_.axhline(np.log10(self.SMBH_angL), color = colours[iter])
-                ax_.axvline(np.log10(self.SMBH_angL), color = colours[iter])
-                ax_.plot(xline, xline, color = colours[iter], linestyle = ':')
-                ax_.set_xlim(17.8, 1.005*(xmax))
-                ax_.set_ylim(17.8, 1.005*(ymax))
-            ax1.text(18, 1.002*np.log10(self.SMBH_angL), r'$L_{\rm{crit}}$')
-
-            plt.colorbar(colour_axes, ax=ax1, label = r'IMBH Population [$N$]')
-            plt.savefig('figures/loss_cone/LCif_scatter_'+str(file[int_])+'.pdf', dpi=300, bbox_inches='tight')
-            plt.clf()
 
     def lcone_plotter(self):
         """

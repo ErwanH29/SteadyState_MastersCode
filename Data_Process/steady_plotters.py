@@ -7,7 +7,6 @@ from scipy.stats import iqr
 import scipy.optimize
 from scipy.optimize import OptimizeWarning
 from scipy.interpolate import make_interp_spline
-import pickle as pkl
 
 class stability_plotters(object):
     """
@@ -200,18 +199,10 @@ class stability_plotters(object):
         ax1.scatter(pop[1][pop[1] <= 40], np.log10(std_min[1][pop[1] <= 40]), color = colors[1], marker = '_')
         ax1.scatter(pop[1][pop[1] <= 40], np.log10(std_max[1][pop[1] <= 40]), color = colors[1], marker = '_')
         ax1.plot([pop[1][pop[1] <= 40], pop[1][pop[1] <= 40]], [np.log10(std_min[1][pop[1] <= 40]), np.log10(std_max[1][pop[1] <= 40])], color = colors[1], zorder = 1)
-        print(pop, psamp)
-
-
         ax1.plot(xtemp, np.log10(curve), zorder = 1, color = 'black', ls = '-.')
         plot_ini.tickers_pop(ax1, pop[0], 'GRX')
         plt.savefig('figures/steady_time/stab_time_mean_GRX.pdf', dpi = 300, bbox_inches='tight')
-
-
-        p0 = (100, -5, 20, 0.5, 60)
-        params, cv = scipy.optimize.curve_fit(log_fit, pop[1][:-2], (N_parti_avg[1][:-2]), p0, maxfev = 10000, method = 'trf')
-        slope, beta, log_c, beta2, y = params
-        print(slope, beta, log_c, beta2, y)
+        
         fig = plt.figure(figsize=(15, 6))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)

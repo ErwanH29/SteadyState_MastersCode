@@ -139,10 +139,10 @@ def phenomena_event():
     NIMBH = 1
 
     for i in range(len(ps_int)):
-        value_const_tempL += (4/3)*np.pi*NIMBH*const_rate[1]*(6*10**10)**-1*(ps_int[i] * cmove_dist_int[i]**3) * 10**-6
+        value_const_tempL += (12/7)*np.pi*NIMBH*const_rate[1]*(6*10**10)**-1*(ps_int[i] * cmove_dist_int[i]**(7/3)) * 10**-6
         cum_GCcL.append(value_const_tempL)
 
-        value_const_tempA += (4/3)*np.pi*NIMBH*const_rate[2]*(6*10**10)**-1*(ps_int[i] * cmove_dist_int[i]**3) * 10**-6
+        value_const_tempA += (12/7)*np.pi*NIMBH*const_rate[2]*(6*10**10)**-1*(ps_int[i] * cmove_dist_int[i]**(7/3)) * 10**-6
         cum_GCcA.append(value_const_tempA)
 
     cum_GCcL.insert(0,0)
