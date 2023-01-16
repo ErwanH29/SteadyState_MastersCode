@@ -27,9 +27,9 @@ class sustainable_sys(object):
         print('!!!!!! WARNING THIS WILL TAKE A WHILE !!!!!!!')
         filenameH = glob.glob(os.path.join('/media/erwanh/Elements/Hermite/particle_trajectory/*'))
         filenameGRX = glob.glob('/media/erwanh/Elements/GRX/particle_trajectory/*')
-        filename = [natsort.natsorted(filenameH)[24:63], natsort.natsorted(filenameGRX)]
+        filename = [natsort.natsorted(filenameH)[61:63], natsort.natsorted(filenameGRX)]
         ints = ['Hermite', 'GRX']
-        count = 3080
+        count = 6030
         
         dir = os.path.join('/home/erwanh/Desktop/SteadyStateBH/Data_Process/figures/steady_time/Sim_summary.txt')
         with open(dir) as f:
@@ -390,6 +390,7 @@ class sustainable_sys(object):
         with open('figures/binary_hierarchical/output/system_summary.txt', 'w') as file:
             integrator = ['Hermite', 'GRX']
             for int_ in range(2):
+                print('=====================================================================')
                 bform_stat = [ ]
                 tform_stat = [ ]
                 minGWtime = [ ]
@@ -404,6 +405,7 @@ class sustainable_sys(object):
                 file.write('Data for '+str(integrator[int_]+' in pc'))
                 iter = -1
                 for pop_ in pop_arr:
+                    print(pop_)
                     iter += 1
                     self.unique_pops[int_].append(pop_)
                     idx = np.argwhere(self.pop[int_] == pop_).flatten()
@@ -442,16 +444,23 @@ class sustainable_sys(object):
                         GW_ttime_temp = np.asarray(self.GW_timet[int_][data_])[idx_tbin-1]
                         bin_data += len(idx_nbin)
                         ter_data += len(idx_tbin)
-                        if np.asarray(self.GW_bmass[int_][data_])[idx_nbin-1] < 1e6:
-                            IMBH_bin += 1
-                        if np.asarray(self.hard_bin[int_][data_])[idx_nbin-1] > 0:
-                            hard_bin += 1
-                            hard_Bool = True
-                        if np.shape(self.GW_tmass[int_][data_])[0] > 1:
-                            if np.asarray(self.GW_tmass[int_][data_])[idx_tbin-1] < 1e6:
-                                IMBH_ter += 1
-                        if np.asarray(self.hard_ter[int_][data_])[idx_tbin-1] > 0:
-                            hard_ter += 1
+                        for idx_ in idx_nbin:
+                            if np.asarray(self.GW_bmass[int_][data_])[idx_-1] < 1e6:
+                                IMBH_bin += 1
+                            if np.asarray(self.hard_bin[int_][data_])[idx_-1] > 0:
+                                hard_bin += 1
+                                hard_Bool = True
+
+                        ter_sys = False
+                        for idx_ in idx_tbin:
+                            if np.shape(self.GW_tmass[int_][data_])[0] > 0:
+                                print(np.asarray(self.GW_tmass[int_][data_])[idx_-1])
+                                for mass_ in np.asarray(self.GW_tmass[int_][data_])[idx_-1]:
+                                    if mass_ > 1e6:
+                                        print('True', self.GW_tmass[int_][data_][idx_-1])
+                                        IMBH_ter -= 1
+                            if np.asarray(self.hard_ter[int_][data_])[idx_-1].all() > 0:
+                                hard_ter += 1
                         
                         if (hard_Bool):
                             if len(idx_nbin) == 1:
@@ -477,9 +486,10 @@ class sustainable_sys(object):
                         if GW_btime_temp < (GW_calcs.tH).value_in(units.Myr):
                             bin_data_merge += 1
                             GWb_time.append(float(GW_btime_temp))
-                        if GW_ttime_temp < (GW_calcs.tH).value_in(units.Myr):
-                            ter_data_merge += 1
-                            GWt_time.append(float(GW_btime_temp))
+                        for item_ in GW_ttime_temp:
+                            if item_ < (GW_calcs.tH).value_in(units.Myr):
+                                ter_data_merge += 1
+                                GWt_time.append(float(GW_btime_temp))
 
                         for item_ in self.semi_NN_avg[int_][data_]:
                             if item_ > 0:
@@ -506,13 +516,13 @@ class sustainable_sys(object):
                     self.binary_hard[int_].append(hard_bin)
                     self.GWb_mergers[int_].append(bin_data_merge)
                     self.tertiary_total[int_].append(ter_data)
-                    self.tertiary_IMBH[int_].append(IMBH_ter)
+                    self.tertiary_IMBH[int_].append((ter_data+IMBH_ter))
                     self.tertiary_hard[int_].append(hard_ter)
                     self.GWt_mergers[int_].append(ter_data_merge)
 
                     self.binary_systems[int_].append(bin_data/sims[int_][iter])
                     self.binary_occupation[int_].append(np.mean(bin_occ))
-                    self.tertiary_systems[int_].append(len(np.asarray(self.semi_t_min[int_][data_])[np.asarray(self.semi_t_min[int_][data_]) > 0])/len(idx))
+                    self.tertiary_systems[int_].append(ter_data/sims[int_][iter])
                     self.tertiary_occupation[int_].append(np.mean(ter_occ))
 
                     bform_stat.append('{:.7f}'.format(np.mean(bform_time)))
@@ -609,11 +619,12 @@ class sustainable_sys(object):
             ax_[int_].set_title(integrator[int_])
             ax_[int_].set_xlabel(r'IMBH Population [$N$]')
             ax_[int_].set_ylabel(r'$\log_{10}(t_{\rm{sys}} / t_{\rm{sim}})$')
-            ax_[int_].set_ylim(-10, 0)
+            ax_[int_].set_ylim(-7, 0)
             #ax_[int_].plot(xtemp, curve(xtemp), color = 'black', linestyle = ':', zorder = 1)
             ax_[int_].plot(xtemp, y_fit, color = 'black', linestyle = '-.', zorder = 1)
             colour_axes = ax_[int_].scatter(ini_pop, np.log10(self.binary_occupation[int_]), edgecolors  = 'black', c = (self.binary_systems[int_]), norm = (normalise_p1), label = 'Stable Binary', zorder = 2)
             ax_[int_].scatter(ini_pop, np.log10(self.tertiary_occupation[int_]), edgecolors  = 'black', c = (self.tertiary_systems[int_]), norm = (normalise_p1), marker = 's', label = 'Stable Triple', zorder = 3)
+            print('Number of tertiary: ', self.tertiary_systems[int_])
         plot_ini.tickers_pop(ax1, self.pop[1], 'GRX')
         plot_ini.tickers_pop(ax2, self.pop[1], 'GRX')
         ax2.legend()
@@ -671,7 +682,6 @@ class sustainable_sys(object):
                                   tertiary, False)
             ax.set_xlabel(r'$\log_{10}f$ [Hz]')
             ax.set_ylabel(r'$\log_{10}h$')
-            ax1.set_title(str(integrators[int_]))
             plot_ini.tickers(ax, 'plot')
             plot_ini.tickers(ax1, 'plot')
             plot_ini.tickers(ax2, 'plot')
@@ -705,7 +715,6 @@ class sustainable_sys(object):
 
             ax.set_xlabel(r'$\log_{10}f$ [Hz]')
             ax.set_ylabel(r'$\log_{10}h$')
-            ax1.set_title(str(integrators[int_]))
             plot_ini.tickers(ax, 'plot')
             plot_ini.tickers(ax1, 'plot')
             plot_ini.tickers(ax2, 'plot')
@@ -771,7 +780,6 @@ class sustainable_sys(object):
             
             ax.set_xlabel(r'$\log_{10}f$ [Hz]')
             ax.set_ylabel(r'$\log_{10}h$')
-            ax.set_title(str(integrators[int_]))
             plot_ini.tickers(ax, 'plot')
             plot_ini.tickers(ax1, 'plot')
             plot_ini.tickers(ax2, 'plot')

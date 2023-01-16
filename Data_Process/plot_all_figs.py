@@ -10,24 +10,24 @@ start_time = cpu_time.time()
 
 
 
-
 print('...tGW_plotters...')
 cst = gw_calcs()
 #cst.new_data_extractor()
 #cst.strain_freq_plotter()
-cst.orbital_hist_plotter()
+#cst.orbital_hist_plotter()
 #cst.Nenc_tgw_plotter()
 #cst.transient_events()
-STOP
+
 print('...sustainable_bintert_plotters...')
 cst = sustainable_sys()
-#cst.combine_data()
-#cst.system_formation_plotter()
-#cst.GW_emissions()
-cst.new_data_extractor()
+#cst.new_data_extractor()   
+cst.combine_data()
+cst.system_formation_plotter()
+cst.GW_emissions()
 
 
 STOP
+
 
 
 print('...loss_cone_plotters...')
